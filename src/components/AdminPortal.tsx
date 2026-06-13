@@ -114,6 +114,13 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
     }
   }, []);
 
+  // Tab access reset if user role changes or is not admin
+  useEffect(() => {
+    if (currentUser?.role !== UserRole.ADMIN && (activeTab === 'users' || activeTab === 'logs')) {
+      setActiveTab('overview');
+    }
+  }, [currentUser, activeTab]);
+
   // Save changes helper
   const saveUsers = (updated: User[]) => {
     setUsers(updated);
@@ -150,6 +157,11 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setLoginErr('');
+
+    if (currentUser && currentUser.role !== UserRole.ADMIN) {
+      alert('Permission Denied: Only administrators are authorized to switch user sessions.');
+      return;
+    }
     
     // Simple email matching bypass passwords for prototype usability
     const found = users.find(u => u.email.toLowerCase().trim() === loginEmail.toLowerCase().trim());
@@ -560,12 +572,14 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
               </div>
               
               <div className="flex gap-1.5">
-                <button
-                  onClick={() => setShowLoginModal(true)}
-                  className="px-2.5 py-1.5 border border-slate-700 rounded-lg hover:border-slate-500 hover:bg-slate-800 text-[10px] text-slate-300 font-semibold cursor-pointer flex items-center gap-1"
-                >
-                  <RefreshCw className="h-3 w-3" /> Switched
-                </button>
+                {currentUser?.role === UserRole.ADMIN && (
+                  <button
+                    onClick={() => setShowLoginModal(true)}
+                    className="px-2.5 py-1.5 border border-slate-700 rounded-lg hover:border-slate-500 hover:bg-slate-800 text-[10px] text-slate-300 font-semibold cursor-pointer flex items-center gap-1"
+                  >
+                    <RefreshCw className="h-3 w-3" /> Switched
+                  </button>
+                )}
                 <button
                   onClick={handleLogout}
                   className="p-1.5 bg-rose-600/10 hover:bg-rose-600 text-rose-400 hover:text-white border border-rose-500/20 rounded-lg transition-colors cursor-pointer"
@@ -1492,27 +1506,33 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
             <div className="p-6 space-y-4 font-sans">
               
               {/* Simple accounts switch buttons */}
-              <div className="space-y-2">
-                <span className="text-[10px] font-bold text-slate-400 font-mono uppercase block mb-1">Interactive User Profiles:</span>
-                <div className="grid grid-cols-2 gap-2">
-                  {users.map(u => (
-                    <button
-                      key={u.id}
-                      onClick={() => {
-                        setLoginEmail(u.email);
-                        setLoginPassword('sandbox123');
-                        setLoginErr('');
-                      }}
-                      className="px-3 py-2 border border-slate-200 hover:border-blue-300 bg-slate-50 hover:bg-slate-100 rounded-lg text-left transition-all text-xs cursor-pointer flex flex-col justify-between"
-                    >
-                      <strong className="text-slate-800 block text-[11px] leading-tight font-sans truncate">{u.name}</strong>
-                      <span className="text-[9px] font-mono text-blue-600 block mt-1 uppercase font-bold">{u.role}</span>
-                    </button>
-                  ))}
+              {(!currentUser || currentUser.role === UserRole.ADMIN) && (
+                <div className="space-y-2">
+                  <span className="text-[10px] font-bold text-slate-400 font-mono uppercase block mb-1">Interactive User Profiles:</span>
+                  <div className="grid grid-cols-2 gap-2">
+                    {users.map(u => (
+                      <button
+                        key={u.id}
+                        onClick={() => {
+                          if (currentUser && currentUser.role !== UserRole.ADMIN) {
+                            alert('Permission Denied: Only administrators are authorized to switch user sessions.');
+                            return;
+                          }
+                          setLoginEmail(u.email);
+                          setLoginPassword('sandbox123');
+                          setLoginErr('');
+                        }}
+                        className="px-3 py-2 border border-slate-200 hover:border-blue-300 bg-slate-50 hover:bg-slate-100 rounded-lg text-left transition-all text-xs cursor-pointer flex flex-col justify-between"
+                      >
+                        <strong className="text-slate-800 block text-[11px] leading-tight font-sans truncate">{u.name}</strong>
+                        <span className="text-[9px] font-mono text-blue-600 block mt-1 uppercase font-bold">{u.role}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
-              <div className="border-t border-slate-100 pt-4">
+              <div className={`border-t border-slate-100 ${(!currentUser || currentUser.role === UserRole.ADMIN) ? 'pt-4' : ''}`}>
                 <form onSubmit={handleLogin} className="space-y-4">
                   {loginErr && (
                     <div className="p-2.5 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-lg flex items-center gap-1.5">
