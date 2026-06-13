@@ -9,9 +9,11 @@ import { SAMPLE_PROPOSALS, formatQAR, createDefaultProposal } from './proposalUt
 import ProposalWizard from './components/ProposalWizard';
 import ProposalDocumentView from './components/ProposalDocumentView';
 import AdminPortal from './components/AdminPortal';
+import LandingPage from './components/LandingPage';
 import { 
   Plus, Search, FileText, Calendar, Building, Landmark, Trash2, Edit3, Eye, 
-  HelpCircle, ChevronRight, BarChart3, Database, TrendingUp, Sparkles, AlertCircle
+  HelpCircle, ChevronRight, BarChart3, Database, TrendingUp, Sparkles, AlertCircle,
+  LogOut
 } from 'lucide-react';
 
 function generateEditSummary(oldProp: Proposal, newProp: Proposal): string {
@@ -42,7 +44,40 @@ export default function App() {
   // Central proposals memory state
   const [proposals, setProposals] = useState<Proposal[]>([]);
   // Team active login session
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(() => {
+    const cached = localStorage.getItem('prowess_session_user');
+    if (cached) {
+      try {
+        return JSON.parse(cached);
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  });
+
+  // Log login helper
+  const logLoginEvent = (actor: User) => {
+    const cachedLogs = localStorage.getItem('prowess_admin_logs');
+    let logs = [];
+    if (cachedLogs) {
+      try {
+        logs = JSON.parse(cachedLogs);
+      } catch {
+        logs = [];
+      }
+    }
+    const newEntry = {
+      id: 'log_' + Math.random().toString(36).substring(2, 10),
+      timestamp: new Date().toISOString(),
+      userId: actor.id,
+      userName: actor.name,
+      userRole: actor.role,
+      action: 'User Login',
+      details: `${actor.name} (${actor.role}) logged in securely via the main gateway landing page.`
+    };
+    localStorage.setItem('prowess_admin_logs', JSON.stringify([newEntry, ...logs]));
+  };
   // Wizard creation/editing state
   const [isCreating, setIsCreating] = useState<boolean>(false);
   // View editable proposal in wizard
@@ -235,6 +270,18 @@ export default function App() {
   const webProposalsCount = visibleProposals.filter(p => p.type === 'website').length;
   const brandingProposalsCount = visibleProposals.filter(p => p.type === 'branding').length;
 
+  if (!currentUser) {
+    return (
+      <LandingPage
+        onLogin={(user) => {
+          setCurrentUser(user);
+          localStorage.setItem('prowess_session_user', JSON.stringify(user));
+          logLoginEvent(user);
+        }}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col justify-between">
       
@@ -257,11 +304,44 @@ export default function App() {
 
           <div className="flex items-center gap-3 text-xs col-span-2 md:col-span-1">
             <span className="text-slate-400 hidden sm:inline">
-              {currentUser ? `${currentUser.name} (${currentUser.role}):` : "User Portal:"}
+              {currentUser?.name} <span className="opacity-60">({currentUser?.role})</span>
             </span>
             <span className="font-mono bg-slate-800 text-slate-200 px-2.5 py-1 rounded-md border border-slate-700">
-              {currentUser ? currentUser.email : "ninanpjoseph@gmail.com"}
+              {currentUser?.email}
             </span>
+            <button 
+              onClick={() => {
+                // Log action in audit trail before clearing session
+                const cachedLogs = localStorage.getItem('prowess_admin_logs');
+                let logs = [];
+                if (cachedLogs) {
+                  try {
+                    logs = JSON.parse(cachedLogs);
+                  } catch {
+                    logs = [];
+                  }
+                }
+                const newEntry = {
+                  id: 'log_' + Math.random().toString(36).substring(2, 10),
+                  timestamp: new Date().toISOString(),
+                  userId: currentUser?.id || 'system',
+                  userName: currentUser?.name || 'Anonymous User',
+                  userRole: currentUser?.role || UserRole.SALES,
+                  action: 'User Logout',
+                  details: `${currentUser?.name} signed out securely.`
+                };
+                localStorage.setItem('prowess_admin_logs', JSON.stringify([newEntry, ...logs]));
+                
+                // Clear state & session
+                localStorage.removeItem('prowess_session_user');
+                setCurrentUser(null);
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-600/10 hover:bg-rose-600 text-rose-400 hover:text-white border border-rose-500/20 rounded-md transition-all cursor-pointer text-[11px] font-semibold"
+              title="Sign Out of Session"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+              <span className="hidden md:inline">Sign Out</span>
+            </button>
           </div>
         </div>
       </header>

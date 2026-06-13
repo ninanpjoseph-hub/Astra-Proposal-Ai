@@ -95,18 +95,14 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
       }
     }
 
-    // Default auto login first user for convenience if none
+    // Read current session from localStorage if already saved
     const activeSession = localStorage.getItem('prowess_session_user');
     if (activeSession) {
       try {
         onLoginUser(JSON.parse(activeSession));
       } catch {
-        onLoginUser(DEFAULT_USERS[0]);
+        // Safe standard fall-through
       }
-    } else {
-      // Auto login the primary user to keep experience direct and friction-free
-      onLoginUser(DEFAULT_USERS[0]);
-      localStorage.setItem('prowess_session_user', JSON.stringify(DEFAULT_USERS[0]));
     }
   }, []);
 
