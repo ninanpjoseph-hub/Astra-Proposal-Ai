@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { BRANDING_TEMPLATES, WEBSITE_TEMPLATES } from '../staticTemplates';
+import { BRANDING_TEMPLATES, WEBSITE_TEMPLATES, DEFAULT_SCOPE_TEMPLATES } from '../staticTemplates';
 import { formatQAR, DEFAULT_BRANDING_MILESTONES, DEFAULT_WEBSITE_MILESTONES, triggerAutomatedFollowUp } from '../proposalUtils';
 import SitemapGenerator from './SitemapGenerator';
 import { Check, Bookmark, DollarSign, Calendar, Landmark, BookOpen, Signature, Award, ChevronRight, FileText, Printer, Download, History, RotateCcw, Clock, Sliders, Upload } from 'lucide-react';
@@ -146,30 +146,35 @@ export function ProposalPageHeader({ proposal, pageNumber }: { proposal: any; pa
   const mode = proposal.letterheadMode || 'minimal';
   const customImg = proposal.customLetterhead;
   const height = proposal.letterheadHeight || 80;
+  const isFullPage = !!proposal.letterheadFullPage;
 
   if (mode === 'none') {
     return null;
   }
 
   if (mode === 'custom' && customImg) {
-    return (
-      <div className="w-full pb-4 border-b border-slate-100 mb-6 relative z-10 select-none flex justify-center items-center">
-        <img 
-          src={customImg} 
-          style={{ height: `${height}px` }} 
-          className="object-contain max-w-full" 
-          alt="Custom Corporate Letterhead" 
-          referrerPolicy="no-referrer"
+    if (isFullPage) {
+      return null;
+    }
+    // Render a clean spacing block to keep text from overlapping the top-edge letterhead background.
+    // The A4 container has 24mm (approx 90px) or 20mm (approx 75px) of padding.
+    const spaceNeeded = Math.max(0, height - 70);
+    if (spaceNeeded > 0) {
+      return (
+        <div 
+          style={{ height: `${spaceNeeded}px` }} 
+          className="w-full relative z-10 select-none mb-4" 
         />
-      </div>
-    );
+      );
+    }
+    return null;
   }
 
   // default / 'minimal' layout (highly elegant, neutral, no hardcoded Astra stuff)
   return (
     <div className="flex justify-between items-center pb-3 border-b border-slate-200/80 mb-6 relative z-10 w-full select-none text-slate-500 text-[10px] font-sans">
       <div className="flex items-center gap-2">
-        <span className="font-mono tracking-wider text-slate-400 font-bold uppercase">
+        <span className="font-mono tracking-wider text-slate-400 font-bold uppercase block">
           Client Proposal
         </span>
         <span className="text-slate-350 font-mono">|</span>
@@ -184,6 +189,29 @@ export function ProposalPageHeader({ proposal, pageNumber }: { proposal: any; pa
         <span className="text-slate-350 font-mono">|</span>
         <span className="font-mono tracking-wider font-bold text-slate-600">PAGE {pageNumber}</span>
       </div>
+    </div>
+  );
+}
+
+export function ProposalCustomLetterheadBackground({ proposal }: { proposal: any }) {
+  const mode = proposal.letterheadMode || 'minimal';
+  const customImg = proposal.customLetterhead;
+  const height = proposal.letterheadHeight || 80;
+  const isFullPage = !!proposal.letterheadFullPage;
+
+  if (mode !== 'custom' || !customImg) {
+    return null;
+  }
+
+  return (
+    <div className="absolute inset-0 pointer-events-none select-none z-0 overflow-hidden rounded-2xl print:rounded-none">
+      <img
+        src={customImg}
+        style={isFullPage ? { width: '100%', height: '100%' } : { height: `${height}px`, width: '100%' }}
+        className={isFullPage ? "w-full h-full object-cover" : "w-full object-contain object-top"}
+        alt="Custom Corporate Letterhead Background"
+        referrerPolicy="no-referrer"
+      />
     </div>
   );
 }
@@ -794,28 +822,56 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
               </div>
 
               {proposal.letterheadMode === 'custom' && proposal.customLetterhead && (
-                <div className="space-y-1.5">
-                  <div className="flex justify-between text-xs text-slate-600 font-semibold">
-                    <span>Letterhead Height Adjustment:</span>
-                    <span className="font-mono">{proposal.letterheadHeight || 80}px</span>
+                <div className="space-y-3.5 pt-1">
+                  <div className="flex items-center justify-between bg-white border border-slate-200/60 p-3 rounded-xl">
+                    <div>
+                      <label htmlFor="full-page-config" className="text-xs font-bold text-slate-700 block cursor-pointer">Full A4 Page Cover Template</label>
+                      <span className="text-[10px] text-slate-400 block">Treat upload as full A4 page background layer</span>
+                    </div>
+                    <input
+                      type="checkbox"
+                      id="full-page-config"
+                      checked={!!proposal.letterheadFullPage}
+                      onChange={(e) => {
+                        if (onUpdateProposal) {
+                          onUpdateProposal({
+                            ...proposal,
+                            letterheadFullPage: e.target.checked,
+                            updatedAt: new Date().toISOString()
+                          });
+                        }
+                      }}
+                      className="h-4.5 w-4.5 rounded text-blue-600 border-slate-300 focus:ring-blue-500 cursor-pointer"
+                    />
                   </div>
-                  <input
-                    type="range"
-                    min="30"
-                    max="180"
-                    value={proposal.letterheadHeight || 80}
-                    onChange={(e) => {
-                      if (onUpdateProposal) {
-                        onUpdateProposal({
-                          ...proposal,
-                          letterheadHeight: parseInt(e.target.value),
-                          updatedAt: new Date().toISOString()
-                        });
-                      }
-                    }}
-                    className="w-full accent-blue-600 h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer"
-                  />
-                  <span className="text-[9.5px] text-slate-400 block">Slide to seamlessly scale the logo/banner inside the header zone across all proposal pages.</span>
+
+                  {!proposal.letterheadFullPage && (
+                    <div className="space-y-1.5 bg-white border border-slate-200/60 p-3 rounded-xl">
+                      <div className="flex justify-between text-xs text-slate-600 font-semibold mb-1">
+                        <span>Top Letterhead Height Adjustment:</span>
+                        <span className="font-mono font-bold text-blue-600">{proposal.letterheadHeight || 80}px</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="30"
+                        max="180"
+                        value={proposal.letterheadHeight || 80}
+                        onChange={(e) => {
+                          if (onUpdateProposal) {
+                            onUpdateProposal({
+                              ...proposal,
+                              letterheadHeight: parseInt(e.target.value),
+                              updatedAt: new Date().toISOString()
+                            });
+                          }
+                        }}
+                        className="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                      />
+                      <span className="text-[9.5px] text-slate-400 block leading-normal">
+                        Dynamically adjust the top header height. The layout flow mathematically maps dynamic top spacers to guarantee pristine spacing without text overlaps.
+                      </span>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -885,6 +941,7 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
         <div id="page-1-cover" className="proposal-page relative flex flex-col justify-between overflow-hidden">
           {/* Background Watermark */}
           <ProposalWatermark proposal={proposal} />
+          <ProposalCustomLetterheadBackground proposal={proposal} />
 
           {/* Top Letterhead Header */}
           <ProposalPageHeader proposal={proposal} pageNumber="01" />
@@ -949,6 +1006,7 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
         <div id="page-2-toc" className="proposal-page relative flex flex-col justify-between overflow-hidden">
           {/* Background Watermark */}
           <ProposalWatermark proposal={proposal} />
+          <ProposalCustomLetterheadBackground proposal={proposal} />
 
           {/* Top Letterhead Header */}
           <ProposalPageHeader proposal={proposal} pageNumber="02" />
@@ -985,6 +1043,7 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
         <div id="page-3-objectives" className="proposal-page relative flex flex-col justify-between overflow-hidden">
           {/* Background Watermark */}
           <ProposalWatermark proposal={proposal} />
+          <ProposalCustomLetterheadBackground proposal={proposal} />
 
           {/* Top Letterhead Header */}
           <ProposalPageHeader proposal={proposal} pageNumber="03" />
@@ -1022,6 +1081,7 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
         <div id="page-4-summary" className="proposal-page relative flex flex-col justify-between overflow-hidden">
           {/* Background Watermark */}
           <ProposalWatermark proposal={proposal} />
+          <ProposalCustomLetterheadBackground proposal={proposal} />
 
           {/* Top Letterhead Header */}
           <ProposalPageHeader proposal={proposal} pageNumber="04" />
@@ -1063,6 +1123,7 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
         <div id="page-5-methodology" className="proposal-page relative flex flex-col justify-between overflow-hidden">
           {/* Background Watermark */}
           <ProposalWatermark proposal={proposal} />
+          <ProposalCustomLetterheadBackground proposal={proposal} />
 
           {/* Top Letterhead Header */}
           <ProposalPageHeader proposal={proposal} pageNumber="05" />
@@ -1116,6 +1177,7 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
         <div id="page-6-scope" className="proposal-page relative flex flex-col justify-between overflow-hidden">
           {/* Background Watermark */}
           <ProposalWatermark proposal={proposal} />
+          <ProposalCustomLetterheadBackground proposal={proposal} />
 
           {/* Top Letterhead Header */}
           <ProposalPageHeader proposal={proposal} pageNumber="06" />
@@ -1174,25 +1236,93 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
                   )}
                 </div>
               ) : (
-                /* WEBSITE SCOPE + SITEMAP */
-                <div className="space-y-6">
-                  <div className="bg-blue-50/50 p-4 border border-blue-100 rounded-xl grid grid-cols-3 gap-4 text-center">
+                /* WEBSITE SCOPE + SITEMAP + DETAILED DELIVERABLES */
+                <div className="space-y-4">
+                  {/* Parameter badges */}
+                  <div className="bg-blue-50/40 p-3 border border-blue-100 rounded-xl grid grid-cols-3 gap-3 text-center">
                     <div>
-                      <span className="text-[10px] uppercase font-mono tracking-wider text-slate-400 block mb-0.5">Pages</span>
-                      <strong className="text-lg text-blue-700 font-bold font-sans">{proposal.websiteScope.totalPages}</strong>
+                      <span className="text-[9px] uppercase font-mono tracking-wider text-slate-450 block mb-0.5">Page Capacity</span>
+                      <strong className="text-sm text-blue-800 font-bold font-sans">{proposal.websiteScope.totalPages} Templates</strong>
                     </div>
                     <div>
-                      <span className="text-[10px] uppercase font-mono tracking-wider text-slate-400 block mb-0.5">Language</span>
-                      <strong className="text-lg text-blue-700 font-bold font-sans truncate block">{proposal.websiteScope.languages}</strong>
+                      <span className="text-[9px] uppercase font-mono tracking-wider text-slate-450 block mb-0.5">Language Profile</span>
+                      <strong className="text-sm text-blue-800 font-bold font-sans truncate block">{proposal.websiteScope.languages || "English"}</strong>
                     </div>
                     <div>
-                      <span className="text-[10px] uppercase font-mono tracking-wider text-slate-400 block mb-0.5">CMS Engine</span>
-                      <strong className="text-lg text-blue-700 font-bold font-sans truncate block uppercase">{proposal.websiteScope.cmsType}</strong>
+                      <span className="text-[9px] uppercase font-mono tracking-wider text-slate-450 block mb-0.5">CMS Architecture</span>
+                      <strong className="text-sm text-blue-800 font-bold font-sans truncate block uppercase">{proposal.websiteScope.cmsType}</strong>
                     </div>
                   </div>
 
+                  {/* Selected Deliverables List */}
+                  <div className="space-y-1.5">
+                    <span className="text-[9.5px] uppercase font-bold font-sans tracking-widest text-[#d3af00] block mb-1.5">
+                      Included Scope Sprints
+                    </span>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-2 max-h-[190px] overflow-y-auto pr-1">
+                      {((proposal.websiteScope.scopeItems && proposal.websiteScope.scopeItems.filter(item => item.isSelected).length > 0)
+                        ? proposal.websiteScope.scopeItems.filter(item => item.isSelected)
+                        : DEFAULT_SCOPE_TEMPLATES[proposal.websiteScope.websiteType || 'static'].slice(0, 6)
+                      ).map((item, idx) => (
+                        <div key={(item as any).id || idx} className="flex gap-2 items-start border-b border-slate-100 pb-1.5">
+                          <Check className="h-3 w-3 text-blue-600 mt-0.5 shrink-0" />
+                          <div>
+                            <span className="text-[11px] font-bold text-slate-800 block leading-tight">{item.title}</span>
+                            <span className="text-[9.5px] text-slate-500 font-sans block leading-normal mt-0.5">{item.description}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Section-Level Notes & Boundaries Grid */}
+                  {proposal.websiteScope.scopeNotes && (
+                    <div className="grid grid-cols-2 gap-3.5 border-t border-slate-150 pt-3">
+                      {/* Project Notes & Client Requirements side by side */}
+                      {(proposal.websiteScope.scopeNotes.notes || proposal.websiteScope.scopeNotes.requirements) && (
+                        <div className="bg-slate-50 border border-slate-150 p-2.5 rounded-lg">
+                          <span className="text-[9px] uppercase font-bold font-sans tracking-wider text-slate-500 block mb-1">
+                            Specific Deliverables & Requirements
+                          </span>
+                          {proposal.websiteScope.scopeNotes.notes && (
+                            <p className="text-[10px] text-slate-700 italic font-sans mb-1 leading-normal">
+                              <strong>Notes:</strong> {proposal.websiteScope.scopeNotes.notes}
+                            </p>
+                          )}
+                          {proposal.websiteScope.scopeNotes.requirements && (
+                            <p className="text-[10px] text-slate-700 font-sans leading-normal">
+                              <strong>Client Directs:</strong> {proposal.websiteScope.scopeNotes.requirements}
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Exclusions & Technical Clarifications side by side */}
+                      {(proposal.websiteScope.scopeNotes.exclusions || proposal.websiteScope.scopeNotes.clarifications) && (
+                        <div className="bg-red-50/30 border border-red-100 p-2.5 rounded-lg">
+                          <span className="text-[9px] uppercase font-bold text-red-700 tracking-wider block mb-1">
+                            Technical Constraints & Boundaries
+                          </span>
+                          {proposal.websiteScope.scopeNotes.exclusions && (
+                            <p className="text-[10px] text-slate-750 font-sans mb-1 leading-normal">
+                              <strong className="text-red-700">Exclusions:</strong> {proposal.websiteScope.scopeNotes.exclusions}
+                            </p>
+                          )}
+                          {proposal.websiteScope.scopeNotes.clarifications && (
+                            <p className="text-[10px] text-slate-755 font-sans leading-normal">
+                              <strong>Clarifications:</strong> {proposal.websiteScope.scopeNotes.clarifications}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {/* Built sitemap visual */}
-                  <div className="mt-4 scale-90 sm:scale-95 origin-top">
+                  <div className="mt-1 border-t border-slate-100 pt-3.5 origin-top">
+                    <span className="text-[9px] uppercase font-mono tracking-widest text-slate-400 block mb-1">
+                      Visual Map Reference:
+                    </span>
                     <SitemapGenerator scope={proposal.websiteScope} projectName={proposal.clientName} />
                   </div>
                 </div>
@@ -1208,6 +1338,7 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
         <div id="page-7-timeline" className="proposal-page relative flex flex-col justify-between overflow-hidden">
           {/* Background Watermark */}
           <ProposalWatermark proposal={proposal} />
+          <ProposalCustomLetterheadBackground proposal={proposal} />
 
           {/* Top Letterhead Header */}
           <ProposalPageHeader proposal={proposal} pageNumber="07" />
@@ -1259,6 +1390,7 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
         <div id="page-8-financials" className="proposal-page relative flex flex-col justify-between overflow-hidden">
           {/* Background Watermark */}
           <ProposalWatermark proposal={proposal} />
+          <ProposalCustomLetterheadBackground proposal={proposal} />
 
           {/* Top Letterhead Header */}
           <ProposalPageHeader proposal={proposal} pageNumber="08" />
@@ -1350,6 +1482,7 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
         <div id="page-9-acceptance" className="proposal-page relative flex flex-col justify-between overflow-hidden">
           {/* Background Watermark */}
           <ProposalWatermark proposal={proposal} />
+          <ProposalCustomLetterheadBackground proposal={proposal} />
 
           {/* Top Letterhead Header */}
           <ProposalPageHeader proposal={proposal} pageNumber="09" />
@@ -1412,6 +1545,7 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
         <div id="page-10-thanks" className="proposal-page relative flex flex-col justify-between overflow-hidden">
           {/* Background Watermark */}
           <ProposalWatermark proposal={proposal} />
+          <ProposalCustomLetterheadBackground proposal={proposal} />
 
           {/* Top Letterhead Header */}
           <ProposalPageHeader proposal={proposal} pageNumber="10" />
@@ -1425,7 +1559,7 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
             </p>
             <div className="w-12 h-0.5 bg-slate-200 mx-auto mb-8 rounded-full"></div>
             <p className="text-xs text-slate-550 leading-relaxed max-w-sm mx-auto font-sans">
-              For immediate support escalations or procedural assistance, contact us at <span className="text-[#d3af00] font-semibold underline">engineering@astra.tech</span> or dial our regional office lines.
+              For immediate support escalations or procedural assistance, contact us at <span className="text-[#d3af00] font-semibold underline">info@technoastra.com</span> or dial our hotline number <span className="font-semibold text-slate-700">4440 0100</span>.
             </p>
           </div>
 

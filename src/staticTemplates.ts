@@ -141,3 +141,33 @@ export const WEBSITE_TEMPLATES: Record<string, StaticPage> = {
     ]
   }
 };
+
+export const DEFAULT_SCOPE_TEMPLATES: Record<'static' | 'dynamic' | 'ecommerce', { title: string; description: string; isSelected: boolean }[]> = {
+  static: [
+    { title: "Number of pages", description: "Design and content layout for standard pages (Home, About, Services, Contact, etc.).", isSelected: true },
+    { title: "Basic UI/UX design", description: "User interface and experience design phase ensuring clean aesthetics and consistent font pairings.", isSelected: true },
+    { title: "Responsive design", description: "Seamless mobile, tablet, and desktop layout compatibility testing and viewport optimizations.", isSelected: true },
+    { title: "Contact form integration", description: "Interactive contact forms to capture user inquiries and route to email seamlessly.", isSelected: true },
+    { title: "Basic SEO setup", description: "Meta titles, descriptions, open graph social sharing cards, and foundational indexing parameters.", isSelected: true },
+    { title: "Hosting deployment support", description: "Staging deployment, main domain DNS settings, and SSL security certificate installation.", isSelected: true }
+  ],
+  dynamic: [
+    { title: "Admin panel / CMS integration", description: "Secure backoffice administrative dashboards for painless and dynamic page content updates.", isSelected: true },
+    { title: "Database-driven content structure", description: "Structured database models for post categories, news listings, or other relational data records.", isSelected: true },
+    { title: "User management", description: "Restricted profile areas, registration, and role-based login protocols if needed.", isSelected: true },
+    { title: "Dynamic page templates", description: "Reusable dynamic layout blocks fetching database items (e.g. single blog posts, dynamic projects).", isSelected: true },
+    { title: "API integrations", description: "Connecting external web services, RSS feeds, or application helper APIs to synchronize content.", isSelected: true },
+    { title: "Advanced SEO configuration", description: "Automatic dynamic XML sitemaps, structured local schema metadata markups, and search console registration.", isSelected: true }
+  ],
+  ecommerce: [
+    { title: "Product catalog structure", description: "Categories, custom attributes (size, colour), tags, customizable items collections, and filtering controls.", isSelected: true },
+    { title: "Shopping cart & checkout system", description: "Professional, multi-step checkout funnel designed to maximize user completed transactions.", isSelected: true },
+    { title: "Payment gateway integration", description: "Seamless connection to major card processors like Stripe, PayPal, or regional merchants.", isSelected: true },
+    { title: "Order management system", description: "Backoffice dashboards for tracking new orders, customer details, and payment/fulfillment states.", isSelected: true },
+    { title: "Inventory management", description: "Automated stock reduction tracking, custom alert limits, and product option levels control.", isSelected: true },
+    { title: "Customer login/registration", description: "Dedicated customer area logging historical orders, checking statuses, and managing checkout profiles.", isSelected: true },
+    { title: "Shipping configuration", description: "Complex dynamic shipping rules, flat rates, free shipping benchmarks, and regional tracking parameters.", isSelected: true },
+    { title: "Invoice generation system", description: "Automatic checkout system PDF invoices or custom emailed receipts triggered post-purchase.", isSelected: true }
+  ]
+};
+

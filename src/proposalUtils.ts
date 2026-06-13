@@ -4,6 +4,7 @@
  */
 
 import { Proposal, ProposalType, Milestone, ResourceCost, ProposalStatus, Reminder } from './types';
+import { DEFAULT_SCOPE_TEMPLATES } from './staticTemplates';
 
 // Simple unique ID generator
 export function generateId(): string {
@@ -89,7 +90,21 @@ export function createDefaultProposal(type: ProposalType): Proposal {
       seoPlugin: true,
       securityPlugin: true,
       cachePlugin: true,
-      maintenancePeriod: 3
+      maintenancePeriod: 3,
+      websiteType: 'static',
+      scopeItems: DEFAULT_SCOPE_TEMPLATES.static.map((item, idx) => ({
+        id: `scope_static_${idx}`,
+        title: item.title,
+        description: item.description,
+        isSelected: item.isSelected,
+        isCustom: false
+      })),
+      scopeNotes: {
+        notes: "",
+        exclusions: "",
+        requirements: "",
+        clarifications: ""
+      }
     },
     
     // Timeline

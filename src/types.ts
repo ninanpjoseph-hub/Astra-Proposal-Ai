@@ -18,6 +18,23 @@ export interface BrandingScope {
   additionalDeliverables: string; // Comma separated or text
 }
 
+export type WebsiteType = 'static' | 'dynamic' | 'ecommerce';
+
+export interface ScopeOfWorkItem {
+  id: string;
+  title: string;
+  description: string;
+  isSelected: boolean;
+  isCustom?: boolean;
+}
+
+export interface ScopeOfWorkNotes {
+  notes?: string;
+  exclusions?: string;
+  requirements?: string;
+  clarifications?: string;
+}
+
 export interface WebsiteScope {
   totalPages: number;
   languages: string;
@@ -31,6 +48,9 @@ export interface WebsiteScope {
   securityPlugin: boolean;
   cachePlugin: boolean;
   maintenancePeriod: number; // in months
+  websiteType?: WebsiteType;
+  scopeItems?: ScopeOfWorkItem[];
+  scopeNotes?: ScopeOfWorkNotes;
 }
 
 export interface Milestone {
@@ -99,6 +119,7 @@ export interface Proposal {
   customLetterhead?: string; // Base64 Data URL of uploaded custom letterhead image
   letterheadHeight?: number; // Height of the letterhead in pixels
   letterheadMode?: 'minimal' | 'custom' | 'none'; // Header style mode
+  letterheadFullPage?: boolean; // Whether the custom letterhead is a full A4 page template
   showWatermark?: boolean; // Whether to display a clean background watermark
   customWatermarkText?: string; // Optional custom watermark text
 }

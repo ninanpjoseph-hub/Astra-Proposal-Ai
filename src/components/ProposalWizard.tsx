@@ -6,11 +6,12 @@
 import React, { useState, useEffect } from 'react';
 import { Proposal, ProposalType, Milestone, ResourceCost } from '../types';
 import { createDefaultProposal, generateId, formatQAR } from '../proposalUtils';
+import { DEFAULT_SCOPE_TEMPLATES } from '../staticTemplates';
 import SitemapGenerator from './SitemapGenerator';
 import ProposalDocumentView from './ProposalDocumentView';
 import { 
   Building2, User, Calendar, FileText, CheckSquare, Clock, Landmark, Settings, 
-  Trash2, Plus, ArrowLeft, ArrowRight, Eye, Sparkles, Check, HelpCircle 
+  Trash2, Plus, ArrowLeft, ArrowRight, Eye, Sparkles, Check, HelpCircle, ArrowUp, ArrowDown, Edit3, X 
 } from 'lucide-react';
 
 interface ProposalWizardProps {
@@ -51,6 +52,13 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
   };
 
   const isBranding = proposal.type === 'branding';
+
+  // Enhanced scope module editing states
+  const [customItemTitle, setCustomItemTitle] = useState('');
+  const [customItemDesc, setCustomItemDesc] = useState('');
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [editingItemTitle, setEditingItemTitle] = useState('');
+  const [editingItemDesc, setEditingItemDesc] = useState('');
 
   // Handle standard strings/numbers in state helper
   const updateField = (field: keyof Proposal, value: any) => {
@@ -563,119 +571,546 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
                   </div>
                 </div>
               ) : (
-                /* WEBSITE SCOPE FORM */
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="font-sans font-bold text-slate-800 text-sm tracking-tight mb-1">
-                      Web System Parameters
-                    </h3>
-                    <p className="text-xs text-slate-500 leading-normal mb-4 font-sans">
-                      Select target page counts, languages, CMS mechanisms, functional plugins, and active service periods.
-                    </p>
-                  </div>
+                /* WEBSITE SCOPE FORM WITH ENHANCED MODULE DEFINITIONS */
+                <div className="space-y-8 select-none">
+                  {/* Part A: Base Parameters */}
+                  <div className="bg-slate-50 border border-slate-200/60 p-5 rounded-2xl space-y-5">
+                    <div>
+                      <h4 className="font-sans font-bold text-slate-800 text-xs tracking-wider uppercase mb-1">
+                        1. Core Web System Parameters
+                      </h4>
+                      <p className="text-[11px] text-slate-400 leading-normal font-sans">
+                        Setup the baseline page capacity, framework mechanisms, translation profile, and maintenance parameters.
+                      </p>
+                    </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Pages total */}
-                    <div className="flex flex-col gap-1.5 p-4 border border-slate-100 bg-slate-50/40 rounded-xl">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Pages total */}
+                      <div className="flex flex-col gap-1.5 p-3.5 bg-white border border-slate-200/60 rounded-xl">
+                        <div className="flex justify-between items-center mb-1">
+                          <label className="text-xs font-sans font-bold text-slate-700">Total Page Templates</label>
+                          <span className="text-xs bg-blue-50 text-blue-700 px-2.5 py-0.5 rounded-full font-sans font-bold">
+                            {proposal.websiteScope.totalPages} Pages
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min="2"
+                          max="50"
+                          value={proposal.websiteScope.totalPages}
+                          onChange={(e) => updateWebsiteScope('totalPages', Number(e.target.value))}
+                          className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                        />
+                        <span className="text-[9px] text-slate-400">Slider adjusts vertical sitemap elements automatically below.</span>
+                      </div>
+
+                      {/* Language and CMS */}
+                      <div className="flex flex-col gap-2 bg-white border border-slate-200/60 p-3.5 rounded-xl">
+                        <div className="flex flex-col gap-1">
+                          <label className="text-xs font-sans font-semibold text-slate-700">Target Languages</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. English & Arabic (Dual-Language)"
+                            value={proposal.websiteScope.languages}
+                            onChange={(e) => updateWebsiteScope('languages', e.target.value)}
+                            className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-sans focus:outline-hidden"
+                          />
+                        </div>
+                        <div className="flex flex-col gap-1 mt-1">
+                          <label className="text-xs font-sans font-semibold text-slate-700">CMS Framework Type</label>
+                          <select
+                            value={proposal.websiteScope.cmsType}
+                            onChange={(e) => updateWebsiteScope('cmsType', e.target.value)}
+                            className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-sans focus:outline-hidden bg-white"
+                          >
+                            <option value="WordPress">WordPress Core (Yoast Setup)</option>
+                            <option value="headless-strapi">Headless CMS (Strapi + Next.js)</option>
+                            <option value="Shopify Engine">Shopify eCommerce Framework</option>
+                            <option value="Custom API Hub">Custom Node/Express Engine</option>
+                            <option value="Static HTML5/SPA">Pure Static HTML5 / React SPA</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-1 bg-white p-3.5 border border-slate-200/60 rounded-xl max-w-[280px]">
                       <div className="flex justify-between items-center mb-1">
-                        <label className="text-xs font-sans font-bold text-slate-700">Total Page Templates</label>
-                        <span className="text-xs bg-blue-50 text-blue-700 px-2.5 py-0.5 rounded-full font-sans font-bold">
-                          {proposal.websiteScope.totalPages} Pages
-                        </span>
+                        <label className="text-xs font-sans font-bold text-slate-700">Launch Maintenance Support</label>
+                        <strong className="text-xs text-blue-700">{proposal.websiteScope.maintenancePeriod} Months</strong>
                       </div>
                       <input
                         type="range"
-                        min="2"
-                        max="50"
-                        value={proposal.websiteScope.totalPages}
-                        onChange={(e) => updateWebsiteScope('totalPages', Number(e.target.value))}
-                        className="w-full accent-blue-600 h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer"
+                        min="1"
+                        max="24"
+                        value={proposal.websiteScope.maintenancePeriod}
+                        onChange={(e) => updateWebsiteScope('maintenancePeriod', Number(e.target.value))}
+                        className="w-full accent-blue-600 cursor-pointer"
                       />
-                      <span className="text-[9px] text-slate-400">Sliders adjusts vertical sitemap elements automatically.</span>
                     </div>
+                  </div>
 
-                    {/* Language and CMS */}
-                    <div className="flex flex-col gap-2.5">
-                      <div className="flex flex-col gap-1">
-                        <label className="text-xs font-sans font-semibold text-slate-700">Target Languages</label>
-                        <input
-                          type="text"
-                          placeholder="e.g. English & Arabic (Dual-Language)"
-                          value={proposal.websiteScope.languages}
-                          onChange={(e) => updateWebsiteScope('languages', e.target.value)}
-                          className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-sans focus:outline-hidden"
-                        />
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <label className="text-xs font-sans font-semibold text-slate-700">CMS Framework Type</label>
+                  {/* Part B: Website Type Selector (Dropdown) & Baseline Scope Items List */}
+                  <div className="space-y-4">
+                    <div className="border border-slate-200 rounded-2xl p-5 bg-white space-y-4">
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                        <div>
+                          <label htmlFor="website-type-select" className="text-xs font-bold font-sans text-slate-700 block uppercase tracking-wide">
+                            2. Website Type Selection (Primary Control)
+                          </label>
+                          <span className="text-[11px] text-slate-400 block font-normal leading-normal">
+                            Choose a template category below to automatically load its industry-standard baseline deliverables.
+                          </span>
+                        </div>
                         <select
-                          value={proposal.websiteScope.cmsType}
-                          onChange={(e) => updateWebsiteScope('cmsType', e.target.value)}
-                          className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-sans focus:outline-hidden bg-white"
+                          id="website-type-select"
+                          value={proposal.websiteScope.websiteType || 'static'}
+                          onChange={(e) => {
+                            const newType = e.target.value as 'static' | 'dynamic' | 'ecommerce';
+                            const baseTemplates = DEFAULT_SCOPE_TEMPLATES[newType];
+                            const freshItems = baseTemplates.map((item, idx) => ({
+                              id: `scope_${newType}_${idx}_${Date.now()}`,
+                              title: item.title,
+                              description: item.description,
+                              isSelected: true,
+                              isCustom: false
+                            }));
+                            setProposal(prev => ({
+                              ...prev,
+                              websiteScope: {
+                                ...prev.websiteScope,
+                                websiteType: newType,
+                                scopeItems: freshItems
+                              }
+                            }));
+                          }}
+                          className="px-3.5 py-2 border border-blue-200 text-xs font-bold font-sans text-blue-700 rounded-xl focus:ring-2 focus:ring-blue-100 bg-blue-50/50 focus:outline-hidden min-w-[220px]"
                         >
-                          <option value="WordPress">WordPress Core (Yoast Setup)</option>
-                          <option value="headless-strapi">Headless CMS (Strapi + Next.js)</option>
-                          <option value="Shopify Engine">Shopify eCommerce Framework</option>
-                          <option value="Custom API Hub">Custom Node/Express Engine</option>
-                          <option value="Static HTML5/SPA">Pure Static HTML5 / React SPA</option>
+                          <option value="static">Static Website Scope</option>
+                          <option value="dynamic">Dynamic Website Scope</option>
+                          <option value="ecommerce">E-commerce Website Scope</option>
                         </select>
                       </div>
+
+                      {/* Scope Items List checklist */}
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center mb-2">
+                          <h5 className="text-[11px] font-bold font-sans text-slate-400 uppercase tracking-widest">
+                            Baseline & Custom Deliverables Checklist
+                          </h5>
+                          <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md font-mono">
+                            {(proposal.websiteScope.scopeItems || []).filter(i => i.isSelected).length} of {(proposal.websiteScope.scopeItems || []).length} Selected
+                          </span>
+                        </div>
+
+                        <div className="space-y-2.5 max-h-[360px] overflow-y-auto pr-1">
+                          {((proposal.websiteScope.scopeItems && proposal.websiteScope.scopeItems.length > 0)
+                            ? proposal.websiteScope.scopeItems
+                            : DEFAULT_SCOPE_TEMPLATES.static.map((item, idx) => ({
+                                id: `scope_static_${idx}`,
+                                title: item.title,
+                                description: item.description,
+                                isSelected: item.isSelected,
+                                isCustom: false
+                              }))
+                          ).map((item, index, arr) => {
+                            const isEditing = editingItemId === item.id;
+                            return (
+                              <div 
+                                key={item.id}
+                                className={`p-3.5 border rounded-xl transition-all ${
+                                  item.isSelected 
+                                    ? 'bg-blue-50/10 border-blue-200/80 shadow-xs' 
+                                    : 'bg-slate-50/40 border-slate-150 text-slate-400'
+                                }`}
+                              >
+                                {isEditing ? (
+                                  /* Inline editing mode */
+                                  <div className="space-y-3">
+                                    <div className="flex justify-between items-center">
+                                      <span className="text-[10px] font-bold text-blue-600 uppercase font-mono">Editing Scope Item</span>
+                                      <button 
+                                        type="button"
+                                        onClick={() => setEditingItemId(null)}
+                                        className="text-slate-400 hover:text-slate-600 text-xs"
+                                      >
+                                        <X className="h-4 w-4" />
+                                      </button>
+                                    </div>
+                                    <div className="space-y-2">
+                                      <input 
+                                        type="text"
+                                        value={editingItemTitle}
+                                        onChange={(e) => setEditingItemTitle(e.target.value)}
+                                        className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-bold"
+                                        placeholder="Item Title"
+                                      />
+                                      <textarea 
+                                        value={editingItemDesc}
+                                        onChange={(e) => setEditingItemDesc(e.target.value)}
+                                        className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-sans resize-y min-h-[50px]"
+                                        placeholder="Item Description"
+                                      />
+                                    </div>
+                                    <div className="flex gap-2 justify-end">
+                                      <button
+                                        type="button"
+                                        onClick={() => setEditingItemId(null)}
+                                        className="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg"
+                                      >
+                                        Cancel
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          if (!editingItemTitle.trim()) return;
+                                          const updated = arr.map(i => 
+                                            i.id === item.id ? { ...i, title: editingItemTitle, description: editingItemDesc } : i
+                                          );
+                                          setProposal(prev => ({
+                                            ...prev,
+                                            websiteScope: {
+                                              ...prev.websiteScope,
+                                              scopeItems: updated
+                                            }
+                                          }));
+                                          setEditingItemId(null);
+                                        }}
+                                        className="px-3 py-1 bg-blue-650 hover:bg-blue-700 text-white text-xs font-bold rounded-lg"
+                                      >
+                                        Save Changes
+                                      </button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  /* Normal list display with actions */
+                                  <div className="flex items-start gap-3">
+                                    {/* Select toggle */}
+                                    <input 
+                                      type="checkbox"
+                                      checked={!!item.isSelected}
+                                      id={`check-${item.id}`}
+                                      onChange={(e) => {
+                                        const updated = arr.map(i => 
+                                          i.id === item.id ? { ...i, isSelected: e.target.checked } : i
+                                        );
+                                        setProposal(prev => ({
+                                          ...prev,
+                                          websiteScope: { ...prev.websiteScope, scopeItems: updated }
+                                        }));
+                                      }}
+                                      className="h-4 w-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500 cursor-pointer shrink-0 mt-0.5"
+                                    />
+
+                                    {/* Text Content */}
+                                    <div className="grow">
+                                      <label 
+                                        htmlFor={`check-${item.id}`} 
+                                        className={`text-xs font-bold block cursor-pointer select-none leading-snug ${
+                                          item.isSelected ? 'text-slate-800' : 'text-slate-400 line-through'
+                                        }`}
+                                      >
+                                        {item.title}
+                                        {item.isCustom && (
+                                          <span className="ml-1.5 px-1.5 py-0.5 text-[8.5px] bg-blue-50 border border-blue-100/55 rounded-sm font-bold text-blue-600 uppercase tracking-wider scale-90 inline-block font-sans">
+                                            Custom
+                                          </span>
+                                        )}
+                                      </label>
+                                      <p className={`text-[11px] mt-1 font-sans leading-normal ${
+                                        item.isSelected ? 'text-slate-500' : 'text-slate-400'
+                                      }`}>
+                                        {item.description}
+                                      </p>
+                                    </div>
+
+                                    {/* Actions Right (Edit, Reorder Up, Reorder Down, Delete) */}
+                                    <div className="flex items-center gap-1 shrink-0">
+                                      <button
+                                        type="button"
+                                        title="Edit this item"
+                                        onClick={() => {
+                                          setEditingItemId(item.id);
+                                          setEditingItemTitle(item.title);
+                                          setEditingItemDesc(item.description);
+                                        }}
+                                        className="p-1 hover:bg-slate-100/80 rounded text-slate-400 hover:text-slate-700 transition-colors"
+                                      >
+                                        <Edit3 className="h-3 w-3" />
+                                      </button>
+
+                                      <button
+                                        type="button"
+                                        title="Move Up"
+                                        disabled={index === 0}
+                                        onClick={() => {
+                                          if (index === 0) return;
+                                          const updated = [...arr];
+                                          const temp = updated[index];
+                                          updated[index] = updated[index - 1];
+                                          updated[index - 1] = temp;
+                                          setProposal(prev => ({
+                                            ...prev,
+                                            websiteScope: { ...prev.websiteScope, scopeItems: updated }
+                                          }));
+                                        }}
+                                        className={`p-1 rounded transition-colors ${
+                                          index === 0 ? 'text-slate-200 cursor-not-allowed' : 'text-slate-400 hover:bg-slate-100/85 hover:text-slate-700'
+                                        }`}
+                                      >
+                                        <ArrowUp className="h-3 w-3" />
+                                      </button>
+
+                                      <button
+                                        type="button"
+                                        title="Move Down"
+                                        disabled={index === arr.length - 1}
+                                        onClick={() => {
+                                          if (index === arr.length - 1) return;
+                                          const updated = [...arr];
+                                          const temp = updated[index];
+                                          updated[index] = updated[index + 1];
+                                          updated[index + 1] = temp;
+                                          setProposal(prev => ({
+                                            ...prev,
+                                            websiteScope: { ...prev.websiteScope, scopeItems: updated }
+                                          }));
+                                        }}
+                                        className={`p-1 rounded transition-colors ${
+                                          index === arr.length - 1 ? 'text-slate-200 cursor-not-allowed' : 'text-slate-400 hover:bg-slate-100/85 hover:text-slate-700'
+                                        }`}
+                                      >
+                                        <ArrowDown className="h-3 w-3" />
+                                      </button>
+
+                                      <button
+                                        type="button"
+                                        title="Delete"
+                                        onClick={() => {
+                                          const updated = arr.filter(i => i.id !== item.id);
+                                          setProposal(prev => ({
+                                            ...prev,
+                                            websiteScope: { ...prev.websiteScope, scopeItems: updated }
+                                          }));
+                                        }}
+                                        className="p-1 hover:bg-red-50 hover:text-red-500 rounded text-slate-400 transition-colors"
+                                      >
+                                        <Trash2 className="h-3 w-3" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Modules grid */}
-                  <div className="space-y-3">
-                    <label className="text-xs font-sans font-bold text-slate-500 uppercase tracking-wide">Integrated Feature Modules</label>
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                      {/* Form inputs mapping */}
-                      {[
-                        { title: "Contact Forms", key: "contactForms" },
-                        { title: "Blog Article Module", key: "blogModule" },
-                        { title: "Photo Gallery", key: "gallery" },
-                        { title: "Careers Board", key: "careersSection" },
-                        { title: "Download Sheet Section", key: "downloadsSection" },
-                        { title: "SEO optimization", key: "seoPlugin" },
-                        { title: "Anti-hack Shield", key: "securityPlugin" },
-                        { title: "Speed cache profile", key: "cachePlugin" }
-                      ].map((item) => (
-                        <label 
-                          key={item.key} 
-                          className={`p-2.5 border rounded-lg flex items-center gap-2 cursor-pointer select-none text-[11px] font-sans hover:bg-slate-50 transition-colors ${
-                            proposal.websiteScope[item.key as keyof Proposal['websiteScope']] 
-                              ? 'bg-blue-50/50 border-blue-200 font-semibold text-slate-800' 
-                              : 'bg-white border-slate-200 text-slate-500'
+                  {/* Part C: Predefined Additional Modules & Custom Scope Builder */}
+                  <div className="border border-slate-200 rounded-2xl p-5 bg-white space-y-4">
+                    <div>
+                      <h4 className="font-sans font-bold text-slate-800 text-xs tracking-wider uppercase mb-1">
+                        3. Custom Scope Builder
+                      </h4>
+                      <p className="text-[11px] text-slate-400 leading-normal font-sans">
+                        Add completely new deliverables, or inject high-demand functional feature modules into the scope stack instantly.
+                      </p>
+                    </div>
+
+                    {/* Predefined Addables list */}
+                    <div className="space-y-2">
+                      <span className="text-[10px] font-bold font-sans text-slate-400 uppercase tracking-wider block">
+                        Quick Add Baseline Feature Modules
+                      </span>
+                      <div className="flex flex-wrap gap-2">
+                        {[
+                          { 
+                            name: "Blog system", 
+                            title: "Blog & CMS Article Publication Hub", 
+                            desc: "Fully built-in articles section with categorized archives, keyword semantic post-tagging, dynamic readers comment loops, and search engine friendliness." 
+                          },
+                          { 
+                            name: "Multi-language support", 
+                            title: "Multilingual Language Routing & Translation", 
+                            desc: "Comprehensive dual-language subfolder routing containing a clean visual menu language switcher to accommodate diverse consumer profiles." 
+                          },
+                          { 
+                            name: "Third-party integrations", 
+                            title: "HubSpot CRM Sync & WhatsApp Live Support", 
+                            desc: "Dynamic live chat popups linking direct with localized client WhatsApp triggers, paired with secure custom webhooks updating lead CRMs automatically." 
+                          },
+                          { 
+                            name: "Analytics & tracking setup", 
+                            title: "Google Analytics 4 & Conversion Event Mapping", 
+                            desc: "Technical deployment of unified Google Tag Manager scripts configuring custom telemetry events tracking click funnels or key goal checkouts." 
+                          },
+                          { 
+                            name: "Custom API development", 
+                            title: "Custom Secured Backend Webhook & Service APIs", 
+                            desc: "Architecting dedicated serverless microservice APIs to query structured database records, execute webhooks, or query business software." 
+                          }
+                        ].map((mod) => (
+                          <button
+                            type="button"
+                            key={mod.name}
+                            onClick={() => {
+                              const items = proposal.websiteScope.scopeItems || [];
+                              const newItem = {
+                                id: `scope_custom_${Date.now()}_${Math.random().toString(36).substring(2,5)}`,
+                                title: mod.title,
+                                description: mod.desc,
+                                isSelected: true,
+                                isCustom: true
+                              };
+                              setProposal(prev => ({
+                                ...prev,
+                                websiteScope: {
+                                  ...prev.websiteScope,
+                                  scopeItems: [...items, newItem]
+                                }
+                              }));
+                            }}
+                            className="bg-slate-50 border border-slate-200 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 text-slate-600 rounded-full px-3 py-1 font-sans font-semibold text-[10.5px] transition-all cursor-pointer inline-flex items-center gap-1 shrink-0"
+                          >
+                            <Plus className="h-2.5 w-2.5" />
+                            <span>{mod.name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Custom Form entry */}
+                    <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl space-y-3">
+                      <span className="text-[10.5px] font-bold text-slate-700 block uppercase font-mono tracking-wider">Define Customized Deliverable</span>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <input
+                          type="text"
+                          placeholder="Deliverable Title (e.g. Video Showcase Board)"
+                          value={customItemTitle}
+                          onChange={(e) => setCustomItemTitle(e.target.value)}
+                          className="w-full px-3.5 py-2 border border-slate-250 bg-white rounded-lg text-xs font-sans"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Description explaining scope boundary details..."
+                          value={customItemDesc}
+                          onChange={(e) => setCustomItemDesc(e.target.value)}
+                          className="w-full px-3.5 py-2 border border-slate-250 bg-white rounded-lg text-xs font-sans"
+                        />
+                      </div>
+                      <div className="flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!customItemTitle.trim()) return;
+                            const items = proposal.websiteScope.scopeItems || [];
+                            const newItem = {
+                              id: `scope_custom_user_${Date.now()}`,
+                              title: customItemTitle.trim(),
+                              description: customItemDesc.trim() || "Custom development deliverable as defined by project requirements.",
+                              isSelected: true,
+                              isCustom: true
+                            };
+                            setProposal(prev => ({
+                              ...prev,
+                              websiteScope: {
+                                ...prev.websiteScope,
+                                scopeItems: [...items, newItem]
+                              }
+                            }));
+                            setCustomItemTitle('');
+                            setCustomItemDesc('');
+                          }}
+                          disabled={!customItemTitle.trim()}
+                          className={`px-4 py-1.5 font-sans font-bold text-xs rounded-lg inline-flex items-center gap-1.5 transition-all ${
+                            customItemTitle.trim() 
+                              ? 'bg-blue-600 hover:bg-blue-700 text-white cursor-pointer hover:shadow-sm' 
+                              : 'bg-slate-200 text-slate-400 cursor-not-allowed'
                           }`}
                         >
-                          <input
-                            type="checkbox"
-                            checked={proposal.websiteScope[item.key as keyof Proposal['websiteScope']] as boolean}
-                            onChange={(e) => updateWebsiteScope(item.key as keyof Proposal['websiteScope'], e.target.checked)}
-                            className="h-4 w-4 text-blue-600 rounded-sm focus:ring-none focus:outline-hidden"
-                          />
-                          <span>{item.title}</span>
-                        </label>
-                      ))}
+                          <Plus className="h-3.5 w-3.5" />
+                          <span>Add Direct Deliverable</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Maintenance block */}
-                  <div className="flex flex-col gap-1 bg-slate-50/50 p-4 border border-slate-200 rounded-xl max-w-[280px]">
-                    <div className="flex justify-between items-center mb-1">
-                      <label className="text-xs font-sans font-bold text-slate-700">Launch Maintenance Support</label>
-                      <strong className="text-xs text-blue-700">{proposal.websiteScope.maintenancePeriod} Months</strong>
+                  {/* Part D: Section-Level Notes */}
+                  <div className="border border-slate-200 rounded-2xl p-5 bg-white space-y-4">
+                    <div>
+                      <h4 className="font-sans font-bold text-slate-800 text-xs tracking-wider uppercase mb-1">
+                        4. Section-Level Details & Boundaries
+                      </h4>
+                      <p className="text-[11px] text-slate-400 leading-normal font-sans">
+                        Control technical clarity and boundary definitions under separate heads. Unpopulated fields are omitted back-end automatically.
+                      </p>
                     </div>
-                    <input
-                      type="range"
-                      min="1"
-                      max="24"
-                      value={proposal.websiteScope.maintenancePeriod}
-                      onChange={(e) => updateWebsiteScope('maintenancePeriod', Number(e.target.value))}
-                      className="w-full accent-blue-600"
-                    />
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Projects scope notes */}
+                      <div className="flex flex-col gap-1">
+                        <label className="text-xs font-sans font-bold text-slate-700">Project-Specific Notes</label>
+                        <textarea
+                          placeholder="Add detail notes e.g., 'Weekly sync calls will review prototype links; Figma specs provided first.'"
+                          value={proposal.websiteScope.scopeNotes?.notes || ''}
+                          onChange={(e) => {
+                            const newNotes = { ...(proposal.websiteScope.scopeNotes || {}), notes: e.target.value };
+                            setProposal(prev => ({ ...prev, websiteScope: { ...prev.websiteScope, scopeNotes: newNotes } }));
+                          }}
+                          className="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-sans focus:outline-hidden min-h-[70px] resize-y"
+                        />
+                      </div>
+
+                      {/* Exclusions */}
+                      <div className="flex flex-col gap-1">
+                        <label className="text-xs font-sans font-bold text-slate-700 font-sans">Define Exclusions</label>
+                        <textarea
+                          placeholder="Add boundary items e.g., 'Writing copy assets, specialized drone video capturing, or server bills are client obligations.'"
+                          value={proposal.websiteScope.scopeNotes?.exclusions || ''}
+                          onChange={(e) => {
+                            const newNotes = { ...(proposal.websiteScope.scopeNotes || {}), exclusions: e.target.value };
+                            setProposal(prev => ({ ...prev, websiteScope: { ...prev.websiteScope, scopeNotes: newNotes } }));
+                          }}
+                          className="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-sans focus:outline-hidden min-h-[70px] resize-y"
+                        />
+                      </div>
+
+                      {/* Client Requirements */}
+                      <div className="flex flex-col gap-1">
+                        <label className="text-xs font-sans font-bold text-slate-700">Client-Specific Requirements</label>
+                        <textarea
+                          placeholder="Add requirements e.g., 'All assets shared via central OneDrive; site must comply with government accessibility metrics WCAG 2.1.'"
+                          value={proposal.websiteScope.scopeNotes?.requirements || ''}
+                          onChange={(e) => {
+                            const newNotes = { ...(proposal.websiteScope.scopeNotes || {}), requirements: e.target.value };
+                            setProposal(prev => ({ ...prev, websiteScope: { ...prev.websiteScope, scopeNotes: newNotes } }));
+                          }}
+                          className="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-sans focus:outline-hidden min-h-[70px] resize-y"
+                        />
+                      </div>
+
+                      {/* Technical Clarifications */}
+                      <div className="flex flex-col gap-1">
+                        <label className="text-xs font-sans font-bold text-slate-700">Technical Clarifications</label>
+                        <textarea
+                          placeholder="Add technical constraints e.g., 'WordPress requires MySQL v8.0 and safe PHP 8.2 active setups. Target API uses JSON via REST endpoints.'"
+                          value={proposal.websiteScope.scopeNotes?.clarifications || ''}
+                          onChange={(e) => {
+                            const newNotes = { ...(proposal.websiteScope.scopeNotes || {}), clarifications: e.target.value };
+                            setProposal(prev => ({ ...prev, websiteScope: { ...prev.websiteScope, scopeNotes: newNotes } }));
+                          }}
+                          className="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-sans focus:outline-hidden min-h-[70px] resize-y"
+                        />
+                      </div>
+                    </div>
                   </div>
 
-                  {/* Live Sitemap view */}
-                  <div className="border border-slate-200 rounded-xl p-2 bg-slate-50 mt-4">
+                  {/* Built sitemap visual representation preview */}
+                  <div className="border border-slate-200 rounded-xl p-2.5 bg-slate-50 mt-4 shadow-sm">
+                    <div className="px-2 pb-1 bg-slate-100 rounded-md py-1 mb-2">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Interactive Sitemap Blueprint Overview</span>
+                    </div>
                     <SitemapGenerator scope={proposal.websiteScope} projectName={proposal.clientName} />
                   </div>
                 </div>
