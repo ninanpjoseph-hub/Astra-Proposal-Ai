@@ -1,0 +1,6 @@
+{
+  "name": "Proposal Generator",
+  "description": "An interactive, client-specific proposal builder for Branding & Identity and Website Design & Development with editable steps, automatic lock templates, financials, sitemaps, and memory search capabilities.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
