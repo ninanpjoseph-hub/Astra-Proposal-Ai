@@ -94,6 +94,13 @@ export interface Proposal {
   assignedUserName?: string;
   preparedByUserId?: string;
   sharedUserIds?: string[];
+
+  // Custom Letterhead configurations
+  customLetterhead?: string; // Base64 Data URL of uploaded custom letterhead image
+  letterheadHeight?: number; // Height of the letterhead in pixels
+  letterheadMode?: 'minimal' | 'custom' | 'none'; // Header style mode
+  showWatermark?: boolean; // Whether to display a clean background watermark
+  customWatermarkText?: string; // Optional custom watermark text
 }
 
 export enum UserRole {

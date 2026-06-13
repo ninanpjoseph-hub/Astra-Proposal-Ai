@@ -7,7 +7,7 @@ import React from 'react';
 import { BRANDING_TEMPLATES, WEBSITE_TEMPLATES } from '../staticTemplates';
 import { formatQAR, DEFAULT_BRANDING_MILESTONES, DEFAULT_WEBSITE_MILESTONES, triggerAutomatedFollowUp } from '../proposalUtils';
 import SitemapGenerator from './SitemapGenerator';
-import { Check, Bookmark, DollarSign, Calendar, Landmark, BookOpen, Signature, Award, ChevronRight, FileText, Printer, Download, History, RotateCcw, Clock } from 'lucide-react';
+import { Check, Bookmark, DollarSign, Calendar, Landmark, BookOpen, Signature, Award, ChevronRight, FileText, Printer, Download, History, RotateCcw, Clock, Sliders, Upload } from 'lucide-react';
 import { Proposal, ProposalHistoryEntry, ProposalStatus } from '../types';
 
 interface ProposalDocumentViewProps {
@@ -142,106 +142,106 @@ function replaceOklabInCss(cssText: string): string {
   });
 }
 
-export function AstraLogo({ className = "h-10" }: { className?: string }) {
-  return (
-    <div className="flex flex-col items-end select-none">
-      {/* Custom ASTRA SVG */}
-      <svg width="150" height="26" viewBox="0 0 150 26" fill="none" xmlns="http://www.w3.org/2000/svg" className="block">
-        <text x="0" y="22" fill="#000000" fontSize="24" fontWeight="900" fontFamily='"Inter", sans-serif' letterSpacing="3">
-          ASTRA
-        </text>
-        {/* Draw a beautiful yellow diagonal bar overlay on the 'T' */}
-        <line x1="61" y1="2" x2="73" y2="24" stroke="#d3af00" strokeWidth="3.2" strokeLinecap="round" />
-      </svg>
-      {/* Arabic text subtitle */}
-      <div className="text-[8px] font-bold text-black mt-0.5 font-sans text-right leading-none">
-        استرا للتجارة والمقاولات
+export function ProposalPageHeader({ proposal, pageNumber }: { proposal: any; pageNumber: string }) {
+  const mode = proposal.letterheadMode || 'minimal';
+  const customImg = proposal.customLetterhead;
+  const height = proposal.letterheadHeight || 80;
+
+  if (mode === 'none') {
+    return null;
+  }
+
+  if (mode === 'custom' && customImg) {
+    return (
+      <div className="w-full pb-4 border-b border-slate-100 mb-6 relative z-10 select-none flex justify-center items-center">
+        <img 
+          src={customImg} 
+          style={{ height: `${height}px` }} 
+          className="object-contain max-w-full" 
+          alt="Custom Corporate Letterhead" 
+          referrerPolicy="no-referrer"
+        />
       </div>
-      {/* English subtext */}
-      <div className="text-[7.5px] text-slate-800 font-sans uppercase tracking-[0.06em] font-bold text-right leading-none mt-0.5">
-        Trading & Contracting
+    );
+  }
+
+  // default / 'minimal' layout (highly elegant, neutral, no hardcoded Astra stuff)
+  return (
+    <div className="flex justify-between items-center pb-3 border-b border-slate-200/80 mb-6 relative z-10 w-full select-none text-slate-500 text-[10px] font-sans">
+      <div className="flex items-center gap-2">
+        <span className="font-mono tracking-wider text-slate-400 font-bold uppercase">
+          Client Proposal
+        </span>
+        <span className="text-slate-350 font-mono">|</span>
+        <span className="font-medium text-slate-700">
+          Client: {proposal.clientName}
+        </span>
+      </div>
+      <div className="text-right flex items-center gap-2">
+        <span className="bg-slate-100 border border-slate-200 text-slate-600 px-1.5 py-0.5 rounded-sm font-bold uppercase tracking-wider text-[8px]">
+          {proposal.status || "Draft"}
+        </span>
+        <span className="text-slate-350 font-mono">|</span>
+        <span className="font-mono tracking-wider font-bold text-slate-600">PAGE {pageNumber}</span>
       </div>
     </div>
   );
+}
+
+export function ProposalPageFooter({ proposal, pageNumber }: { proposal: any; pageNumber: string }) {
+  const mode = proposal.letterheadMode || 'minimal';
+  if (mode === 'none') {
+    return (
+      <div className="w-full mt-auto relative z-10 pb-1 pt-4 text-right text-slate-400 font-mono text-[9px]">
+        {pageNumber}
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full mt-auto relative z-10 select-none pb-1 pt-4">
+      {/* Neutral thin divider */}
+      <div className="h-[1px] w-full bg-slate-200 mb-2" />
+
+      {/* Footer Info Strip */}
+      <div className="flex justify-between items-center text-[9px] text-slate-500 font-sans font-medium px-1">
+        <div>
+          <span>{proposal.preparedByCompany || "Commercial Proposal"}</span>
+          <span className="mx-1.5 text-slate-300">|</span>
+          <span>Confidentiality Guaranteed</span>
+        </div>
+        <div className="font-mono text-[10px] font-bold text-slate-600 uppercase tracking-wider">
+          Page {pageNumber}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function ProposalWatermark({ proposal }: { proposal: any }) {
+  if (!proposal.showWatermark) return null;
+  const text = proposal.customWatermarkText || proposal.companyName || "CONFIDENTIAL";
+  return (
+    <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-0 overflow-hidden">
+      <div className="relative opacity-[0.025] flex flex-col items-center">
+        <div className="font-sans font-black text-[90px] tracking-[0.14em] text-slate-900 leading-none uppercase transform -rotate-[15deg]">
+          {text}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function AstraLogo({ className = "h-10" }: { className?: string }) {
+  return null;
 }
 
 export function AstraWatermark() {
-  return (
-    <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-0 overflow-hidden">
-      <div className="relative opacity-[0.035] flex flex-col items-center">
-        <div className="font-sans font-black text-[120px] tracking-[0.14em] text-slate-900 leading-none relative">
-          ASTRA
-          {/* Overlay yellow slash */}
-          <div className="absolute left-[51.4%] top-[-20%] w-[10px] h-[150%] bg-[#d3af00] transform -rotate-[22deg]"></div>
-        </div>
-      </div>
-    </div>
-  );
+  return null;
 }
 
 export function AstraFooter({ pageNumber }: { pageNumber: string }) {
-  return (
-    <div className="w-full mt-auto relative z-10 select-none pb-1 pt-4">
-      {/* Top dual-color bar layout */}
-      <div className="h-6 w-full relative overflow-hidden flex">
-        {/* Yellow slanted bar (representing the left accent) */}
-        <div 
-          className="absolute left-0 top-0 bottom-0 bg-[#d3af00]" 
-          style={{ 
-            width: '45%', 
-            clipPath: 'polygon(0 0, 93% 0, 100% 100%, 0 100%)' 
-          }} 
-        />
-        {/* Black bar on the right */}
-        <div 
-          className="absolute right-0 top-0 bottom-0 bg-[#000000]" 
-          style={{ 
-            left: '43.8%', 
-            clipPath: 'polygon(1.2% 0, 100% 0, 100% 100%, 0 100%)' 
-          }} 
-        />
-      </div>
-
-      {/* Footer Contact Info Strip */}
-      <div className="bg-[#000000] text-white py-2.5 px-6 flex flex-col md:flex-row justify-between items-center text-[9px] font-sans font-medium gap-2">
-        {/* Left side: Contact stats */}
-        <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[9px] text-slate-200">
-          <span className="flex items-center gap-1 font-sans">
-            <span className="text-[#d3af00]">☎</span> (+974) 4480 4157
-          </span>
-          <span className="text-slate-500">|</span>
-          <span className="flex items-center gap-1 font-sans">
-            <span className="text-[#d3af00]">✉</span> info@technoastra.com
-          </span>
-          <span className="text-slate-500">|</span>
-          <span className="flex items-center gap-1 font-sans">
-            <span className="text-[#d3af00]">🌐</span> www.technoastra.com
-          </span>
-          <span className="text-slate-500">|</span>
-          <span className="flex items-center gap-1 font-sans">
-            <span className="text-[#d3af00]">📍</span> Doha-Qatar
-          </span>
-        </div>
-
-        {/* Right side: social circles + page number */}
-        <div className="flex items-center gap-3">
-          {/* Social icons */}
-          <div className="flex items-center gap-1 shrink-0">
-            <span className="w-4.5 h-4.5 rounded-full bg-[#d3af00] text-black flex items-center justify-center font-bold text-[8.5px]">f</span>
-            <span className="w-4.5 h-4.5 rounded-full bg-[#d3af00] text-black flex items-center justify-center font-bold text-[8.5px]">t</span>
-            <span className="w-4.5 h-4.5 rounded-full bg-[#d3af00] text-black flex items-center justify-center font-bold text-[8.5px]">i</span>
-            <span className="w-4.5 h-4.5 rounded-full bg-[#d3af00] text-black flex items-center justify-center font-bold text-[8.5px]">in</span>
-          </div>
-          {/* Separator */}
-          <span className="text-slate-500 text-[9px]">|</span>
-          {/* Page number */}
-          <span className="font-mono text-[9px] font-bold text-[#d3af00] uppercase tracking-wider">
-            Page {pageNumber}
-          </span>
-        </div>
-      </div>
-    </div>
-  );
+  return null;
 }
 
 export default function ProposalDocumentView({ proposal, onBack, showBackBtn = true, onRevert, onUpdateProposal }: ProposalDocumentViewProps) {
@@ -648,32 +648,246 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
         💡 <strong>Pro-Tip:</strong> Set the page margins to <strong>None/Minimum</strong> and check <strong>Background Graphics</strong> in your printer settings for accurate high-fidelity PDF output.
       </p>
 
+      {/* Dynamic letterhead and styling customization card - Hidden when printing */}
+      {activeTab === 'document' && (
+        <div id="brand-customization-card" className="no-print bg-slate-50 border border-slate-200 rounded-2xl p-5 mb-2 font-sans select-none">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-4 mb-4">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 bg-blue-100 text-blue-700 rounded-xl">
+                <Sliders className="h-5 w-5" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-slate-800">Visual Brand & Letterhead Customization</h4>
+                <p className="text-xs text-slate-500">Configure corporate headers, uploads, and watermarks dynamically</p>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-2 self-start md:self-auto">
+              {/* Letterhead Mode Selectors */}
+              <div className="bg-slate-200/60 p-1 rounded-xl flex gap-1 shadow-inner">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onUpdateProposal) {
+                      onUpdateProposal({
+                        ...proposal,
+                        letterheadMode: 'minimal',
+                        updatedAt: new Date().toISOString()
+                      });
+                    }
+                  }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    (proposal.letterheadMode || 'minimal') === 'minimal'
+                      ? 'bg-white text-slate-800 shadow-xs'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  Minimal Text
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onUpdateProposal) {
+                      onUpdateProposal({
+                        ...proposal,
+                        letterheadMode: 'custom',
+                        updatedAt: new Date().toISOString()
+                      });
+                    }
+                  }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    proposal.letterheadMode === 'custom'
+                      ? 'bg-white text-slate-800 shadow-xs'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  Custom Letterhead
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onUpdateProposal) {
+                      onUpdateProposal({
+                        ...proposal,
+                        letterheadMode: 'none',
+                        updatedAt: new Date().toISOString()
+                      });
+                    }
+                  }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    proposal.letterheadMode === 'none'
+                      ? 'bg-white text-slate-800 shadow-xs'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  No Header
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Configurations Fields conditional content */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+            {/* Column 1: upload custom letterhead file */}
+            <div className="space-y-4">
+              <span className="text-xs font-bold text-slate-700 uppercase tracking-wider block">Manual Letterhead Upload</span>
+              
+              <div className="border-2 border-dashed border-slate-300 rounded-xl p-4 bg-white flex flex-col items-center justify-center text-center hover:border-blue-400 hover:bg-slate-50/50 transition-colors relative h-36">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onload = (event) => {
+                        const base64 = event.target?.result as string;
+                        if (onUpdateProposal && base64) {
+                          onUpdateProposal({
+                            ...proposal,
+                            customLetterhead: base64,
+                            letterheadMode: 'custom', // Auto-switch to custom letterhead mode on upload
+                            updatedAt: new Date().toISOString()
+                          });
+                        }
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                  className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
+                  title="Choose an image file"
+                />
+                {proposal.customLetterhead ? (
+                  <div className="flex flex-col items-center gap-2">
+                    <img src={proposal.customLetterhead} style={{ height: '56px' }} className="object-contain max-w-full rounded border border-slate-100 p-1 bg-white" alt="Current Upload" />
+                    <div className="z-20 relative">
+                      <span className="text-xs font-bold text-slate-700 block text-center">Custom Letterhead Uploaded</span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          if (onUpdateProposal) {
+                            onUpdateProposal({
+                              ...proposal,
+                              customLetterhead: undefined,
+                              letterheadMode: 'minimal',
+                              updatedAt: new Date().toISOString()
+                            });
+                          }
+                        }}
+                        className="text-[10px] text-rose-500 font-bold hover:underline mt-1 block text-center w-full cursor-pointer"
+                      >
+                        Remove Image
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center gap-2">
+                    <Upload className="h-6 w-6 text-slate-400 animate-none" />
+                    <div>
+                      <span className="text-xs font-bold text-slate-700 block text-blue-600">Drag & drop or Click to manual upload</span>
+                      <span className="text-[10px] text-slate-400 block mt-0.5">Accepts corporate logos or full top-banners (PNG, JPG, SVG)</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {proposal.letterheadMode === 'custom' && proposal.customLetterhead && (
+                <div className="space-y-1.5">
+                  <div className="flex justify-between text-xs text-slate-600 font-semibold">
+                    <span>Letterhead Height Adjustment:</span>
+                    <span className="font-mono">{proposal.letterheadHeight || 80}px</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="30"
+                    max="180"
+                    value={proposal.letterheadHeight || 80}
+                    onChange={(e) => {
+                      if (onUpdateProposal) {
+                        onUpdateProposal({
+                          ...proposal,
+                          letterheadHeight: parseInt(e.target.value),
+                          updatedAt: new Date().toISOString()
+                        });
+                      }
+                    }}
+                    className="w-full accent-blue-600 h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer"
+                  />
+                  <span className="text-[9.5px] text-slate-400 block">Slide to seamlessly scale the logo/banner inside the header zone across all proposal pages.</span>
+                </div>
+              )}
+            </div>
+
+            {/* Column 2: Watermark options */}
+            <div className="space-y-4">
+              <span className="text-xs font-bold text-slate-700 uppercase tracking-wider block">Subtle Background Watermark</span>
+              
+              <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-3.5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label htmlFor="watermark-toggle" className="text-xs font-bold text-slate-700 block cursor-pointer">Enable Background Watermark</label>
+                    <span className="text-[10px] text-slate-400 block">Renders faint clean text diagonally in background</span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    id="watermark-toggle"
+                    checked={!!proposal.showWatermark}
+                    onChange={(e) => {
+                      if (onUpdateProposal) {
+                        onUpdateProposal({
+                          ...proposal,
+                          showWatermark: e.target.checked,
+                          updatedAt: new Date().toISOString()
+                        });
+                      }
+                    }}
+                    className="h-4.5 w-4.5 rounded text-blue-600 border-slate-300 focus:ring-blue-500 cursor-pointer"
+                  />
+                </div>
+
+                {proposal.showWatermark && (
+                  <div className="space-y-1.5 border-t border-slate-100 pt-3">
+                    <label htmlFor="watermark-text" className="text-[11px] font-bold text-slate-600 block">Custom Watermark Text:</label>
+                    <input
+                      type="text"
+                      id="watermark-text"
+                      value={proposal.customWatermarkText !== undefined ? proposal.customWatermarkText : (proposal.companyName || proposal.clientName || '')}
+                      placeholder="e.g. CONFIDENTIAL"
+                      onChange={(e) => {
+                        if (onUpdateProposal) {
+                          onUpdateProposal({
+                            ...proposal,
+                            customWatermarkText: e.target.value,
+                            updatedAt: new Date().toISOString()
+                          });
+                        }
+                      }}
+                      className="w-full text-xs p-2.5 border border-slate-200 bg-slate-50/30 rounded-lg outline-none focus:border-blue-400 focus:bg-white transition-all font-sans"
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="p-3 bg-blue-50/50 border border-blue-150 rounded-xl text-[10px] text-blue-800 leading-normal">
+                💡 <strong>Brand Integrity Rule:</strong> The pre-set Astra contractor letterhead structures have been fully deactivated. Use <strong>Manual Upload</strong> to easily drag and drop your own team's authentic custom company letterhead image!
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Pages Canvas */}
       <div className={`print-only flex flex-col gap-10 bg-slate-200/40 p-4 rounded-2xl border border-slate-300 no-print:shadow-inner ${activeTab === 'document' ? 'block' : 'hidden print:block'}`}>
         
         {/* --- PAGE 1: COVER PAGE --- */}
         <div id="page-1-cover" className="proposal-page relative flex flex-col justify-between overflow-hidden">
           {/* Background Watermark */}
-          <AstraWatermark />
+          <ProposalWatermark proposal={proposal} />
 
           {/* Top Letterhead Header */}
-          <div className="flex justify-between items-start pb-4 border-b border-slate-200/80 mb-6 relative z-10 w-full">
-            <div className="flex flex-col gap-1">
-              <span className="text-[10px] font-mono uppercase tracking-widest text-[#d3af00] font-extrabold">
-                ASTRA COMMERCIAL PROPOSAL
-              </span>
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] font-sans text-slate-750 font-bold">
-                  Client: {proposal.clientName}
-                </span>
-                <span className="text-[9px] text-slate-300 font-mono">|</span>
-                <span className="text-[9px] bg-slate-100 border border-slate-200 text-slate-600 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
-                  Status: {proposal.status || "Draft"}
-                </span>
-              </div>
-            </div>
-            <AstraLogo className="h-10 -mt-1" />
-          </div>
+          <ProposalPageHeader proposal={proposal} pageNumber="01" />
 
           {/* Main Title Area */}
           <div className="my-auto py-12 relative z-10">
@@ -728,32 +942,16 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
           </div>
 
           {/* Footer */}
-          <AstraFooter pageNumber="01" />
+          <ProposalPageFooter proposal={proposal} pageNumber="01" />
         </div>
 
         {/* --- PAGE 2: TABLE OF CONTENTS --- */}
         <div id="page-2-toc" className="proposal-page relative flex flex-col justify-between overflow-hidden">
           {/* Background Watermark */}
-          <AstraWatermark />
+          <ProposalWatermark proposal={proposal} />
 
           {/* Top Letterhead Header */}
-          <div className="flex justify-between items-start pb-4 border-b border-slate-200/80 mb-6 relative z-10 w-full">
-            <div className="flex flex-col gap-1">
-              <span className="text-[10px] font-mono uppercase tracking-widest text-[#d3af00] font-extrabold">
-                ASTRA COMMERCIAL PROPOSAL
-              </span>
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] font-sans text-slate-750 font-bold">
-                  Client: {proposal.clientName}
-                </span>
-                <span className="text-[9px] text-slate-300 font-mono">|</span>
-                <span className="text-[9px] bg-slate-100 border border-slate-200 text-slate-600 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
-                  Status: {proposal.status || "Draft"}
-                </span>
-              </div>
-            </div>
-            <AstraLogo className="h-10 -mt-1" />
-          </div>
+          <ProposalPageHeader proposal={proposal} pageNumber="02" />
 
           <div className="my-auto max-w-2xl mx-auto w-full relative z-10">
             <h2 className="font-serif text-3xl font-bold text-slate-900 mb-8 tracking-tight text-center">
@@ -780,32 +978,16 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
           </div>
 
           {/* Footer */}
-          <AstraFooter pageNumber="02" />
+          <ProposalPageFooter proposal={proposal} pageNumber="02" />
         </div>
 
         {/* --- PAGE 3: PROJECT OBJECTIVES --- */}
         <div id="page-3-objectives" className="proposal-page relative flex flex-col justify-between overflow-hidden">
           {/* Background Watermark */}
-          <AstraWatermark />
+          <ProposalWatermark proposal={proposal} />
 
           {/* Top Letterhead Header */}
-          <div className="flex justify-between items-start pb-4 border-b border-slate-200/80 mb-6 relative z-10 w-full">
-            <div className="flex flex-col gap-1">
-              <span className="text-[10px] font-mono uppercase tracking-widest text-[#d3af00] font-extrabold">
-                ASTRA COMMERCIAL PROPOSAL
-              </span>
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] font-sans text-slate-750 font-bold">
-                  Client: {proposal.clientName}
-                </span>
-                <span className="text-[9px] text-slate-300 font-mono">|</span>
-                <span className="text-[9px] bg-slate-100 border border-slate-200 text-slate-600 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
-                  Status: {proposal.status || "Draft"}
-                </span>
-              </div>
-            </div>
-            <AstraLogo className="h-10 -mt-1" />
-          </div>
+          <ProposalPageHeader proposal={proposal} pageNumber="03" />
 
           <div className="my-auto max-w-xl mx-auto w-full relative z-10">
             <span className="text-xs font-sans tracking-widest text-blue-600 font-bold uppercase mb-2 block">
@@ -833,32 +1015,16 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
           </div>
 
           {/* Footer */}
-          <AstraFooter pageNumber="03" />
+          <ProposalPageFooter proposal={proposal} pageNumber="03" />
         </div>
 
         {/* --- PAGE 4: EXECUTIVE SUMMARY --- */}
         <div id="page-4-summary" className="proposal-page relative flex flex-col justify-between overflow-hidden">
           {/* Background Watermark */}
-          <AstraWatermark />
+          <ProposalWatermark proposal={proposal} />
 
           {/* Top Letterhead Header */}
-          <div className="flex justify-between items-start pb-4 border-b border-slate-200/80 mb-6 relative z-10 w-full">
-            <div className="flex flex-col gap-1">
-              <span className="text-[10px] font-mono uppercase tracking-widest text-[#d3af00] font-extrabold">
-                ASTRA COMMERCIAL PROPOSAL
-              </span>
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] font-sans text-slate-750 font-bold">
-                  Client: {proposal.clientName}
-                </span>
-                <span className="text-[9px] text-slate-300 font-mono">|</span>
-                <span className="text-[9px] bg-slate-100 border border-slate-200 text-slate-600 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
-                  Status: {proposal.status || "Draft"}
-                </span>
-              </div>
-            </div>
-            <AstraLogo className="h-10 -mt-1" />
-          </div>
+          <ProposalPageHeader proposal={proposal} pageNumber="04" />
 
           <div className="my-auto max-w-xl mx-auto w-full relative z-10">
             <span className="text-xs font-sans tracking-widest text-blue-600 font-bold uppercase mb-2 block">
@@ -890,32 +1056,16 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
           </div>
 
           {/* Footer */}
-          <AstraFooter pageNumber="04" />
+          <ProposalPageFooter proposal={proposal} pageNumber="04" />
         </div>
 
         {/* --- PAGE 5: STRATEGIC METHODOLOGY --- */}
         <div id="page-5-methodology" className="proposal-page relative flex flex-col justify-between overflow-hidden">
           {/* Background Watermark */}
-          <AstraWatermark />
+          <ProposalWatermark proposal={proposal} />
 
           {/* Top Letterhead Header */}
-          <div className="flex justify-between items-start pb-4 border-b border-slate-200/80 mb-6 relative z-10 w-full">
-            <div className="flex flex-col gap-1">
-              <span className="text-[10px] font-mono uppercase tracking-widest text-[#d3af00] font-extrabold">
-                ASTRA COMMERCIAL PROPOSAL
-              </span>
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] font-sans text-slate-750 font-bold">
-                  Client: {proposal.clientName}
-                </span>
-                <span className="text-[9px] text-slate-300 font-mono">|</span>
-                <span className="text-[9px] bg-slate-100 border border-slate-200 text-slate-600 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
-                  Status: {proposal.status || "Draft"}
-                </span>
-              </div>
-            </div>
-            <AstraLogo className="h-10 -mt-1" />
-          </div>
+          <ProposalPageHeader proposal={proposal} pageNumber="05" />
 
           <div className="my-auto max-w-xl mx-auto w-full relative z-10">
             <span className="text-xs font-sans tracking-widest text-blue-600 font-bold uppercase mb-2 block">
@@ -959,32 +1109,16 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
           </div>
 
           {/* Footer */}
-          <AstraFooter pageNumber="05" />
+          <ProposalPageFooter proposal={proposal} pageNumber="05" />
         </div>
 
         {/* --- PAGE 6: DETAILED SCOPE OF WORK --- */}
         <div id="page-6-scope" className="proposal-page relative flex flex-col justify-between overflow-hidden">
           {/* Background Watermark */}
-          <AstraWatermark />
+          <ProposalWatermark proposal={proposal} />
 
           {/* Top Letterhead Header */}
-          <div className="flex justify-between items-start pb-4 border-b border-slate-200/80 mb-6 relative z-10 w-full">
-            <div className="flex flex-col gap-1">
-              <span className="text-[10px] font-mono uppercase tracking-widest text-[#d3af00] font-extrabold">
-                ASTRA COMMERCIAL PROPOSAL
-              </span>
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] font-sans text-slate-750 font-bold">
-                  Client: {proposal.clientName}
-                </span>
-                <span className="text-[9px] text-slate-300 font-mono">|</span>
-                <span className="text-[9px] bg-slate-100 border border-slate-200 text-slate-600 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
-                  Status: {proposal.status || "Draft"}
-                </span>
-              </div>
-            </div>
-            <AstraLogo className="h-10 -mt-1" />
-          </div>
+          <ProposalPageHeader proposal={proposal} pageNumber="06" />
 
           <div className="my-auto w-full relative z-10">
             <div className="max-w-2xl mx-auto">
@@ -1067,32 +1201,16 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
           </div>
 
           {/* Footer */}
-          <AstraFooter pageNumber="06" />
+          <ProposalPageFooter proposal={proposal} pageNumber="06" />
         </div>
 
         {/* --- PAGE 7: TIMELINE & MILESTONES --- */}
         <div id="page-7-timeline" className="proposal-page relative flex flex-col justify-between overflow-hidden">
           {/* Background Watermark */}
-          <AstraWatermark />
+          <ProposalWatermark proposal={proposal} />
 
           {/* Top Letterhead Header */}
-          <div className="flex justify-between items-start pb-4 border-b border-slate-200/80 mb-6 relative z-10 w-full">
-            <div className="flex flex-col gap-1">
-              <span className="text-[10px] font-mono uppercase tracking-widest text-[#d3af00] font-extrabold">
-                ASTRA COMMERCIAL PROPOSAL
-              </span>
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] font-sans text-slate-750 font-bold">
-                  Client: {proposal.clientName}
-                </span>
-                <span className="text-[9px] text-slate-300 font-mono">|</span>
-                <span className="text-[9px] bg-slate-100 border border-slate-200 text-slate-600 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
-                  Status: {proposal.status || "Draft"}
-                </span>
-              </div>
-            </div>
-            <AstraLogo className="h-10 -mt-1" />
-          </div>
+          <ProposalPageHeader proposal={proposal} pageNumber="07" />
 
           <div className="my-auto w-full max-w-xl mx-auto relative z-10">
             <span className="text-xs font-sans tracking-widest text-[#d3af00] font-bold uppercase mb-2 block">
@@ -1134,32 +1252,16 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
           </div>
 
           {/* Footer */}
-          <AstraFooter pageNumber="07" />
+          <ProposalPageFooter proposal={proposal} pageNumber="07" />
         </div>
 
         {/* --- PAGE 8: FINANCIAL BLUEPRINT --- */}
         <div id="page-8-financials" className="proposal-page relative flex flex-col justify-between overflow-hidden">
           {/* Background Watermark */}
-          <AstraWatermark />
+          <ProposalWatermark proposal={proposal} />
 
           {/* Top Letterhead Header */}
-          <div className="flex justify-between items-start pb-4 border-b border-slate-200/80 mb-6 relative z-10 w-full">
-            <div className="flex flex-col gap-1">
-              <span className="text-[10px] font-mono uppercase tracking-widest text-[#d3af00] font-extrabold">
-                ASTRA COMMERCIAL PROPOSAL
-              </span>
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] font-sans text-slate-750 font-bold">
-                  Client: {proposal.clientName}
-                </span>
-                <span className="text-[9px] text-slate-300 font-mono">|</span>
-                <span className="text-[9px] bg-slate-100 border border-slate-200 text-slate-600 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
-                  Status: {proposal.status || "Draft"}
-                </span>
-              </div>
-            </div>
-            <AstraLogo className="h-10 -mt-1" />
-          </div>
+          <ProposalPageHeader proposal={proposal} pageNumber="08" />
 
           <div className="my-auto w-full max-w-xl mx-auto relative z-10">
             <span className="text-xs font-sans tracking-widest text-blue-600 font-bold uppercase mb-2 block">
@@ -1241,32 +1343,16 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
           </div>
 
           {/* Footer */}
-          <AstraFooter pageNumber="08" />
+          <ProposalPageFooter proposal={proposal} pageNumber="08" />
         </div>
 
         {/* --- PAGE 9: ACCEPTANCE PAGE --- */}
         <div id="page-9-acceptance" className="proposal-page relative flex flex-col justify-between overflow-hidden">
           {/* Background Watermark */}
-          <AstraWatermark />
+          <ProposalWatermark proposal={proposal} />
 
           {/* Top Letterhead Header */}
-          <div className="flex justify-between items-start pb-4 border-b border-slate-200/80 mb-6 relative z-10 w-full">
-            <div className="flex flex-col gap-1">
-              <span className="text-[10px] font-mono uppercase tracking-widest text-[#d3af00] font-extrabold">
-                ASTRA COMMERCIAL PROPOSAL
-              </span>
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] font-sans text-slate-755 font-bold">
-                  Client: {proposal.clientName}
-                </span>
-                <span className="text-[9px] text-slate-300 font-mono">|</span>
-                <span className="text-[9px] bg-slate-100 border border-slate-200 text-slate-600 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
-                  Status: {proposal.status || "Draft"}
-                </span>
-              </div>
-            </div>
-            <AstraLogo className="h-10 -mt-1" />
-          </div>
+          <ProposalPageHeader proposal={proposal} pageNumber="09" />
 
           <div className="my-auto w-full max-w-xl mx-auto font-sans relative z-10">
             <span className="text-xs tracking-widest font-sans font-bold text-blue-600 uppercase mb-2 block">
@@ -1319,32 +1405,16 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
           </div>
 
           {/* Footer */}
-          <AstraFooter pageNumber="09" />
+          <ProposalPageFooter proposal={proposal} pageNumber="09" />
         </div>
 
         {/* --- PAGE 10: THANK YOU PAGE --- */}
         <div id="page-10-thanks" className="proposal-page relative flex flex-col justify-between overflow-hidden">
           {/* Background Watermark */}
-          <AstraWatermark />
+          <ProposalWatermark proposal={proposal} />
 
           {/* Top Letterhead Header */}
-          <div className="flex justify-between items-start pb-4 border-b border-slate-200/80 mb-6 relative z-10 w-full">
-            <div className="flex flex-col gap-1">
-              <span className="text-[10px] font-mono uppercase tracking-widest text-[#d3af00] font-extrabold">
-                ASTRA COMMERCIAL PROPOSAL
-              </span>
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] font-sans text-slate-755 font-bold">
-                  Client: {proposal.clientName}
-                </span>
-                <span className="text-[9px] text-slate-300 font-mono">|</span>
-                <span className="text-[9px] bg-slate-100 border border-slate-200 text-slate-600 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
-                  Status: {proposal.status || "Draft"}
-                </span>
-              </div>
-            </div>
-            <AstraLogo className="h-10 -mt-1" />
-          </div>
+          <ProposalPageHeader proposal={proposal} pageNumber="10" />
 
           <div className="my-auto py-12 text-center max-w-lg mx-auto relative z-10">
             <h2 className="font-serif italic text-4xl text-[#d3af00] mb-4 block font-extrabold">
@@ -1360,7 +1430,7 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
           </div>
 
           {/* Footer */}
-          <AstraFooter pageNumber="10" />
+          <ProposalPageFooter proposal={proposal} pageNumber="10" />
         </div>
 
       </div>
