@@ -5,16 +5,17 @@
 
 import React from 'react';
 import { BRANDING_TEMPLATES, WEBSITE_TEMPLATES } from '../staticTemplates';
-import { formatQAR, DEFAULT_BRANDING_MILESTONES, DEFAULT_WEBSITE_MILESTONES } from '../proposalUtils';
+import { formatQAR, DEFAULT_BRANDING_MILESTONES, DEFAULT_WEBSITE_MILESTONES, triggerAutomatedFollowUp } from '../proposalUtils';
 import SitemapGenerator from './SitemapGenerator';
 import { Check, Bookmark, DollarSign, Calendar, Landmark, BookOpen, Signature, Award, ChevronRight, FileText, Printer, Download, History, RotateCcw, Clock } from 'lucide-react';
-import { Proposal, ProposalHistoryEntry } from '../types';
+import { Proposal, ProposalHistoryEntry, ProposalStatus } from '../types';
 
 interface ProposalDocumentViewProps {
   proposal: Proposal;
   onBack?: () => void;
   showBackBtn?: boolean;
   onRevert?: (targetHistory: ProposalHistoryEntry) => void;
+  onUpdateProposal?: (updated: Proposal) => void;
 }
 
 // Helper functions to convert oklch to rgb to prevent html2canvas color parsing crashes
@@ -141,7 +142,109 @@ function replaceOklabInCss(cssText: string): string {
   });
 }
 
-export default function ProposalDocumentView({ proposal, onBack, showBackBtn = true, onRevert }: ProposalDocumentViewProps) {
+export function AstraLogo({ className = "h-10" }: { className?: string }) {
+  return (
+    <div className="flex flex-col items-end select-none">
+      {/* Custom ASTRA SVG */}
+      <svg width="150" height="26" viewBox="0 0 150 26" fill="none" xmlns="http://www.w3.org/2000/svg" className="block">
+        <text x="0" y="22" fill="#000000" fontSize="24" fontWeight="900" fontFamily='"Inter", sans-serif' letterSpacing="3">
+          ASTRA
+        </text>
+        {/* Draw a beautiful yellow diagonal bar overlay on the 'T' */}
+        <line x1="61" y1="2" x2="73" y2="24" stroke="#d3af00" strokeWidth="3.2" strokeLinecap="round" />
+      </svg>
+      {/* Arabic text subtitle */}
+      <div className="text-[8px] font-bold text-black mt-0.5 font-sans text-right leading-none">
+        استرا للتجارة والمقاولات
+      </div>
+      {/* English subtext */}
+      <div className="text-[7.5px] text-slate-800 font-sans uppercase tracking-[0.06em] font-bold text-right leading-none mt-0.5">
+        Trading & Contracting
+      </div>
+    </div>
+  );
+}
+
+export function AstraWatermark() {
+  return (
+    <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-0 overflow-hidden">
+      <div className="relative opacity-[0.035] flex flex-col items-center">
+        <div className="font-sans font-black text-[120px] tracking-[0.14em] text-slate-900 leading-none relative">
+          ASTRA
+          {/* Overlay yellow slash */}
+          <div className="absolute left-[51.4%] top-[-20%] w-[10px] h-[150%] bg-[#d3af00] transform -rotate-[22deg]"></div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function AstraFooter({ pageNumber }: { pageNumber: string }) {
+  return (
+    <div className="w-full mt-auto relative z-10 select-none pb-1 pt-4">
+      {/* Top dual-color bar layout */}
+      <div className="h-6 w-full relative overflow-hidden flex">
+        {/* Yellow slanted bar (representing the left accent) */}
+        <div 
+          className="absolute left-0 top-0 bottom-0 bg-[#d3af00]" 
+          style={{ 
+            width: '45%', 
+            clipPath: 'polygon(0 0, 93% 0, 100% 100%, 0 100%)' 
+          }} 
+        />
+        {/* Black bar on the right */}
+        <div 
+          className="absolute right-0 top-0 bottom-0 bg-[#000000]" 
+          style={{ 
+            left: '43.8%', 
+            clipPath: 'polygon(1.2% 0, 100% 0, 100% 100%, 0 100%)' 
+          }} 
+        />
+      </div>
+
+      {/* Footer Contact Info Strip */}
+      <div className="bg-[#000000] text-white py-2.5 px-6 flex flex-col md:flex-row justify-between items-center text-[9px] font-sans font-medium gap-2">
+        {/* Left side: Contact stats */}
+        <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[9px] text-slate-200">
+          <span className="flex items-center gap-1 font-sans">
+            <span className="text-[#d3af00]">☎</span> (+974) 4480 4157
+          </span>
+          <span className="text-slate-500">|</span>
+          <span className="flex items-center gap-1 font-sans">
+            <span className="text-[#d3af00]">✉</span> info@technoastra.com
+          </span>
+          <span className="text-slate-500">|</span>
+          <span className="flex items-center gap-1 font-sans">
+            <span className="text-[#d3af00]">🌐</span> www.technoastra.com
+          </span>
+          <span className="text-slate-500">|</span>
+          <span className="flex items-center gap-1 font-sans">
+            <span className="text-[#d3af00]">📍</span> Doha-Qatar
+          </span>
+        </div>
+
+        {/* Right side: social circles + page number */}
+        <div className="flex items-center gap-3">
+          {/* Social icons */}
+          <div className="flex items-center gap-1 shrink-0">
+            <span className="w-4.5 h-4.5 rounded-full bg-[#d3af00] text-black flex items-center justify-center font-bold text-[8.5px]">f</span>
+            <span className="w-4.5 h-4.5 rounded-full bg-[#d3af00] text-black flex items-center justify-center font-bold text-[8.5px]">t</span>
+            <span className="w-4.5 h-4.5 rounded-full bg-[#d3af00] text-black flex items-center justify-center font-bold text-[8.5px]">i</span>
+            <span className="w-4.5 h-4.5 rounded-full bg-[#d3af00] text-black flex items-center justify-center font-bold text-[8.5px]">in</span>
+          </div>
+          {/* Separator */}
+          <span className="text-slate-500 text-[9px]">|</span>
+          {/* Page number */}
+          <span className="font-mono text-[9px] font-bold text-[#d3af00] uppercase tracking-wider">
+            Page {pageNumber}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function ProposalDocumentView({ proposal, onBack, showBackBtn = true, onRevert, onUpdateProposal }: ProposalDocumentViewProps) {
   const isBranding = proposal.type === 'branding';
   const templates = isBranding ? BRANDING_TEMPLATES : WEBSITE_TEMPLATES;
   
@@ -373,6 +476,20 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
       const fileName = `Proposal-${cleanClientName}-${proposal.id.substring(0, 8)}.pdf`;
       pdf.save(fileName);
       setProgressText('Document download triggered!');
+
+      // Automatically mark proposal as completed (final) if not already, and trigger 2-day follow-up reminder
+      if (proposal.status !== ProposalStatus.COMPLETED && onUpdateProposal) {
+        onUpdateProposal({
+          ...proposal,
+          status: ProposalStatus.COMPLETED,
+          updatedAt: new Date().toISOString()
+        });
+      }
+
+      triggerAutomatedFollowUp({
+        ...proposal,
+        status: ProposalStatus.COMPLETED
+      });
     } catch (error) {
       console.error('PDF generation crash:', error);
       alert('We encountered an error generating the high-fidelity PDF directly. We recommend using the "Print / Print Dialog" option to save as PDF via your browser\'s native high-resolution system.');
@@ -535,35 +652,41 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
       <div className={`print-only flex flex-col gap-10 bg-slate-200/40 p-4 rounded-2xl border border-slate-300 no-print:shadow-inner ${activeTab === 'document' ? 'block' : 'hidden print:block'}`}>
         
         {/* --- PAGE 1: COVER PAGE --- */}
-        <div id="page-1-cover" className="proposal-page relative flex flex-col justify-between">
-          {/* Header Accent block */}
-          <div className="absolute top-0 left-0 right-0 h-4 bg-blue-600"></div>
-          
-          {/* Top meta strip */}
-          <div className="flex justify-between items-center pb-4 border-b border-slate-100">
-            <span className="text-xs tracking-widest font-mono font-medium text-blue-600 uppercase flex items-center gap-2">
-              {proposal.preparedByCompany || "Astra Technologies"}
-              <span className="text-[9px] bg-slate-105 border border-slate-200 text-slate-500 px-2 py-0.5 rounded font-sans tracking-normal font-extrabold normal-case">
-                Status: {proposal.status || "Draft"}
+        <div id="page-1-cover" className="proposal-page relative flex flex-col justify-between overflow-hidden">
+          {/* Background Watermark */}
+          <AstraWatermark />
+
+          {/* Top Letterhead Header */}
+          <div className="flex justify-between items-start pb-4 border-b border-slate-200/80 mb-6 relative z-10 w-full">
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] font-mono uppercase tracking-widest text-[#d3af00] font-extrabold">
+                ASTRA COMMERCIAL PROPOSAL
               </span>
-            </span>
-            <span className="text-xs font-sans text-slate-400">
-              ID: {proposal.id}
-            </span>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-sans text-slate-750 font-bold">
+                  Client: {proposal.clientName}
+                </span>
+                <span className="text-[9px] text-slate-300 font-mono">|</span>
+                <span className="text-[9px] bg-slate-100 border border-slate-200 text-slate-600 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
+                  Status: {proposal.status || "Draft"}
+                </span>
+              </div>
+            </div>
+            <AstraLogo className="h-10 -mt-1" />
           </div>
 
           {/* Main Title Area */}
-          <div className="my-auto py-12">
+          <div className="my-auto py-12 relative z-10">
             <p className="text-[13px] font-sans font-bold text-slate-500 tracking-widest uppercase mb-4">
               COMMERCIAL PROPOSAL FOR
             </p>
             <h1 className="font-serif text-5xl md:text-6xl font-bold text-slate-900 leading-tight tracking-tight mb-6">
               {isBranding ? "Visual Branding & Identity" : "Custom Web Software Architecture"}
             </h1>
-            <div className="w-24 h-1 bg-blue-600 mb-8 rounded-full"></div>
+            <div className="w-24 h-1 bg-[#d3af00] mb-8 rounded-full"></div>
             
-            <p className="font-serif text-2xl italic text-slate-800 mb-2">
-              Prepared for are {proposal.clientName || "[Client Name]"}
+            <p className="font-serif text-2xl italic text-slate-800 mb-2 font-medium">
+              Prepared for {proposal.clientName || "[Client Name]"}
             </p>
             <p className="text-sm font-sans text-slate-600 max-w-xl">
               {isBranding 
@@ -574,15 +697,15 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
           </div>
 
           {/* Bottom details block */}
-          <div className="border-t border-slate-200 pt-8 grid grid-cols-2 gap-4">
+          <div className="border-t border-slate-200/80 pt-8 grid grid-cols-2 gap-4 relative z-10 mb-6">
             <div>
-              <p className="text-[10px] font-sans font-bold text-slate-400 tracking-wider uppercase mb-1">
+              <p className="text-[9px] font-sans font-bold text-slate-400 tracking-wider uppercase mb-1">
                 PREPARED BY
               </p>
               <p className="text-xs font-sans font-bold text-slate-800">
                 {proposal.preparedByName || "Ninan P Joseph"}
               </p>
-              <p className="text-[11px] font-sans text-slate-500">
+              <p className="text-[11px] font-sans text-slate-500 font-semibold text-[#d3af00]">
                 {proposal.preparedByCompany || "Astra Technologies"}
               </p>
               {proposal.preparedByTitle && (
@@ -592,27 +715,47 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
               )}
             </div>
             <div className="text-right">
-              <p className="text-[10px] font-sans font-bold text-slate-400 tracking-wider uppercase mb-1">
+              <p className="text-[9px] font-sans font-bold text-slate-400 tracking-wider uppercase mb-1">
                 DOCUMENT EXCLUSIVES
               </p>
               <p className="text-xs font-sans font-bold text-slate-800">
                 {formatFriendlyDate(proposal.proposalDate)}
               </p>
-              <p className="text-[11px] font-sans text-slate-500 uppercase">
+              <p className="text-[11px] font-sans text-slate-500 uppercase font-semibold">
                 Valid for 30 Days
               </p>
             </div>
           </div>
+
+          {/* Footer */}
+          <AstraFooter pageNumber="01" />
         </div>
 
         {/* --- PAGE 2: TABLE OF CONTENTS --- */}
-        <div id="page-2-toc" className="proposal-page flex flex-col justify-between">
-          <div className="flex justify-between items-center pb-4 border-b border-slate-100">
-            <span className="text-[10px] font-mono text-slate-400 uppercase">Table of Contents</span>
-            <span className="text-[10px] font-mono text-slate-400">{proposal.clientName}</span>
+        <div id="page-2-toc" className="proposal-page relative flex flex-col justify-between overflow-hidden">
+          {/* Background Watermark */}
+          <AstraWatermark />
+
+          {/* Top Letterhead Header */}
+          <div className="flex justify-between items-start pb-4 border-b border-slate-200/80 mb-6 relative z-10 w-full">
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] font-mono uppercase tracking-widest text-[#d3af00] font-extrabold">
+                ASTRA COMMERCIAL PROPOSAL
+              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-sans text-slate-750 font-bold">
+                  Client: {proposal.clientName}
+                </span>
+                <span className="text-[9px] text-slate-300 font-mono">|</span>
+                <span className="text-[9px] bg-slate-100 border border-slate-200 text-slate-600 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
+                  Status: {proposal.status || "Draft"}
+                </span>
+              </div>
+            </div>
+            <AstraLogo className="h-10 -mt-1" />
           </div>
 
-          <div className="my-auto max-w-2xl mx-auto w-full">
+          <div className="my-auto max-w-2xl mx-auto w-full relative z-10">
             <h2 className="font-serif text-3xl font-bold text-slate-900 mb-8 tracking-tight text-center">
               Proposal Directory
             </h2>
@@ -636,19 +779,35 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
             </div>
           </div>
 
-          <div className="text-center pt-4 border-t border-slate-100">
-            <span className="text-[10px] font-mono text-slate-400">Page 02</span>
-          </div>
+          {/* Footer */}
+          <AstraFooter pageNumber="02" />
         </div>
 
         {/* --- PAGE 3: PROJECT OBJECTIVES --- */}
-        <div id="page-3-objectives" className="proposal-page flex flex-col justify-between">
-          <div className="flex justify-between items-center pb-4 border-b border-slate-100">
-            <span className="text-[10px] font-mono text-slate-400 uppercase">Sec. 01 — Mission Goals</span>
-            <span className="text-[10px] font-mono text-slate-400">{proposal.clientName}</span>
+        <div id="page-3-objectives" className="proposal-page relative flex flex-col justify-between overflow-hidden">
+          {/* Background Watermark */}
+          <AstraWatermark />
+
+          {/* Top Letterhead Header */}
+          <div className="flex justify-between items-start pb-4 border-b border-slate-200/80 mb-6 relative z-10 w-full">
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] font-mono uppercase tracking-widest text-[#d3af00] font-extrabold">
+                ASTRA COMMERCIAL PROPOSAL
+              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-sans text-slate-750 font-bold">
+                  Client: {proposal.clientName}
+                </span>
+                <span className="text-[9px] text-slate-300 font-mono">|</span>
+                <span className="text-[9px] bg-slate-100 border border-slate-200 text-slate-600 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
+                  Status: {proposal.status || "Draft"}
+                </span>
+              </div>
+            </div>
+            <AstraLogo className="h-10 -mt-1" />
           </div>
 
-          <div className="my-auto max-w-xl mx-auto w-full">
+          <div className="my-auto max-w-xl mx-auto w-full relative z-10">
             <span className="text-xs font-sans tracking-widest text-blue-600 font-bold uppercase mb-2 block">
               PHASE ZERO
             </span>
@@ -673,19 +832,35 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
             </div>
           </div>
 
-          <div className="text-center pt-4 border-t border-slate-100">
-            <span className="text-[10px] font-mono text-slate-400">Page 03</span>
-          </div>
+          {/* Footer */}
+          <AstraFooter pageNumber="03" />
         </div>
 
         {/* --- PAGE 4: EXECUTIVE SUMMARY --- */}
-        <div id="page-4-summary" className="proposal-page flex flex-col justify-between">
-          <div className="flex justify-between items-center pb-4 border-b border-slate-100">
-            <span className="text-[10px] font-mono text-slate-400 uppercase">Sec. 02 — Executive Sync</span>
-            <span className="text-[10px] font-mono text-slate-400">{proposal.clientName}</span>
+        <div id="page-4-summary" className="proposal-page relative flex flex-col justify-between overflow-hidden">
+          {/* Background Watermark */}
+          <AstraWatermark />
+
+          {/* Top Letterhead Header */}
+          <div className="flex justify-between items-start pb-4 border-b border-slate-200/80 mb-6 relative z-10 w-full">
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] font-mono uppercase tracking-widest text-[#d3af00] font-extrabold">
+                ASTRA COMMERCIAL PROPOSAL
+              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-sans text-slate-750 font-bold">
+                  Client: {proposal.clientName}
+                </span>
+                <span className="text-[9px] text-slate-300 font-mono">|</span>
+                <span className="text-[9px] bg-slate-100 border border-slate-200 text-slate-600 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
+                  Status: {proposal.status || "Draft"}
+                </span>
+              </div>
+            </div>
+            <AstraLogo className="h-10 -mt-1" />
           </div>
 
-          <div className="my-auto max-w-xl mx-auto w-full">
+          <div className="my-auto max-w-xl mx-auto w-full relative z-10">
             <span className="text-xs font-sans tracking-widest text-blue-600 font-bold uppercase mb-2 block">
               THE OPPORTUNITY
             </span>
@@ -714,26 +889,42 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
             </p>
           </div>
 
-          <div className="text-center pt-4 border-t border-slate-100">
-            <span className="text-[10px] font-mono text-slate-400">Page 04</span>
-          </div>
+          {/* Footer */}
+          <AstraFooter pageNumber="04" />
         </div>
 
         {/* --- PAGE 5: STRATEGIC METHODOLOGY --- */}
-        <div id="page-5-methodology" className="proposal-page flex flex-col justify-between">
-          <div className="flex justify-between items-center pb-4 border-b border-slate-100">
-            <span className="text-[10px] font-mono text-slate-400 uppercase">Sec. 03 — Strategy Process</span>
-            <span className="text-[10px] font-mono text-slate-400">{proposal.clientName}</span>
+        <div id="page-5-methodology" className="proposal-page relative flex flex-col justify-between overflow-hidden">
+          {/* Background Watermark */}
+          <AstraWatermark />
+
+          {/* Top Letterhead Header */}
+          <div className="flex justify-between items-start pb-4 border-b border-slate-200/80 mb-6 relative z-10 w-full">
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] font-mono uppercase tracking-widest text-[#d3af00] font-extrabold">
+                ASTRA COMMERCIAL PROPOSAL
+              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-sans text-slate-750 font-bold">
+                  Client: {proposal.clientName}
+                </span>
+                <span className="text-[9px] text-slate-300 font-mono">|</span>
+                <span className="text-[9px] bg-slate-100 border border-slate-200 text-slate-600 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
+                  Status: {proposal.status || "Draft"}
+                </span>
+              </div>
+            </div>
+            <AstraLogo className="h-10 -mt-1" />
           </div>
 
-          <div className="my-auto max-w-xl mx-auto w-full">
+          <div className="my-auto max-w-xl mx-auto w-full relative z-10">
             <span className="text-xs font-sans tracking-widest text-blue-600 font-bold uppercase mb-2 block">
               HOW WE DELIVER
             </span>
             <h2 className="font-serif text-3xl font-bold text-slate-900 mb-2">
               Our Process & Approach
             </h2>
-            <p className="font-serif italic text-slate-800 mb-8 border-b border-blue-100 pb-4 text-sm">
+            <p className="font-serif italic text-slate-800 mb-8 border-b border-blue-105 pb-4 text-sm">
               {templates.approach.subtitle}
             </p>
 
@@ -767,21 +958,37 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
             </div>
           </div>
 
-          <div className="text-center pt-4 border-t border-slate-100">
-            <span className="text-[10px] font-mono text-slate-400">Page 05</span>
-          </div>
+          {/* Footer */}
+          <AstraFooter pageNumber="05" />
         </div>
 
         {/* --- PAGE 6: DETAILED SCOPE OF WORK --- */}
-        <div id="page-6-scope" className="proposal-page flex flex-col justify-between">
-          <div className="flex justify-between items-center pb-4 border-b border-slate-100">
-            <span className="text-[10px] font-mono text-slate-400 uppercase">Sec. 04 — Product Scope</span>
-            <span className="text-[10px] font-mono text-slate-400">{proposal.clientName}</span>
+        <div id="page-6-scope" className="proposal-page relative flex flex-col justify-between overflow-hidden">
+          {/* Background Watermark */}
+          <AstraWatermark />
+
+          {/* Top Letterhead Header */}
+          <div className="flex justify-between items-start pb-4 border-b border-slate-200/80 mb-6 relative z-10 w-full">
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] font-mono uppercase tracking-widest text-[#d3af00] font-extrabold">
+                ASTRA COMMERCIAL PROPOSAL
+              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-sans text-slate-750 font-bold">
+                  Client: {proposal.clientName}
+                </span>
+                <span className="text-[9px] text-slate-300 font-mono">|</span>
+                <span className="text-[9px] bg-slate-100 border border-slate-200 text-slate-600 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
+                  Status: {proposal.status || "Draft"}
+                </span>
+              </div>
+            </div>
+            <AstraLogo className="h-10 -mt-1" />
           </div>
 
-          <div className="my-auto w-full">
+          <div className="my-auto w-full relative z-10">
             <div className="max-w-2xl mx-auto">
-              <span className="text-xs font-sans tracking-widest text-blue-600 font-bold uppercase mb-2 block text-center">
+              <span className="text-xs font-sans tracking-widest text-[#d3af00] font-bold uppercase mb-2 block text-center">
                 DELIVERABLE DETAILS
               </span>
               <h2 className="font-serif text-3xl font-bold text-slate-900 mb-6 tracking-tight text-center">
@@ -804,7 +1011,7 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
                             key={key} 
                             className={`p-3 border rounded-xl flex items-center gap-3 transition-all ${
                               isSelected 
-                                ? 'bg-blue-50/60 border-blue-200 text-slate-800' 
+                                ? 'bg-[#d3af00]/10 border-[#d3af00]/30 text-slate-800' 
                                 : 'bg-slate-50/40 border-slate-150 text-slate-400 line-through'
                             }`}
                           >
@@ -859,20 +1066,36 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
             </div>
           </div>
 
-          <div className="text-center pt-4 border-t border-slate-100">
-            <span className="text-[10px] font-mono text-slate-400">Page 06</span>
-          </div>
+          {/* Footer */}
+          <AstraFooter pageNumber="06" />
         </div>
 
         {/* --- PAGE 7: TIMELINE & MILESTONES --- */}
-        <div id="page-7-timeline" className="proposal-page flex flex-col justify-between">
-          <div className="flex justify-between items-center pb-4 border-b border-slate-100">
-            <span className="text-[10px] font-mono text-slate-400 uppercase">Sec. 05 — Production Tracks</span>
-            <span className="text-[10px] font-mono text-slate-400">{proposal.clientName}</span>
+        <div id="page-7-timeline" className="proposal-page relative flex flex-col justify-between overflow-hidden">
+          {/* Background Watermark */}
+          <AstraWatermark />
+
+          {/* Top Letterhead Header */}
+          <div className="flex justify-between items-start pb-4 border-b border-slate-200/80 mb-6 relative z-10 w-full">
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] font-mono uppercase tracking-widest text-[#d3af00] font-extrabold">
+                ASTRA COMMERCIAL PROPOSAL
+              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-sans text-slate-750 font-bold">
+                  Client: {proposal.clientName}
+                </span>
+                <span className="text-[9px] text-slate-300 font-mono">|</span>
+                <span className="text-[9px] bg-slate-100 border border-slate-200 text-slate-600 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
+                  Status: {proposal.status || "Draft"}
+                </span>
+              </div>
+            </div>
+            <AstraLogo className="h-10 -mt-1" />
           </div>
 
-          <div className="my-auto w-full max-w-xl mx-auto">
-            <span className="text-xs font-sans tracking-widest text-blue-600 font-bold uppercase mb-2 block">
+          <div className="my-auto w-full max-w-xl mx-auto relative z-10">
+            <span className="text-xs font-sans tracking-widest text-[#d3af00] font-bold uppercase mb-2 block">
               THE MILESTONE HIGHWAYS
             </span>
             <h2 className="font-serif text-3xl font-bold text-slate-900 mb-2">
@@ -910,19 +1133,35 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
             </div>
           </div>
 
-          <div className="text-center pt-4 border-t border-slate-100">
-            <span className="text-[10px] font-mono text-slate-400">Page 07</span>
-          </div>
+          {/* Footer */}
+          <AstraFooter pageNumber="07" />
         </div>
 
         {/* --- PAGE 8: FINANCIAL BLUEPRINT --- */}
-        <div id="page-8-financials" className="proposal-page flex flex-col justify-between">
-          <div className="flex justify-between items-center pb-4 border-b border-slate-100">
-            <span className="text-[10px] font-mono text-slate-400 uppercase">Sec. 06 — Commercial Framework</span>
-            <span className="text-[10px] font-mono text-slate-400">{proposal.clientName}</span>
+        <div id="page-8-financials" className="proposal-page relative flex flex-col justify-between overflow-hidden">
+          {/* Background Watermark */}
+          <AstraWatermark />
+
+          {/* Top Letterhead Header */}
+          <div className="flex justify-between items-start pb-4 border-b border-slate-200/80 mb-6 relative z-10 w-full">
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] font-mono uppercase tracking-widest text-[#d3af00] font-extrabold">
+                ASTRA COMMERCIAL PROPOSAL
+              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-sans text-slate-750 font-bold">
+                  Client: {proposal.clientName}
+                </span>
+                <span className="text-[9px] text-slate-300 font-mono">|</span>
+                <span className="text-[9px] bg-slate-100 border border-slate-200 text-slate-600 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
+                  Status: {proposal.status || "Draft"}
+                </span>
+              </div>
+            </div>
+            <AstraLogo className="h-10 -mt-1" />
           </div>
 
-          <div className="my-auto w-full max-w-xl mx-auto">
+          <div className="my-auto w-full max-w-xl mx-auto relative z-10">
             <span className="text-xs font-sans tracking-widest text-blue-600 font-bold uppercase mb-2 block">
               INVESTMENT ALLOCATION
             </span>
@@ -932,7 +1171,7 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
 
             {isBranding ? (
               /* Branding Table */
-              <div className="border border-slate-200 rounded-xl overflow-hidden mb-6">
+              <div className="border border-slate-200 rounded-xl overflow-hidden mb-6 bg-white">
                 <table className="min-w-full text-xs font-sans">
                   <thead>
                     <tr className="bg-slate-100 border-b border-slate-200 text-slate-700">
@@ -956,7 +1195,7 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
               </div>
             ) : (
               /* Website Table */
-              <div className="border border-slate-200 rounded-xl overflow-hidden mb-6">
+              <div className="border border-slate-200 rounded-xl overflow-hidden mb-6 bg-white">
                 <div className="divide-y divide-slate-150 text-xs font-sans text-slate-600">
                   <div className="grid grid-cols-2 bg-slate-100 border-b border-slate-200 py-2.5 px-4 font-semibold text-slate-700">
                     <span>Sprinting Resource Category</span>
@@ -1001,19 +1240,35 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
             </div>
           </div>
 
-          <div className="text-center pt-4 border-t border-slate-100">
-            <span className="text-[10px] font-mono text-slate-400">Page 08</span>
-          </div>
+          {/* Footer */}
+          <AstraFooter pageNumber="08" />
         </div>
 
         {/* --- PAGE 9: ACCEPTANCE PAGE --- */}
-        <div id="page-9-acceptance" className="proposal-page flex flex-col justify-between">
-          <div className="flex justify-between items-center pb-4 border-b border-slate-100">
-            <span className="text-[10px] font-mono text-slate-400 uppercase">Sec. 07 — Acceptance Sheet</span>
-            <span className="text-[10px] font-mono text-slate-400">{proposal.clientName}</span>
+        <div id="page-9-acceptance" className="proposal-page relative flex flex-col justify-between overflow-hidden">
+          {/* Background Watermark */}
+          <AstraWatermark />
+
+          {/* Top Letterhead Header */}
+          <div className="flex justify-between items-start pb-4 border-b border-slate-200/80 mb-6 relative z-10 w-full">
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] font-mono uppercase tracking-widest text-[#d3af00] font-extrabold">
+                ASTRA COMMERCIAL PROPOSAL
+              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-sans text-slate-755 font-bold">
+                  Client: {proposal.clientName}
+                </span>
+                <span className="text-[9px] text-slate-300 font-mono">|</span>
+                <span className="text-[9px] bg-slate-100 border border-slate-200 text-slate-600 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
+                  Status: {proposal.status || "Draft"}
+                </span>
+              </div>
+            </div>
+            <AstraLogo className="h-10 -mt-1" />
           </div>
 
-          <div className="my-auto w-full max-w-xl mx-auto font-sans">
+          <div className="my-auto w-full max-w-xl mx-auto font-sans relative z-10">
             <span className="text-xs tracking-widest font-sans font-bold text-blue-600 uppercase mb-2 block">
               OFFICIAL RATIFICATION
             </span>
@@ -1026,7 +1281,7 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
 
             <div className="grid grid-cols-2 gap-8 mt-6">
               {/* Agency approval */}
-              <div className="flex flex-col justify-between h-[180px] border border-slate-200/80 p-4 rounded-xl relative">
+              <div className="flex flex-col justify-between h-[180px] border border-slate-200/80 p-4 rounded-xl relative bg-white">
                 <div>
                   <span className="text-[10px] font-mono tracking-wider text-blue-500 font-bold uppercase mb-0.5 block">Approved For</span>
                   <strong className="text-xs text-slate-800 block">{proposal.preparedByCompany || "Astra Technologies"}</strong>
@@ -1045,7 +1300,7 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
               </div>
 
               {/* Client approval */}
-              <div className="flex flex-col justify-between h-[180px] border border-slate-200/80 p-4 rounded-xl">
+              <div className="flex flex-col justify-between h-[180px] border border-slate-200/80 p-4 rounded-xl bg-white">
                 <div>
                   <span className="text-[10px] font-mono tracking-wider text-emerald-500 font-bold uppercase mb-0.5 block">Accepted For</span>
                   <strong className="text-xs text-slate-800 block">{proposal.clientName || "[Client Company]"}</strong>
@@ -1063,34 +1318,49 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
             </div>
           </div>
 
-          <div className="text-center pt-4 border-t border-slate-100">
-            <span className="text-[10px] font-mono text-slate-400">Page 09</span>
-          </div>
+          {/* Footer */}
+          <AstraFooter pageNumber="09" />
         </div>
 
         {/* --- PAGE 10: THANK YOU PAGE --- */}
-        <div id="page-10-thanks" className="proposal-page flex flex-col justify-between bg-slate-900 text-white border-t-8 border-blue-600">
-          <div className="flex justify-between items-center pb-4 border-b border-slate-800 no-print:border-slate-800">
-            <span className="text-[10px] font-mono text-slate-500 uppercase">Final Page</span>
-            <span className="text-[10px] font-mono text-slate-500">{proposal.clientName}</span>
+        <div id="page-10-thanks" className="proposal-page relative flex flex-col justify-between overflow-hidden">
+          {/* Background Watermark */}
+          <AstraWatermark />
+
+          {/* Top Letterhead Header */}
+          <div className="flex justify-between items-start pb-4 border-b border-slate-200/80 mb-6 relative z-10 w-full">
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] font-mono uppercase tracking-widest text-[#d3af00] font-extrabold">
+                ASTRA COMMERCIAL PROPOSAL
+              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-sans text-slate-755 font-bold">
+                  Client: {proposal.clientName}
+                </span>
+                <span className="text-[9px] text-slate-300 font-mono">|</span>
+                <span className="text-[9px] bg-slate-100 border border-slate-200 text-slate-600 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
+                  Status: {proposal.status || "Draft"}
+                </span>
+              </div>
+            </div>
+            <AstraLogo className="h-10 -mt-1" />
           </div>
 
-          <div className="my-auto py-12 text-center max-w-lg mx-auto">
-            <h2 className="font-serif italic text-4xl text-blue-400 mb-4 block">
+          <div className="my-auto py-12 text-center max-w-lg mx-auto relative z-10">
+            <h2 className="font-serif italic text-4xl text-[#d3af00] mb-4 block font-extrabold">
               Thank You.
             </h2>
-            <p className="font-serif text-xl tracking-tight text-slate-300 mb-6 font-medium">
+            <p className="font-serif text-xl tracking-tight text-slate-800 mb-6 font-medium">
               We look forward to creating stellar digital value with your team.
             </p>
-            <div className="w-12 h-0.5 bg-slate-600 mx-auto mb-8 rounded-full"></div>
-            <p className="text-xs text-slate-400 leading-relaxed max-w-sm mx-auto font-sans">
-              For immediate support escalations or procedural assistance, contact us at <span className="text-blue-400 font-semibold underline">engineering@astra.tech</span> or dial our regional office lines.
+            <div className="w-12 h-0.5 bg-slate-200 mx-auto mb-8 rounded-full"></div>
+            <p className="text-xs text-slate-550 leading-relaxed max-w-sm mx-auto font-sans">
+              For immediate support escalations or procedural assistance, contact us at <span className="text-[#d3af00] font-semibold underline">engineering@astra.tech</span> or dial our regional office lines.
             </p>
           </div>
 
-          <div className="text-center pt-4 border-t border-slate-800">
-            <span className="text-[10px] font-mono text-slate-500">Page 10</span>
-          </div>
+          {/* Footer */}
+          <AstraFooter pageNumber="10" />
         </div>
 
       </div>

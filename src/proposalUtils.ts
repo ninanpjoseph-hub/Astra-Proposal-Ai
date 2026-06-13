@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Proposal, ProposalType, Milestone, ResourceCost, ProposalStatus } from './types';
+import { Proposal, ProposalType, Milestone, ResourceCost, ProposalStatus, Reminder } from './types';
 
 // Simple unique ID generator
 export function generateId(): string {
@@ -239,3 +239,43 @@ export const SAMPLE_PROPOSALS: Proposal[] = [
     paymentTerms: "40% upfront deposit on contract signature, 40% after creative concept selection, and 20% on brand guidelines delivery."
   }
 ];
+
+export function triggerAutomatedFollowUp(proposal: Proposal) {
+  const cached = localStorage.getItem('prowess_admin_reminders');
+  let remindersList: Reminder[] = [];
+  if (cached) {
+    try {
+      remindersList = JSON.parse(cached);
+    } catch {
+      remindersList = [];
+    }
+  }
+
+  const hasExisting = remindersList.some(
+    r => r.proposalId === proposal.id && !r.isCompleted && r.title.startsWith('Follow-up:')
+  );
+
+  if (!hasExisting) {
+    const futureDate = new Date();
+    futureDate.setDate(futureDate.getDate() + 2);
+    const formattedDueDate = futureDate.toISOString().split('T')[0];
+
+    const newReminder: Reminder = {
+      id: 'rem_auto_' + Math.random().toString(36).substring(2, 10),
+      proposalId: proposal.id,
+      proposalClient: proposal.clientName || 'Client',
+      title: `Follow-up: ${proposal.clientName || 'Client'} Proposal`,
+      dueDate: formattedDueDate,
+      notes: `Automated 2-day professional outreach touchpoint regarding the finalized and downloaded ${proposal.type === 'branding' ? 'Branding & Identity' : 'Website Design & Development'} proposal (Value: QAR ${proposal.totalCost}).`,
+      isCompleted: false,
+      createdAt: new Date().toISOString()
+    };
+
+    const updatedReminders = [newReminder, ...remindersList];
+    localStorage.setItem('prowess_admin_reminders', JSON.stringify(updatedReminders));
+
+    window.dispatchEvent(new Event('storage'));
+    window.dispatchEvent(new CustomEvent('reminders_updated', { detail: updatedReminders }));
+  }
+}
+

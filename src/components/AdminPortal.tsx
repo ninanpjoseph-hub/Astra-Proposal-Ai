@@ -6,7 +6,7 @@ import {
   FileText, Shield, Sparkle
 } from 'lucide-react';
 import { Proposal, User, UserRole, ProposalStatus, Reminder, ActivityLog } from '../types';
-import { formatQAR, generateId } from '../proposalUtils';
+import { formatQAR, generateId, triggerAutomatedFollowUp } from '../proposalUtils';
 
 interface AdminPortalProps {
   proposals: Proposal[];
@@ -112,6 +112,33 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
         // Safe standard fall-through
       }
     }
+  }, []);
+
+  // Sync reminders dynamically to support automated additions anywhere in the app
+  useEffect(() => {
+    const handleSyncReminders = () => {
+      const latest = localStorage.getItem('prowess_admin_reminders');
+      if (latest) {
+        try {
+          const parsed = JSON.parse(latest);
+          setReminders(parsed);
+        } catch (e) {
+          console.error("Failed to sync automated reminders", e);
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleSyncReminders);
+    window.addEventListener('reminders_updated' as any, handleSyncReminders);
+
+    // Also poll occasionally as fallback
+    const syncInterval = setInterval(handleSyncReminders, 1200);
+
+    return () => {
+      window.removeEventListener('storage', handleSyncReminders);
+      window.removeEventListener('reminders_updated' as any, handleSyncReminders);
+      clearInterval(syncInterval);
+    };
   }, []);
 
   // Tab access reset if user role changes or is not admin
@@ -338,6 +365,13 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
     });
 
     onUpdateProposals(updatedList);
+
+    if (selectedStatus === ProposalStatus.COMPLETED) {
+      triggerAutomatedFollowUp({
+        ...prop,
+        status: selectedStatus,
+      });
+    }
     
     // Formulate activity log
     const statusChangeText = prop.status !== selectedStatus ? `Status: ${prop.status || 'Draft'} \u2192 ${selectedStatus}` : '';
@@ -718,7 +752,11 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
             )}
 
             {/* Reports graphics, charts on proposal metrics */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className={`grid grid-cols-1 ${
+              (currentUser?.role === UserRole.ADMIN || currentUser?.role === UserRole.MANAGER) 
+                ? 'lg:grid-cols-3' 
+                : 'lg:grid-cols-2'
+            } gap-6`}>
               
               {/* Analytics report block */}
               <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 flex flex-col justify-between">
@@ -792,40 +830,42 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
               </div>
 
               {/* Collaborative assignments report */}
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 flex flex-col justify-between">
-                <div>
-                  <h4 className="text-xs font-bold tracking-tight text-slate-700 uppercase font-mono mb-2">
-                    Operational Team Allocations
-                  </h4>
-                  <div className="mt-3 divide-y divide-slate-200/80">
-                    {users.map(u => {
-                      const count = proposals.filter(p => p.assignedUserId === u.id).length;
-                      return (
-                        <div key={u.id} className="flex justify-between items-center py-2">
-                          <div className="flex items-center gap-2">
-                            <div className="h-6 w-6 rounded-full bg-slate-200 font-bold text-[9px] flex items-center justify-center text-slate-600">
-                              {u.name.split(' ').map(n=>n[0]).join('')}
+              {(currentUser?.role === UserRole.ADMIN || currentUser?.role === UserRole.MANAGER) && (
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 flex flex-col justify-between">
+                  <div>
+                    <h4 className="text-xs font-bold tracking-tight text-slate-700 uppercase font-mono mb-2">
+                      Operational Team Allocations
+                    </h4>
+                    <div className="mt-3 divide-y divide-slate-200/80">
+                      {users.map(u => {
+                        const count = proposals.filter(p => p.assignedUserId === u.id).length;
+                        return (
+                          <div key={u.id} className="flex justify-between items-center py-2">
+                            <div className="flex items-center gap-2">
+                              <div className="h-6 w-6 rounded-full bg-slate-200 font-bold text-[9px] flex items-center justify-center text-slate-600">
+                                {u.name.split(' ').map(n=>n[0]).join('')}
+                              </div>
+                              <div>
+                                <p className="text-[10px] font-bold text-slate-800">{u.name}</p>
+                                <p className="text-[8px] font-mono text-slate-400 leading-none">{u.role}</p>
+                              </div>
                             </div>
-                            <div>
-                              <p className="text-[10px] font-bold text-slate-800">{u.name}</p>
-                              <p className="text-[8px] font-mono text-slate-400 leading-none">{u.role}</p>
-                            </div>
+                            <span className="bg-white border border-slate-200 rounded px-2 py-0.5 font-mono text-[9px] text-slate-600 font-bold">
+                              {count} {count === 1 ? 'project' : 'projects'}
+                            </span>
                           </div>
-                          <span className="bg-white border border-slate-200 rounded px-2 py-0.5 font-mono text-[9px] text-slate-600 font-bold">
-                            {count} {count === 1 ? 'project' : 'projects'}
-                          </span>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="mt-4 pt-3 border-t border-slate-200 text-center">
+                    <span className="text-[9px] font-mono text-slate-400 italic block">
+                      All updates feed to our collaborative logging registry in real-time.
+                    </span>
                   </div>
                 </div>
-
-                <div className="mt-4 pt-3 border-t border-slate-200 text-center">
-                  <span className="text-[9px] font-mono text-slate-400 italic block">
-                    All updates feed to our collaborative logging registry in real-time.
-                  </span>
-                </div>
-              </div>
+              )}
 
             </div>
 

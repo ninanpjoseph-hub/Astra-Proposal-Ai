@@ -377,6 +377,14 @@ export default function App() {
               proposal={viewingProposal} 
               onBack={() => setViewingProposal(null)} 
               onRevert={handleRevertProposal}
+              onUpdateProposal={(updated) => {
+                setProposals(prev => {
+                  const updatedList = prev.map(p => p.id === updated.id ? updated : p);
+                  localStorage.setItem('prowess_proposals_v1', JSON.stringify(updatedList));
+                  return updatedList;
+                });
+                setViewingProposal(updated);
+              }}
             />
           </div>
         ) : isCreating ? (
