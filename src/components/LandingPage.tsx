@@ -232,46 +232,7 @@ export default function LandingPage({ onLogin }: LandingPageProps) {
                 </button>
               </form>
 
-              {/* Quick Preset Tray / Test Drive Header */}
-              <div className="mt-6 pt-5 border-t border-slate-800/80">
-                <div className="flex items-center gap-2 mb-3">
-                  <ShieldCheck className="h-3.5 w-3.5 text-blue-400" />
-                  <span className="text-[10px] uppercase font-mono tracking-wider font-bold text-slate-400">
-                    Staff Profiles / Test Drive:
-                  </span>
-                </div>
 
-                {/* Grid of quick preset buttons */}
-                <div className="grid grid-cols-2 gap-2">
-                  {registeredUsers.map((u) => {
-                    const mappedPass = getPasswordForUser(u);
-                    const isSelected = email.toLowerCase() === u.email.toLowerCase();
-                    return (
-                      <button
-                        key={u.id}
-                        type="button"
-                        onClick={() => selectUserPreset(u)}
-                        className={`p-2 bg-slate-900 border rounded-xl shrink-0 text-left transition-all hover:border-slate-600 group cursor-pointer ${
-                          isSelected ? 'border-blue-500/70 bg-blue-950/20 ring-1 ring-blue-500/20' : 'border-slate-800'
-                        }`}
-                        title={`Log in as ${u.name} (${u.role})`}
-                      >
-                        <span className="text-[10px] font-bold text-white block truncate leading-none mb-1 group-hover:text-blue-300">
-                          {u.name.split(' ')[0]} {u.name.split(' ')[2] ? u.name.split(' ')[2][0] + '.' : ''}
-                        </span>
-                        
-                        <span className="text-[8.5px] font-mono text-slate-400 block truncate uppercase leading-none">
-                          {u.role.split(' ')[0]} ({mappedPass})
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-                
-                <p className="text-[9.5px] text-slate-500 font-sans leading-relaxed text-center mt-3">
-                  💡 <strong>How to Login:</strong> Tap a staff tile above to load their credentials, then select "Authorize Connection". Logged-in features will dynamically adjust.
-                </p>
-              </div>
 
             </div>
           </div>
