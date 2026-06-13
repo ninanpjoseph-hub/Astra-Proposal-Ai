@@ -41,6 +41,14 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
   const [newUserName, setNewUserName] = useState<string>('');
   const [newUserEmail, setNewUserEmail] = useState<string>('');
   const [newUserRole, setNewUserRole] = useState<UserRole>(UserRole.SALES);
+  const [newUserPassword, setNewUserPassword] = useState<string>('');
+
+  // Editing existing user profile/credentials states
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [editingUserName, setEditingUserName] = useState<string>('');
+  const [editingUserEmail, setEditingUserEmail] = useState<string>('');
+  const [editingUserRole, setEditingUserRole] = useState<UserRole>(UserRole.SALES);
+  const [editingUserPassword, setEditingUserPassword] = useState<string>('');
 
   // Status updates states
   const [editingPropId, setEditingPropId] = useState<string | null>(null);
@@ -185,25 +193,80 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
     e.preventDefault();
     if (!newUserName.trim() || !newUserEmail.trim()) return;
 
-    if (users.find(u => u.email.toLowerCase() === newUserEmail.toLowerCase())) {
+    if (users.find(u => u.email.toLowerCase() === newUserEmail.toLowerCase().trim())) {
       alert('Email handles must be unique. This email is already registered.');
       return;
     }
+
+    const customPass = newUserPassword.trim();
 
     const newUser: User = {
       id: 'user_' + Math.random().toString(36).substring(2, 10),
       name: newUserName.trim(),
       email: newUserEmail.toLowerCase().trim(),
       role: newUserRole,
-      isActive: true
+      isActive: true,
+      password: customPass || undefined
     };
 
     const updated = [...users, newUser];
     saveUsers(updated);
-    addLog('Create User', `Registered user "${newUser.name}" with role "${newUser.role}".`);
+    addLog('Create User', `Registered user "${newUser.name}" with role "${newUser.role}". Password was ${customPass ? 'set manually' : 'determined by role default'}.`);
     
     setNewUserName('');
     setNewUserEmail('');
+    setNewUserPassword('');
+  };
+
+  const handleStartEditUser = (u: User) => {
+    setEditingUserId(u.id);
+    setEditingUserName(u.name);
+    setEditingUserEmail(u.email);
+    setEditingUserRole(u.role);
+    const currentPass = u.password || (
+      u.id === 'user_ninan' ? 'admin' :
+      u.id === 'user_sarah' ? 'manager' :
+      u.id === 'user_carlos' ? 'sales' :
+      u.id === 'user_lina' ? 'designer' :
+      u.role === UserRole.ADMIN ? 'admin123' :
+      u.role === UserRole.MANAGER ? 'manager123' :
+      u.role === UserRole.SALES ? 'sales123' :
+      u.role === UserRole.DESIGNER ? 'designer123' :
+      'prowess2026'
+    );
+    setEditingUserPassword(currentPass);
+  };
+
+  const handleEditUserSave = (e: React.FormEvent | React.MouseEvent) => {
+    e.preventDefault();
+    if (!editingUserId || !editingUserName.trim() || !editingUserEmail.trim()) return;
+
+    if (users.some(u => u.id !== editingUserId && u.email.toLowerCase() === editingUserEmail.toLowerCase().trim())) {
+      alert('Email handles must be unique. This email is already registered.');
+      return;
+    }
+
+    const updated = users.map(u => {
+      if (u.id === editingUserId) {
+        return {
+          ...u,
+          name: editingUserName.trim(),
+          email: editingUserEmail.toLowerCase().trim(),
+          role: editingUserRole,
+          password: editingUserPassword.trim() || undefined
+        };
+      }
+      return u;
+    });
+
+    saveUsers(updated);
+    addLog('Update User Profile', `Admin updated profile/password for "${editingUserName}".`);
+    
+    // Clear state
+    setEditingUserId(null);
+    setEditingUserName('');
+    setEditingUserEmail('');
+    setEditingUserPassword('');
   };
 
   const handleToggleUserActive = (userId: string) => {
@@ -1021,6 +1084,19 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
                     </select>
                   </div>
 
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-bold text-slate-500 font-mono uppercase">Access Password</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. securePass123 (Optional)"
+                      value={newUserPassword}
+                      onChange={(e) => setNewUserPassword(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs leading-normal font-sans focus:outline-hidden bg-white"
+                      id="input_admin_userpassword"
+                    />
+                    <span className="text-[9.5px] text-slate-400">If left blank, role-default (e.g., "sales123") is active.</span>
+                  </div>
+
                   <button
                     type="submit"
                     className="w-full py-2 bg-slate-900 hover:bg-slate-850 text-white font-semibold text-xs rounded-xl shadow-xs transition-colors cursor-pointer"
@@ -1037,49 +1113,148 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
                     <tr className="bg-slate-50 border-b border-slate-200 text-slate-400 font-mono text-[9px] uppercase font-bold tracking-wider">
                       <th className="py-3 px-4 font-bold">Team Member</th>
                       <th className="py-3 px-4 font-bold">Email handle</th>
-                      <th className="py-3 px-4 font-bold">Role</th>
-                      <th className="py-3 px-4 font-bold">Status</th>
-                      <th className="py-3 px-4 text-right pr-6 font-bold">Bypasses</th>
+                      <th className="py-3 px-4 font-bold">Role & Password</th>
+                      <th className="py-3 px-4 font-bold">Admin Status</th>
+                      <th className="py-3 px-4 text-right pr-6 font-bold">Manage Tools</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200">
-                    {users.map(u => (
-                      <tr key={u.id} className="hover:bg-slate-50/20">
-                        <td className="py-3 px-4 font-sans font-bold text-xs text-slate-800">
-                          {u.name} {currentUser?.id === u.id && <span className="ml-1.5 text-[8px] tracking-wider text-blue-500 bg-blue-50 font-mono font-bold leading-normal px-1 py-0.5 border border-blue-200/50 rounded uppercase">Active session</span>}
-                        </td>
-                        <td className="py-3 px-4 font-mono text-slate-500 text-[11px]">
-                          {u.email}
-                        </td>
-                        <td className="py-3 px-4">
-                          <span className="text-[10px] font-sans font-bold bg-slate-100 text-slate-700 px-2 py-0.5 border border-slate-200 rounded">
-                            {u.role}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4">
-                          <button
-                            onClick={() => handleToggleUserActive(u.id)}
-                            className={`px-2 py-1 rounded text-[9px] tracking-wider font-bold transition-all cursor-pointer font-sans leading-none border uppercase ${
-                              u.isActive 
-                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200' 
-                                : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200'
-                            }`}
-                            title="Deactivate / Reactivate account"
-                          >
-                            {u.isActive ? 'Active' : 'Inactive'}
-                          </button>
-                        </td>
-                        <td className="py-3 px-4 text-right pr-6">
-                          <button
-                            onClick={() => handleDeleteUser(u.id)}
-                            className="p-1.5 hover:bg-slate-50 border border-transparent hover:border-slate-200 text-slate-400 hover:text-rose-600 rounded"
-                            title="Delete user record"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
+                    {users.map(u => {
+                      const isEditing = editingUserId === u.id;
+                      if (isEditing) {
+                        return (
+                          <tr key={u.id} className="bg-blue-50/25">
+                            <td className="py-3 px-3">
+                              <input
+                                type="text"
+                                value={editingUserName}
+                                onChange={(e) => setEditingUserName(e.target.value)}
+                                required
+                                className="w-full px-2 py-1.5 border border-slate-300 rounded font-sans font-bold text-xs bg-white focus:ring-1 focus:ring-blue-500"
+                              />
+                            </td>
+                            <td className="py-3 px-3">
+                              <input
+                                type="email"
+                                value={editingUserEmail}
+                                onChange={(e) => setEditingUserEmail(e.target.value)}
+                                required
+                                className="w-full px-2 py-1.5 border border-slate-300 rounded font-mono text-[11px] bg-white focus:ring-1 focus:ring-blue-500"
+                              />
+                            </td>
+                            <td className="py-3 px-3 space-y-2">
+                              <select
+                                value={editingUserRole}
+                                onChange={(e) => setEditingUserRole(e.target.value as UserRole)}
+                                className="w-full px-2 py-1.5 border border-slate-300 rounded font-sans text-xs bg-white focus:ring-1 focus:ring-blue-500"
+                              >
+                                {Object.values(UserRole).map(role => (
+                                  <option key={role} value={role}>{role}</option>
+                                ))}
+                              </select>
+                              <div className="flex flex-col gap-0.5">
+                                <span className="text-[8px] font-mono uppercase text-slate-400">Set Password</span>
+                                <input
+                                  type="text"
+                                  value={editingUserPassword}
+                                  onChange={(e) => setEditingUserPassword(e.target.value)}
+                                  placeholder="Password"
+                                  className="w-full px-2 py-1 border border-slate-300 rounded font-mono text-xs bg-white focus:ring-1 focus:ring-blue-500"
+                                />
+                              </div>
+                            </td>
+                            <td colSpan={1} className="py-3 px-3 text-xs text-slate-400 italic">
+                              Editing Profile...
+                            </td>
+                            <td className="py-3 px-3 text-right pr-6">
+                              <div className="flex items-center justify-end gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={handleEditUserSave}
+                                  className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-[10px] rounded transition-colors cursor-pointer"
+                                  title="Save Edits"
+                                >
+                                  Save
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingUserId(null)}
+                                  className="px-2.5 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-600 font-semibold text-[10px] rounded transition-colors cursor-pointer"
+                                  title="Cancel Editing"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      }
+
+                      // Standard row:
+                      const resolvedPass = u.password || (
+                        u.id === 'user_ninan' ? 'admin' :
+                        u.id === 'user_sarah' ? 'manager' :
+                        u.id === 'user_carlos' ? 'sales' :
+                        u.id === 'user_lina' ? 'designer' :
+                        u.role === UserRole.ADMIN ? 'admin123' :
+                        u.role === UserRole.MANAGER ? 'manager123' :
+                        u.role === UserRole.SALES ? 'sales123' :
+                        u.role === UserRole.DESIGNER ? 'designer123' :
+                        'prowess2026'
+                      );
+
+                      return (
+                        <tr key={u.id} className="hover:bg-slate-50/20">
+                          <td className="py-4 px-4 font-sans font-bold text-xs text-slate-800">
+                            {u.name} {currentUser?.id === u.id && <span className="ml-1.5 text-[8px] tracking-wider text-blue-500 bg-blue-50 font-mono font-bold leading-normal px-1 py-0.5 border border-blue-200/50 rounded uppercase">Active session</span>}
+                          </td>
+                          <td className="py-4 px-4 font-mono text-slate-500 text-[11px]">
+                            {u.email}
+                          </td>
+                          <td className="py-4 px-4">
+                            <div className="flex flex-col gap-1 align-top items-start">
+                              <span className="text-[10px] font-sans font-bold bg-slate-100 text-slate-700 px-2 py-0.5 border border-slate-200 rounded">
+                                {u.role}
+                              </span>
+                              <span className="text-[10px] font-mono text-slate-400 bg-slate-50 px-1 py-0.5 border border-slate-100 rounded">
+                                Key: <span className="text-blue-600 font-bold">{resolvedPass}</span>
+                              </span>
+                            </div>
+                          </td>
+                          <td className="py-4 px-4">
+                            <button
+                              onClick={() => handleToggleUserActive(u.id)}
+                              className={`px-2 py-1 rounded text-[9px] tracking-wider font-bold transition-all cursor-pointer font-sans leading-none border uppercase ${
+                                u.isActive 
+                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200' 
+                                  : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200'
+                              }`}
+                              title="Deactivate / Reactivate account"
+                            >
+                              {u.isActive ? 'Active' : 'Inactive'}
+                            </button>
+                          </td>
+                          <td className="py-4 px-4 text-right pr-6">
+                            <div className="flex items-center justify-end gap-2">
+                              <button
+                                onClick={() => handleStartEditUser(u)}
+                                className="px-2.5 py-1 text-[10px] font-semibold font-sans border border-slate-200 rounded-md text-slate-500 hover:text-blue-600 hover:border-blue-200 cursor-pointer"
+                                title="Edit profile and update password"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleDeleteUser(u.id)}
+                                className="p-1.5 hover:bg-slate-50 border border-transparent hover:border-slate-200 text-slate-400 hover:text-rose-600 rounded cursor-pointer"
+                                title="Delete user record"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

@@ -37,6 +37,8 @@ export default function LandingPage({ onLogin }: LandingPageProps) {
   }, []);
 
   const getPasswordForUser = (user: User): string => {
+    if (user.password) return user.password;
+
     // Return specific prefilled passwords for pre-registered users, or intuitive passwords for custom users
     if (user.id === 'user_ninan') return 'admin';
     if (user.id === 'user_sarah') return 'manager';
