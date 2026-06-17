@@ -46,6 +46,8 @@ export default function App() {
   const [isDbConnected, setIsDbConnected] = useState<boolean>(false);
   const [dbStatusDetails, setDbStatusDetails] = useState<string>("Detecting connection...");
 
+  const [activeTab, setActiveTab] = useState<'overview' | 'proposals' | 'users' | 'reminders' | 'logs' | 'payments'>('overview');
+
   // Team active login session
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
     const cached = localStorage.getItem('prowess_session_user');
@@ -476,37 +478,45 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col justify-between">
+    <div className="min-h-screen bg-[#030712] flex flex-col justify-between text-slate-100">
       
       {/* GLOBAL BANNER HEADER - Hidden during printing */}
-      <header className="no-print bg-slate-900 text-white shadow-md border-b-4 border-blue-600">
+      <header className="no-print bg-[#0a0f1d] border-b border-[#162035] shadow-lg sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="bg-blue-600 h-9 w-9 rounded-lg flex items-center justify-center font-bold font-serif italic text-white text-lg animate-none">
-              As
+            <div className="h-9 w-9 rounded-xl bg-amber-500 flex items-center justify-center font-extrabold text-slate-950 text-base shadow-sm font-sans">
+              A
             </div>
             <div>
-              <h1 className="font-serif font-bold text-base md:text-lg tracking-tight leading-none text-slate-100">
-                Astra Tech
-              </h1>
-              <p className="text-[10px] font-mono text-slate-400 mt-1 uppercase tracking-widest">
-                Automated Client Proposal Workspace
-              </p>
+              <span className="font-sans font-bold text-white text-sm md:text-base tracking-wider uppercase block leading-none">
+                Astra Team Hub
+              </span>
+              <span className="text-[10px] font-semibold text-amber-500 uppercase tracking-widest block mt-1.5 leading-none">
+                Admin Portal
+              </span>
+            </div>
+            <div className="hidden lg:block border-l border-slate-800 h-6 mx-2"></div>
+            <div className="hidden lg:block font-mono text-[9px] text-slate-400 tracking-widest uppercase">
+              Secure Administrative Controller & Collaborative Logging Systems
             </div>
           </div>
 
-          <div className="flex items-center gap-3 text-xs col-span-2 md:col-span-1">
-            <span className="text-slate-400 hidden sm:inline">
-              {currentUser?.name} <span className="opacity-60">({currentUser?.role})</span>
-            </span>
-            <span className="font-mono bg-slate-800 text-slate-200 px-2.5 py-1 rounded-md border border-slate-700">
-              {currentUser?.email}
+          <div className="flex items-center gap-3">
+            <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] bg-slate-900 border border-slate-800 text-slate-400 rounded-md font-mono">
+              <span className={`h-1.5 w-1.5 rounded-full ${isDbConnected ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span>
+              {isDbConnected ? 'Hostinger DB' : 'Offline Cache'}
             </span>
             
-            {/* Hostinger DB connection badge */}
-            <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-[10px] font-mono font-medium ${isDbConnected ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-amber-500/10 border-amber-500/20 text-amber-400'}`} title={dbStatusDetails}>
-              <span className={`h-1.5 w-1.5 rounded-full ${isDbConnected ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span>
-              <span className="hidden lg:inline">{isDbConnected ? 'Hostinger DB' : 'Offline Cache'}</span>
+            <div className="flex items-center gap-2.5 bg-slate-900/80 border border-slate-800 rounded-xl px-3 py-1.5">
+              <div className="h-6 w-6 rounded-full bg-slate-800 text-amber-500 flex items-center justify-center text-[10px] font-extrabold font-sans">
+                {currentUser ? currentUser.name.split(' ').map(n=>n[0]).join('') : 'NJ'}
+              </div>
+              <div className="flex flex-col text-left">
+                <span className="text-[11px] text-white font-medium">{currentUser ? currentUser.name : 'Unknown'}</span>
+                <span className="text-[8px] font-mono font-bold text-amber-500 uppercase tracking-wider">
+                  {currentUser ? currentUser.role : 'Guest'}
+                </span>
+              </div>
             </div>
 
             <button 
@@ -518,7 +528,7 @@ export default function App() {
                   try {
                     logs = JSON.parse(cachedLogs);
                   } catch {
-                    logs = [];
+                     logs = [];
                   }
                 }
                 const newEntry = {
@@ -536,11 +546,10 @@ export default function App() {
                 localStorage.removeItem('prowess_session_user');
                 setCurrentUser(null);
               }}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-600/10 hover:bg-rose-600 text-rose-400 hover:text-white border border-rose-500/20 rounded-md transition-all cursor-pointer text-[11px] font-semibold"
-              title="Sign Out of Session"
+              className="p-2 bg-slate-900 hover:bg-rose-500/10 text-slate-400 hover:text-rose-450 border border-slate-800 hover:border-rose-500/20 rounded-xl transition-all cursor-pointer"
+              title="Sign out of portal"
             >
-              <LogOut className="h-3.5 w-3.5" />
-              <span className="hidden md:inline">Sign Out</span>
+              <LogOut className="h-4 w-4" />
             </button>
           </div>
         </div>
@@ -650,80 +659,85 @@ export default function App() {
           <div id="dashboard-main-view" className="space-y-8 font-sans">
             
             {/* SaaS Metrics block */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              
-              <div className="bg-white border border-slate-200 p-5 rounded-2xl flex items-center gap-4 shadow-xs">
-                <div className="bg-blue-50 text-blue-600 h-10 w-10 rounded-xl flex items-center justify-center shrink-0">
-                  <Database className="h-5 w-5" />
+            {activeTab === 'overview' && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                
+                <div className="bg-[#0b101f] border border-[#1a2235] p-5 rounded-2xl flex items-center justify-between shadow-md">
+                  <div>
+                    <span className="text-[10px] tracking-widest font-mono text-[#d3af00] uppercase font-bold block mb-1">Stored Proposals</span>
+                    <strong className="text-2xl font-extrabold text-white">{proposals.length} <span className="text-slate-400 text-xs font-normal font-sans">Saved</span></strong>
+                  </div>
+                  <div className="bg-[#d3af00]/10 text-[#d3af00] h-10 w-10 rounded-xl flex items-center justify-center shrink-0 border border-[#d3af00]/20">
+                    <Database className="h-5 w-5" />
+                  </div>
                 </div>
-                <div>
-                  <span className="text-[10px] uppercase font-mono tracking-wider text-slate-400 block mb-0.5">Stored Proposals</span>
-                  <strong className="text-xl font-bold text-slate-800">{proposals.length} Saved</strong>
-                </div>
-              </div>
 
-              <div className="bg-white border border-slate-200 p-5 rounded-2xl flex items-center gap-4 shadow-xs">
-                <div className="bg-emerald-50 text-emerald-600 h-10 w-10 rounded-xl flex items-center justify-center shrink-0">
-                  <TrendingUp className="h-5 w-5" />
+                <div className="bg-[#0b101f] border border-[#1a2235] p-5 rounded-2xl flex items-center justify-between shadow-md">
+                  <div>
+                    <span className="text-[10px] tracking-widest font-mono text-[#d3af00] uppercase font-bold block mb-1">Total Pipeline Value</span>
+                    <strong className="text-2xl font-extrabold text-[#efbc00]">{formatQAR(totalValueSum)}</strong>
+                  </div>
+                  <div className="bg-[#d3af00]/10 text-[#d3af00] h-10 w-10 rounded-xl flex items-center justify-center shrink-0 border border-[#d3af00]/20">
+                    <TrendingUp className="h-5 w-5" />
+                  </div>
                 </div>
-                <div>
-                  <span className="text-[10px] uppercase font-mono tracking-wider text-slate-400 block mb-0.5">Total Pipeline Value</span>
-                  <strong className="text-xl font-bold text-slate-800">{formatQAR(totalValueSum)}</strong>
-                </div>
-              </div>
 
-              <div className="bg-white border border-slate-200 p-5 rounded-2xl flex items-center gap-4 shadow-xs">
-                <div className="bg-amber-50 text-amber-600 h-10 w-10 rounded-xl flex items-center justify-center shrink-0">
-                  <FileText className="h-5 w-5" />
+                <div className="bg-[#0b101f] border border-[#1a2235] p-5 rounded-2xl flex items-center justify-between shadow-md">
+                  <div>
+                    <span className="text-[10px] tracking-widest font-mono text-[#d3af00] uppercase font-bold block mb-1">Web Platforms ratio</span>
+                    <strong className="text-2xl font-extrabold text-white">{webProposalsCount} <span className="text-slate-400 text-xs font-normal font-sans">Active</span></strong>
+                  </div>
+                  <div className="bg-[#d3af00]/10 text-[#d3af00] h-10 w-10 rounded-xl flex items-center justify-center shrink-0 border border-[#d3af00]/20">
+                    <FileText className="h-5 w-5" />
+                  </div>
                 </div>
-                <div>
-                  <span className="text-[10px] uppercase font-mono tracking-wider text-slate-400 block mb-0.5">Web Platforms ratio</span>
-                  <strong className="text-xl font-bold text-slate-800">{webProposalsCount} Active</strong>
-                </div>
-              </div>
 
-              <div className="bg-white border border-slate-200 p-5 rounded-2xl flex items-center gap-4 shadow-xs">
-                <div className="bg-sky-50 text-sky-600 h-10 w-10 rounded-xl flex items-center justify-center shrink-0">
-                  <Sparkles className="h-5 w-5" />
+                <div className="bg-[#0b101f] border border-[#1a2235] p-5 rounded-2xl flex items-center justify-between shadow-md">
+                  <div>
+                    <span className="text-[10px] tracking-widest font-mono text-[#d3af00] uppercase font-bold block mb-1">Branding Campaigns</span>
+                    <strong className="text-2xl font-extrabold text-white">{brandingProposalsCount} <span className="text-slate-400 text-xs font-normal font-sans">Issued</span></strong>
+                  </div>
+                  <div className="bg-[#d3af00]/10 text-[#d3af00] h-10 w-10 rounded-xl flex items-center justify-center shrink-0 border border-[#d3af00]/20">
+                    <Sparkles className="h-5 w-5" />
+                  </div>
                 </div>
-                <div>
-                  <span className="text-[10px] uppercase font-mono tracking-wider text-slate-400 block mb-0.5">Branding Campaigns</span>
-                  <strong className="text-xl font-bold text-slate-800">{brandingProposalsCount} Issued</strong>
-                </div>
-              </div>
 
-            </div>
+              </div>
+            )}
 
             {/* Create Proposal Selector Bar */}
-            <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-xs flex flex-col md:flex-row items-center justify-between gap-4">
-              <div>
-                <h2 className="font-serif font-bold text-slate-900 text-lg tracking-tight">
-                  Design bespoke proposals instantly
-                </h2>
-                <p className="text-xs text-slate-500 leading-normal font-sans">
-                  Choose a blueprint target below. The wizard compiles locking master pages and asks only for clients specifics.
-                </p>
-              </div>
+            {activeTab === 'overview' && (
+              <div className="bg-gradient-to-r from-[#0d1222] to-[#070b14] border border-[#1b253b] p-6 rounded-2xl shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
+                <div>
+                  <h2 className="font-sans font-extrabold text-white text-lg tracking-tight flex items-center gap-2">
+                    <Sparkles className="h-4.5 w-4.5 text-amber-500" />
+                    Design bespoke proposals instantly
+                  </h2>
+                  <p className="text-xs text-slate-400 leading-normal font-sans mt-0.5">
+                    Choose a blueprint target below. The wizard compiles locking master pages and asks only for clients specifics.
+                  </p>
+                </div>
 
-              <div className="flex gap-3 shrink-0">
-                <button
-                  onClick={() => startNewProposal('branding')}
-                  id="create-branding-proposal-btn"
-                  className="px-4 py-2 bg-slate-900 hover:bg-slate-850 text-white font-semibold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
-                >
-                  <Plus className="h-4 w-4 text-blue-400" />
-                  + Branding & Identity Proposal
-                </button>
-                <button
-                  onClick={() => startNewProposal('website')}
-                  id="create-website-proposal-btn"
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
-                >
-                  <Plus className="h-4 w-4" />
-                  + Website Development Proposal
-                </button>
+                <div className="flex gap-3 shrink-0">
+                  <button
+                    onClick={() => startNewProposal('branding')}
+                    id="create-branding-proposal-btn"
+                    className="px-4 py-2.5 bg-[#12192c] hover:bg-[#18233f] text-slate-200 hover:text-white font-sans font-bold text-xs rounded-xl shadow-sm border border-[#202b45] transition-all cursor-pointer flex items-center gap-2"
+                  >
+                    <Plus className="h-4 w-4 text-amber-500" />
+                    Branding & Identity Proposal
+                  </button>
+                  <button
+                    onClick={() => startNewProposal('website')}
+                    id="create-website-proposal-btn"
+                    className="px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-sans font-bold text-xs rounded-xl shadow-lg transition-all cursor-pointer flex items-center gap-2"
+                  >
+                    <Plus className="h-4 w-4 text-slate-950" />
+                    Website Development Proposal
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* HIGH-FIDELITY TEAM COLLABORATION HUB */}
             <div className="no-print">
@@ -790,194 +804,202 @@ export default function App() {
                   setViewingProposal(prop);
                   setProposalViewTab(tab || 'document');
                 }}
+                activeTab={activeTab}
+                onActiveTabChange={setActiveTab}
               />
             </div>
-
+            
             {/* Smart search center console */}
-            <div className="space-y-4">
-              <div className="relative max-w-2xl mx-auto">
-                <Search className="absolute left-4 top-3.5 h-4.5 w-4.5 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder='Search by client, scope or type (e.g., "Show me the Mannai TechHub website proposal")...'
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-11 pr-12 py-3 border border-slate-300 rounded-xl font-sans text-xs shadow-sm bg-white placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-sha pr-8"
-                  id="search-memory-input"
-                />
-                
-                {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery('')}
-                    className="absolute right-4 top-3.5 text-xs text-slate-400 hover:text-slate-600"
-                  >
-                    Clear
-                  </button>
-                )}
-              </div>
+            {activeTab === 'overview' && (
+              <div className="space-y-4">
+                <div className="relative max-w-2xl mx-auto">
+                  <Search className="absolute left-4 top-3.5 h-4.5 w-4.5 text-slate-500" />
+                  <input
+                    type="text"
+                    placeholder='Search by client, scope or type (e.g., "Show me the Mannai TechHub website proposal")...'
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-12 pr-20 py-3.5 bg-[#090d16] border border-[#1b2539] hover:border-amber-500/30 text-white rounded-xl font-sans text-xs shadow-sm placeholder-slate-550 placeholder-slate-500 focus:outline-hidden focus:ring-2 focus:ring-[#d3af00]/20 focus:border-[#d3af00] transition-all"
+                    id="search-memory-input"
+                  />
+                  
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-4 top-3.5 text-xs text-slate-400 hover:text-slate-200 transition-colors uppercase font-mono font-bold tracking-wider"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
 
-              {/* Suggestions Chips */}
-              <div className="flex flex-wrap gap-2 items-center justify-center max-w-2xl mx-auto">
-                <span className="text-[10px] font-bold text-slate-400 font-mono uppercase shrink-0">
-                  Search Prompts:
-                </span>
-                {searchSuggestions.map((s, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setSearchQuery(s.query)}
-                    className="px-3 py-1 font-sans text-[10px] border border-slate-200 hover:border-slate-350 bg-white hover:bg-slate-50 text-slate-600 rounded-full transition-colors cursor-pointer"
-                  >
-                    "{s.label}"
-                  </button>
-                ))}
+                {/* Suggestions Chips */}
+                <div className="flex flex-wrap gap-2 items-center justify-center max-w-2xl mx-auto">
+                  <span className="text-[9px] font-bold text-slate-500 font-mono uppercase shrink-0 tracking-wider">
+                    Recent Queries:
+                  </span>
+                  {searchSuggestions.map((s, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setSearchQuery(s.query)}
+                      className="px-3 py-1 font-sans text-[10px] border border-[#182132] hover:border-amber-500/30 bg-[#0b101e] hover:bg-[#12192f] text-slate-400 hover:text-slate-200 rounded-lg transition-colors cursor-pointer"
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Search Results Table / Deck Grid */}
-            <div className="space-y-4">
-              <div className="flex justify-between items-center bg-slate-100/50 px-4 py-2 border border-slate-200/80 rounded-lg">
-                <span className="text-xs font-mono font-bold text-slate-400 uppercase">
-                  ACTIVE MEMORY DIRECTORY
-                </span>
-                <span className="text-xs font-sans text-slate-500">
-                  Showing <strong>{filteredProposals.length}</strong> of <strong>{proposals.length}</strong> stored proposals
-                </span>
+            {activeTab === 'overview' && (
+              <div className="space-y-4">
+                <div className="flex justify-between items-center bg-[#070b15] px-4 py-2 border border-[#141d30] rounded-xl text-xs font-mono">
+                  <span className="font-bold text-[#d3af00] tracking-wider">
+                    ACTIVE MEMORY DIRECTORY
+                  </span>
+                  <span className="text-slate-400 font-sans">
+                    Showing <strong className="text-white font-bold">{filteredProposals.length}</strong> of <strong className="text-white font-bold">{proposals.length}</strong> stored proposals
+                  </span>
+                </div>
+
+                {filteredProposals.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {filteredProposals.map((prop) => {
+                      const isB = prop.type === 'branding';
+                      return (
+                        <div 
+                          key={prop.id}
+                          onClick={() => {
+                            setProposalViewTab('document');
+                            setViewingProposal(prop);
+                          }}
+                          className="bg-[#0b101f] border border-[#1a2235] p-5 rounded-2xl hover:border-amber-500/50 hover:shadow-lg transition-all cursor-pointer relative group flex flex-col justify-between"
+                        >
+                          {/* Type Tag indicator */}
+                          <div className="absolute top-5 right-5 flex flex-col items-end gap-1.5">
+                            <span className={`text-[9px] font-mono font-bold px-2.5 py-0.5 rounded uppercase leading-none ${
+                              isB ? 'bg-cyan-500/10 text-cyan-405 text-cyan-400 border border-cyan-500/20' : 'bg-emerald-500/10 text-emerald-405 text-emerald-400 border border-emerald-500/20'
+                            }`}>
+                              {isB ? "Identity" : "Website"}
+                            </span>
+                            <span className={`text-[8.5px] font-sans font-bold px-2 py-0.5 border rounded leading-none uppercase ${
+                              prop.status === 'Completed' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                              prop.status === 'Cancelled' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' :
+                              prop.status === 'Under Process' ? 'bg-[#d3af00]/10 text-amber-500 border border-amber-500/20' :
+                              prop.status === 'Under Review' ? 'bg-slate-500/10 text-slate-450 text-slate-400 border-slate-550 border-slate-700' :
+                              prop.status === 'Awaiting Client Feedback' ? 'bg-pink-500/10 text-pink-400 border-pink-500/20' :
+                              'bg-slate-800 text-slate-400 border-slate-750'
+                            }`}>
+                              {prop.status || 'Draft'}
+                            </span>
+                          </div>
+
+                          <div>
+                            <div className="flex items-center gap-2 text-slate-450 text-slate-450 text-slate-400 text-xs mb-1">
+                              <Calendar className="h-3.5 w-3.5 text-slate-500" />
+                              <span className="font-mono text-[10px] mr-1">{prop.proposalDate}</span>
+                              {prop.assignedUserName && (
+                                <span className="text-[9px] bg-[#11182c] text-amber-500 font-semibold px-2 py-0.5 rounded border border-[#1c294a] leading-none uppercase font-mono tracking-wider">
+                                  Lead: {prop.assignedUserName}
+                                </span>
+                              )}
+                            </div>
+
+                            <h3 className="font-sans font-extrabold text-white text-base leading-tight group-hover:text-amber-500 transition-colors mt-2.5">
+                              {prop.clientName || "Unnamed Client"}
+                            </h3>
+                            <p className="font-sans text-[11.5px] text-slate-400 mt-1 lines-clamp-2 leading-relaxed">
+                              {prop.companyName || (isB ? "Branding Strategy Suite" : "Custom Web Project")}
+                            </p>
+                            
+                            <p className="text-slate-400 text-[10.5px] italic font-sans mt-3 line-clamp-2 border-l-2 border-[#d3af00]/20 pl-3">
+                              "{prop.briefDescription || "Bespoke production strategic deck targeting operational deadlines and conversion metrics."}"
+                            </p>
+                          </div>
+
+                          {/* Specs grid */}
+                          <div className="mt-5 pt-4 border-t border-[#1a2235] flex items-center justify-between gap-4">
+                            <div className="flex flex-col">
+                              <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block">Contract Value</span>
+                              <strong className="text-sm font-sans font-extrabold text-[#efbc00] mt-0.5">
+                                {formatQAR(prop.totalCost)} QAR
+                              </strong>
+                            </div>
+
+                            <div className="flex gap-1">
+                              {/* View block */}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setProposalViewTab('document');
+                                  setViewingProposal(prop);
+                                }}
+                                className="p-1.5 hover:bg-slate-800 text-slate-400 hover:text-white rounded-md border border-transparent hover:border-slate-700 transition-colors cursor-pointer"
+                                title="Render PDF"
+                              >
+                                <Eye className="h-4.5 w-4.5" />
+                              </button>
+                              {/* Edit block */}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditingProposal(prop);
+                                  setIsCreating(true);
+                                }}
+                                className="p-1.5 hover:bg-slate-800 text-slate-400 hover:text-amber-500 rounded-md border border-transparent hover:border-slate-700 transition-colors cursor-pointer"
+                                title="Modify Proposal"
+                              >
+                                <Edit3 className="h-4.5 w-4.5" />
+                              </button>
+                              {/* Delete block */}
+                              <button
+                                onClick={(e) => handleDeleteProposal(prop.id, e)}
+                                className="p-1.5 hover:bg-rose-950/20 text-slate-405 text-slate-400 hover:text-rose-450 hover:text-rose-400 rounded-md border border-transparent hover:border-rose-900/30 transition-colors cursor-pointer"
+                                title="Delete from memory"
+                              >
+                                <Trash2 className="h-4.5 w-4.5" />
+                              </button>
+                            </div>
+                          </div>
+
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  /* Empty state */
+                  <div className="p-12 text-center bg-[#070b15] border border-[#141d30] border-dashed rounded-2xl max-w-md mx-auto">
+                    <AlertCircle className="h-8 w-8 text-amber-500 mx-auto mb-3" />
+                    <h4 className="text-white font-sans font-bold text-xs">No matching proposals retrieved</h4>
+                    <p className="text-[11px] text-slate-400 mt-1 leading-normal font-sans pr-2 pl-2">
+                      Our dynamic memory indexing returns zero matches for <strong>"{searchQuery}"</strong>. Ensure keywords match clients, dates or sitemap scopes, or click a prefilled prompt chip to clear.
+                    </p>
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="mt-4 px-3.5 py-1 text-xs border border-slate-704 border-slate-700 hover:bg-slate-850 hover:border-amber-500 text-slate-300 rounded-lg transition-colors font-medium cursor-pointer"
+                    >
+                      Reset Query Engine
+                    </button>
+                  </div>
+                )}
               </div>
-
-              {filteredProposals.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {filteredProposals.map((prop) => {
-                    const isB = prop.type === 'branding';
-                    return (
-                      <div 
-                        key={prop.id}
-                        onClick={() => {
-                          setProposalViewTab('document');
-                          setViewingProposal(prop);
-                        }}
-                        className="bg-white border border-slate-200 p-5 rounded-2xl hover:border-blue-300 hover:shadow-md transition-all cursor-pointer relative group flex flex-col justify-between"
-                      >
-                        {/* Type Tag indicator */}
-                        <div className="absolute top-5 right-5 flex flex-col items-end gap-1.5">
-                          <span className={`text-[9px] font-mono font-bold px-2.5 py-0.5 rounded-full uppercase leading-none ${
-                            isB ? 'bg-sky-50 text-sky-700' : 'bg-emerald-50 text-emerald-700'
-                          }`}>
-                            {isB ? "Identity" : "Website"}
-                          </span>
-                          <span className={`text-[8.5px] font-sans font-bold px-2 py-0.5 border rounded-full leading-none uppercase ${
-                            prop.status === 'Completed' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                            prop.status === 'Cancelled' ? 'bg-rose-50 text-rose-700 border-rose-200' :
-                            prop.status === 'Under Process' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                            prop.status === 'Under Review' ? 'bg-amber-50 text-amber-750 border-amber-200' :
-                            prop.status === 'Awaiting Client Feedback' ? 'bg-pink-50 text-pink-700 border-pink-200' :
-                            'bg-slate-100 text-slate-600 border-slate-205'
-                          }`}>
-                            {prop.status || 'Draft'}
-                          </span>
-                        </div>
-
-                        <div>
-                          <div className="flex items-center gap-2 text-slate-400 text-xs mb-1">
-                            <Calendar className="h-3.5 w-3.5" />
-                            <span className="font-mono text-[10px] mr-1">{prop.proposalDate}</span>
-                            {prop.assignedUserName && (
-                              <span className="text-[9.5px] bg-slate-100/80 text-slate-600 font-sans px-1.5 py-0.5 rounded border border-slate-200 leading-none">
-                                Lead: {prop.assignedUserName}
-                              </span>
-                            )}
-                          </div>
-
-                          <h3 className="font-serif font-bold text-slate-800 text-base leading-tight group-hover:text-blue-600 transition-colors">
-                            {prop.clientName || "Unnamed Client"}
-                          </h3>
-                          <p className="font-sans text-[11px] text-slate-500 mt-1 lines-clamp-2 leading-relaxed">
-                            {prop.companyName || (isB ? "Branding Strategy Suite" : "Custom Web Project")}
-                          </p>
-                          
-                          <p className="text-slate-400 text-[10px] italic font-sans mt-3 line-clamp-2 border-l-2 border-slate-100 pl-2">
-                            "{prop.briefDescription || "Bespoke production strategic deck targeting operational deadlines and conversion metrics."}"
-                          </p>
-                        </div>
-
-                        {/* Specs grid */}
-                        <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between gap-4">
-                          <div className="flex flex-col">
-                            <span className="text-[8px] font-mono text-slate-400 uppercase tracking-wider block">Contract Value</span>
-                            <strong className="text-sm font-sans font-extrabold text-blue-700 mt-0.5">
-                              {formatQAR(prop.totalCost)} QAR
-                            </strong>
-                          </div>
-
-                          <div className="flex gap-1">
-                            {/* View block */}
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setProposalViewTab('document');
-                                setViewingProposal(prop);
-                              }}
-                              className="p-1.5 hover:bg-slate-100 text-slate-500 hover:text-blue-600 rounded-md transition-colors"
-                              title="Render PDF"
-                            >
-                              <Eye className="h-4.5 w-4.5" />
-                            </button>
-                            {/* Edit block */}
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setEditingProposal(prop);
-                                setIsCreating(true);
-                              }}
-                              className="p-1.5 hover:bg-slate-100 text-slate-500 hover:text-blue-600 rounded-md transition-colors"
-                              title="Modify Proposal"
-                            >
-                              <Edit3 className="h-4.5 w-4.5" />
-                            </button>
-                            {/* Delete block */}
-                            <button
-                              onClick={(e) => handleDeleteProposal(prop.id, e)}
-                              className="p-1.5 hover:bg-slate-100 text-slate-400 hover:text-rose-600 rounded-md transition-colors animate-none"
-                              title="Delete from memory"
-                            >
-                              <Trash2 className="h-4.5 w-4.5" />
-                            </button>
-                          </div>
-                        </div>
-
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                /* Empty state */
-                <div className="p-12 text-center bg-white border border-slate-200 border-dashed rounded-2xl max-w-md mx-auto">
-                  <AlertCircle className="h-8 w-8 text-blue-500 mx-auto mb-3" />
-                  <h4 className="text-slate-800 font-sans font-bold text-xs">No matching proposals retrieved</h4>
-                  <p className="text-[11px] text-slate-500 mt-1 leading-normal font-sans pr-2 pl-2">
-                    Our dynamic memory indexing returns zero matches for <strong>"{searchQuery}"</strong>. Ensure keywords match clients, dates or sitemap scopes, or click a prefilled prompt chip to clear.
-                  </p>
-                  <button
-                    onClick={() => setSearchQuery('')}
-                    className="mt-4 px-3.5 py-1 text-xs border border-blue-200 hover:bg-blue-50 text-blue-600 rounded-lg transition-colors font-medium cursor-pointer"
-                  >
-                    Reset Query Engine
-                  </button>
-                </div>
-              )}
-            </div>
+            )}
 
             {/* Workflow information assist box */}
-            <div className="bg-slate-100 border border-slate-200 rounded-xl p-5 flex items-start gap-4">
-              <HelpCircle className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
-              <div>
-                <h4 className="font-sans font-bold text-slate-800 text-xs">
-                  Understanding Proposal Workflow Automation
-                </h4>
-                <p className="text-[11px] text-slate-500 font-sans leading-relaxed mt-1 pr-6">
-                  Locked templates represent official legal and operational standards (Approach, Methodology, Exclusion terms etc.) automatically merged during compilation. You only define details that vary per client (Company Name, Weeks duration, active sitemaps, budgeting allocation). Saved entries are stored locally on-device and mapped into the retrieval search bar instantly.
-                </p>
+            {activeTab === 'overview' && (
+              <div className="bg-[#0b101f] border border-[#1a2235] rounded-xl p-5 flex items-start gap-4 shadow-md">
+                <HelpCircle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="font-sans font-bold text-white text-xs">
+                    Understanding Proposal Workflow Automation
+                  </h4>
+                  <p className="text-[11px] text-slate-400 font-sans leading-relaxed mt-1 pr-6">
+                    Locked templates represent official legal and operational standards (Approach, Methodology, Exclusion terms etc.) automatically merged during compilation. You only define details that vary per client (Company Name, Weeks duration, active sitemaps, budgeting allocation). Saved entries are stored locally on-device and mapped into the retrieval search bar instantly.
+                  </p>
+                </div>
               </div>
-            </div>
+            )}
 
           </div>
         )}
@@ -985,13 +1007,13 @@ export default function App() {
       </main>
 
       {/* FOOTER - Hidden during printing */}
-      <footer className="no-print bg-white border-t border-slate-200 py-6 text-slate-400 text-xs text-center mt-8 font-sans">
+      <footer className="no-print bg-[#0a0f1d] border-t border-[#162035] py-6 text-slate-500 text-xs text-center mt-8 font-sans">
         <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <span>© 2026 Astra Tech. All rights reserved. Registered trademark of Qatar.</span>
+          <span>© 2026 Astra Tech. All rights reserved. Operating under regional corporate regulations.</span>
           <div className="flex gap-4">
-            <span className="hover:text-slate-600 transition-colors cursor-pointer">Security Cert</span>
+            <span className="hover:text-slate-300 transition-colors cursor-pointer">Security Ledger</span>
             <span>•</span>
-            <span className="hover:text-slate-600 transition-colors cursor-pointer">Data Policy</span>
+            <span className="hover:text-slate-300 transition-colors cursor-pointer">System Protocol</span>
           </div>
         </div>
       </footer>

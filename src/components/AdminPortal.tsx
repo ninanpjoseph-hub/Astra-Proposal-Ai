@@ -14,6 +14,8 @@ interface AdminPortalProps {
   currentUser: User | null;
   onLoginUser: (user: User | null) => void;
   onViewProposalDetail?: (proposal: Proposal, tab?: 'document' | 'history' | 'payment') => void;
+  activeTab?: 'overview' | 'proposals' | 'users' | 'reminders' | 'logs' | 'payments';
+  onActiveTabChange?: (tab: 'overview' | 'proposals' | 'users' | 'reminders' | 'logs' | 'payments') => void;
 }
 
 const DEFAULT_USERS: User[] = [
@@ -22,7 +24,15 @@ const DEFAULT_USERS: User[] = [
   { id: 'user_shareef', name: 'Shareef', email: 'shareef@technoastra.com', role: UserRole.DESIGNER, isActive: true },
 ];
 
-export default function AdminPortal({ proposals, onUpdateProposals, currentUser, onLoginUser, onViewProposalDetail }: AdminPortalProps) {
+export default function AdminPortal({ 
+  proposals, 
+  onUpdateProposals, 
+  currentUser, 
+  onLoginUser, 
+  onViewProposalDetail,
+  activeTab: propsActiveTab,
+  onActiveTabChange
+}: AdminPortalProps) {
   // Systems States
   const [users, setUsers] = useState<User[]>([]);
   const [reminders, setReminders] = useState<Reminder[]>([]);
@@ -54,7 +64,16 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
   const [smtpFromName, setSmtpFromName] = useState<string>('Astra Automated Delivery');
 
   // Local UI States
-  const [activeTab, setActiveTab] = useState<'overview' | 'proposals' | 'users' | 'reminders' | 'logs' | 'payments'>('overview');
+  const [localActiveTab, setLocalActiveTab] = useState<'overview' | 'proposals' | 'users' | 'reminders' | 'logs' | 'payments'>('overview');
+  
+  const activeTab = propsActiveTab || localActiveTab;
+  const setActiveTab = (tab: 'overview' | 'proposals' | 'users' | 'reminders' | 'logs' | 'payments') => {
+    setLocalActiveTab(tab);
+    if (onActiveTabChange) {
+      onActiveTabChange(tab);
+    }
+  };
+
   const [showLoginModal, setShowLoginModal] = useState<boolean>(false);
   
   // Login credentials mock state
@@ -896,125 +915,82 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
   };
 
   return (
-    <div id="admin-collaboration-space" className="bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden font-sans">
+    <div id="admin-collaboration-space" className="space-y-6 font-sans">
       
-      {/* Top Controller Ribbon */}
-      <div className="bg-slate-900 px-6 py-4 flex flex-col md:flex-row md:items-center md:justify-between border-b border-slate-800 gap-4">
-        <div className="flex items-center gap-3">
-          <div className="bg-blue-600/10 text-blue-400 p-2 rounded-xl border border-blue-500/20">
-            <Shield className="h-5 w-5" />
-          </div>
-          <div>
-            <h3 className="text-white text-sm font-semibold tracking-tight uppercase font-serif">
-              Astra Team Hub & Admin Portal
-            </h3>
-            <p className="text-[10px] text-slate-400 font-mono mt-0.5 uppercase tracking-wider">
-              Secure administrative controller & collaborative logging systems
-            </p>
-          </div>
+      {/* Sleek Dark Pillar Navigation Tab Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#1b253b] pb-4">
+        <div className="flex items-center gap-2">
+          <div className="h-2 w-2 rounded-full bg-amber-500 animate-pulse"></div>
+          <span className="text-xs font-mono font-bold uppercase tracking-widest text-[#efbc00]">Collaborative Desk</span>
         </div>
 
-        <div className="flex self-start md:self-auto items-center gap-2.5">
-          {currentUser ? (
-            <div className="flex items-center gap-3">
-              <div className="flex flex-col items-end">
-                <span className="text-[11px] text-white font-semibold font-sans">{currentUser.name}</span>
-                <span className="text-[9px] font-mono font-bold tracking-wider text-blue-400 uppercase bg-blue-900/40 px-1.5 py-0.5 rounded border border-blue-800/30 mt-0.5">
-                  {currentUser.role}
-                </span>
-              </div>
-              
-              <div className="flex gap-1.5">
-                <button
-                  onClick={handleLogout}
-                  className="p-1.5 bg-rose-600/10 hover:bg-rose-600 text-rose-400 hover:text-white border border-rose-500/20 rounded-lg transition-colors cursor-pointer"
-                  title="Sign out of portal"
-                >
-                  <LogOut className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            </div>
-          ) : (
-            <button
-              onClick={() => {
-                setShowLoginModal(true);
-                setLoginErr('');
-              }}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-md transition-colors cursor-pointer flex items-center gap-1.5"
-            >
-              <Lock className="h-3.5 w-3.5" /> Direct Team Authentication
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Internal Tabs controller */}
-      <div className="bg-slate-50/80 border-b border-slate-200/80 px-6 py-2 flex flex-wrap gap-1.5">
-        <button
-          onClick={() => setActiveTab('overview')}
-          className={`px-3 py-1.5 rounded-lg text-xs leading-none font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-            activeTab === 'overview' 
-              ? 'bg-white border border-slate-200 text-slate-900 shadow-xs' 
-              : 'text-slate-500 hover:text-slate-800'
-          }`}
-        >
-          <BarChart3 className="h-3.5 w-3.5" /> Operational Overview
-        </button>
-
-        <button
-          onClick={() => setActiveTab('proposals')}
-          className={`px-3 py-1.5 rounded-lg text-xs leading-none font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-            activeTab === 'proposals' 
-              ? 'bg-white border border-slate-200 text-slate-900 shadow-xs' 
-              : 'text-slate-500 hover:text-slate-800'
-          }`}
-        >
-          <FileText className="h-3.5 w-3.5" /> Pipeline Controller
-        </button>
-
-        {(currentUser?.role === UserRole.ADMIN || currentUser?.role === UserRole.MANAGER) && (
+        <div className="bg-[#070b15] border border-[#162035] p-1.5 rounded-2xl flex flex-wrap gap-1">
           <button
-            onClick={() => setActiveTab('users')}
-            className={`px-3 py-1.5 rounded-lg text-xs leading-none font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-              activeTab === 'users' 
-                ? 'bg-white border border-slate-200 text-slate-900 shadow-xs' 
-                : 'text-slate-500 hover:text-slate-800'
+            onClick={() => setActiveTab('overview')}
+            className={`px-4 py-2 rounded-xl text-xs font-sans font-bold tracking-tight transition-all cursor-pointer flex items-center gap-2 ${
+              activeTab === 'overview' 
+                ? 'bg-[#131b2e] border border-[#202d4d] text-[#efbc00] shadow-md' 
+                : 'text-slate-400 hover:text-slate-200 border border-transparent'
             }`}
           >
-            <Users className="h-3.5 w-3.5" /> Identity & Users
+            <BarChart3 className="h-4 w-4" /> Operational Overview
           </button>
-        )}
 
-        <button
-          onClick={() => setActiveTab('reminders')}
-          className={`px-3 py-1.5 rounded-lg text-xs leading-none font-semibold transition-all cursor-pointer flex items-center gap-1.5 relative ${
-            activeTab === 'reminders' 
-              ? 'bg-white border border-slate-200 text-slate-900 shadow-xs' 
-              : 'text-slate-500 hover:text-slate-800'
-          }`}
-        >
-          <Bell className="h-3.5 w-3.5" /> Follow-ups
-          {visibleReminders.filter(r => !r.isCompleted).length > 0 && (
-            <span className="absolute -top-1 -right-1.5 bg-rose-500 text-white text-[8px] h-4 w-4 rounded-full flex items-center justify-center font-bold">
-              {visibleReminders.filter(r => !r.isCompleted).length}
-            </span>
+          <button
+            onClick={() => setActiveTab('proposals')}
+            className={`px-4 py-2 rounded-xl text-xs font-sans font-bold tracking-tight transition-all cursor-pointer flex items-center gap-2 ${
+              activeTab === 'proposals' 
+                ? 'bg-[#131b2e] border border-[#202d4d] text-[#efbc00] shadow-md' 
+                : 'text-slate-400 hover:text-slate-200 border border-transparent'
+            }`}
+          >
+            <FileText className="h-4 w-4" /> Pipeline Controller
+          </button>
+
+          {(currentUser?.role === UserRole.ADMIN || currentUser?.role === UserRole.MANAGER) && (
+            <button
+              onClick={() => setActiveTab('users')}
+              className={`px-4 py-2 rounded-xl text-xs font-sans font-bold tracking-tight transition-all cursor-pointer flex items-center gap-2 ${
+                activeTab === 'users' 
+                  ? 'bg-[#131b2e] border border-[#202d4d] text-[#efbc00] shadow-md' 
+                  : 'text-slate-400 hover:text-slate-200 border border-transparent'
+              }`}
+            >
+              <Users className="h-4 w-4" /> Identity & Users
+            </button>
           )}
-        </button>
 
-        <button
-          onClick={() => setActiveTab('payments')}
-          className={`px-3 py-1.5 rounded-lg text-xs leading-none font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-            activeTab === 'payments' 
-              ? 'bg-white border border-slate-200 text-slate-900 shadow-xs' 
-              : 'text-slate-500 hover:text-slate-800'
-          }`}
-        >
-          <Coins className="h-3.5 w-3.5 font-bold" /> Payment Tracker
-        </button>
+          <button
+            onClick={() => setActiveTab('reminders')}
+            className={`px-4 py-2 rounded-xl text-xs font-sans font-bold tracking-tight transition-all cursor-pointer flex items-center gap-2 relative ${
+              activeTab === 'reminders' 
+                ? 'bg-[#131b2e] border border-[#202d4d] text-[#efbc00] shadow-md' 
+                : 'text-slate-400 hover:text-slate-200 border border-transparent'
+            }`}
+          >
+            <Bell className="h-4 w-4" /> Follow-ups
+            {visibleReminders.filter(r => !r.isCompleted).length > 0 && (
+              <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[8px] h-4 w-4 rounded-full flex items-center justify-center font-bold">
+                {visibleReminders.filter(r => !r.isCompleted).length}
+              </span>
+            )}
+          </button>
+
+          <button
+            onClick={() => setActiveTab('payments')}
+            className={`px-4 py-2 rounded-xl text-xs font-sans font-bold tracking-tight transition-all cursor-pointer flex items-center gap-2 ${
+              activeTab === 'payments' 
+                ? 'bg-[#131b2e] border border-[#202d4d] text-[#efbc00] shadow-md' 
+                : 'text-slate-400 hover:text-slate-200 border border-transparent'
+            }`}
+          >
+            <Coins className="h-4 w-4 text-amber-500" /> Payment Tracker
+          </button>
+        </div>
       </div>
 
       {/* Primary Display Center */}
-      <div className="p-6">
+      <div className="bg-transparent">
         
         {/* TAB 1: OVERVIEW & ANALYTICS REPORTS */}
         {activeTab === 'overview' && (
