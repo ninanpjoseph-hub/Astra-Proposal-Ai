@@ -19,6 +19,14 @@ async function startServer() {
   // API Routes - Must be registered first!
   app.use('/api/proposals', proposalsRouter);
 
+  // Outgoing SMTP system configuration secrets
+  app.get('/api/config', (req, res) => {
+    res.json({
+      smtpFromEmail: process.env.SMTP_FROM_EMAIL || 'ninan@technoastra.com',
+      smtpFromName: process.env.SMTP_FROM_NAME || 'Astra Automated Delivery'
+    });
+  });
+
   // ----------------------------------------
   // EXTRA CRM BACKEND API ENDPOINTS
   // ----------------------------------------

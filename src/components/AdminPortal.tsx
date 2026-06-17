@@ -49,6 +49,10 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
 
   const [selectedEmail, setSelectedEmail] = useState<any | null>(null);
 
+  // SMTP Sender outbound settings derived dynamically from backend environment/secrets
+  const [smtpFromEmail, setSmtpFromEmail] = useState<string>('ninan@technoastra.com');
+  const [smtpFromName, setSmtpFromName] = useState<string>('Astra Automated Delivery');
+
   // Local UI States
   const [activeTab, setActiveTab] = useState<'overview' | 'proposals' | 'users' | 'reminders' | 'logs'>('overview');
   const [showLoginModal, setShowLoginModal] = useState<boolean>(false);
@@ -91,6 +95,18 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
   // Load backend systems on startup from local storage or defaults
   useEffect(() => {
     async function loadDataFromDb() {
+      // 0. Fetch outgoing SMTP system configurations
+      try {
+        const configRes = await fetch('/api/config');
+        if (configRes.ok) {
+          const configObj = await configRes.json();
+          if (configObj.smtpFromEmail) setSmtpFromEmail(configObj.smtpFromEmail);
+          if (configObj.smtpFromName) setSmtpFromName(configObj.smtpFromName);
+        }
+      } catch (err: any) {
+        console.warn("Could not retrieve dynamic system configuration secrets:", err.message);
+      }
+
       // 1. Users list sync
       try {
         const res = await fetch('/api/users');
@@ -1796,7 +1812,7 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-[10px] font-mono border-b border-slate-800 pb-3 text-slate-400">
                     <div>
-                      <strong className="text-slate-500 font-bold uppercase">SMTP From:</strong> <span className="text-slate-350">Astra Automated Delivery &lt;alerts@astra.tech&gt;</span>
+                      <strong className="text-slate-500 font-bold uppercase">SMTP From:</strong> <span className="text-slate-350">{smtpFromName} &lt;{smtpFromEmail}&gt;</span>
                     </div>
                     <div>
                       <strong className="text-slate-500 font-bold uppercase">To Destination:</strong> <span className="text-emerald-400 font-bold">{selectedEmail.creatorEmail}</span>
