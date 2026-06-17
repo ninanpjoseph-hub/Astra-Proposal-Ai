@@ -35,6 +35,14 @@ export interface ScopeOfWorkNotes {
   clarifications?: string;
 }
 
+export interface CustomSitemapNode {
+  id: string;
+  title: string;
+  description: string;
+  children?: string[];
+  isCustom?: boolean;
+}
+
 export interface WebsiteScope {
   totalPages: number;
   languages: string;
@@ -51,6 +59,17 @@ export interface WebsiteScope {
   websiteType?: WebsiteType;
   scopeItems?: ScopeOfWorkItem[];
   scopeNotes?: ScopeOfWorkNotes;
+  ecommerceOdooSyncModules?: string[];
+  ecommercePaymentGateways?: string[];
+  ecommerceTechStack?: {
+    website?: string;
+    mobile?: string;
+    backend?: string;
+    database?: string;
+    hosting?: string;
+  };
+  customSitemapNodes?: CustomSitemapNode[];
+  sitemapLayout?: 'portrait' | 'landscape';
 }
 
 export interface Milestone {

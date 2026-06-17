@@ -9,6 +9,7 @@ import { createDefaultProposal, generateId, formatQAR } from '../proposalUtils';
 import { DEFAULT_SCOPE_TEMPLATES } from '../staticTemplates';
 import SitemapGenerator from './SitemapGenerator';
 import ProposalDocumentView from './ProposalDocumentView';
+import { getScopeCategory, ScopeCategory } from '../utils/scopeClassifier';
 import { 
   Building2, User, Calendar, FileText, CheckSquare, Clock, Landmark, Settings, 
   Trash2, Plus, ArrowLeft, ArrowRight, Eye, Sparkles, Check, HelpCircle, ArrowUp, ArrowDown, Edit3, X 
@@ -59,6 +60,7 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editingItemTitle, setEditingItemTitle] = useState('');
   const [editingItemDesc, setEditingItemDesc] = useState('');
+  const [activeScopeTab, setActiveScopeTab] = useState<ScopeCategory>('core');
 
   // Handle standard strings/numbers in state helper
   const updateField = (field: keyof Proposal, value: any) => {
@@ -691,217 +693,308 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
                         </select>
                       </div>
 
-                      {/* Scope Items List checklist */}
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-center mb-2">
-                          <h5 className="text-[11px] font-bold font-sans text-slate-400 uppercase tracking-widest">
-                            Baseline & Custom Deliverables Checklist
-                          </h5>
-                          <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md font-mono">
-                            {(proposal.websiteScope.scopeItems || []).filter(i => i.isSelected).length} of {(proposal.websiteScope.scopeItems || []).length} Selected
+                      {/* PROGRESSIVE SCOPE FLOW (ANTI-CLUTTER SYSTEM) */}
+                      <div className="space-y-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                          <div>
+                            <h5 className="text-xs font-bold font-sans text-slate-700 uppercase tracking-widest">
+                              Progressive Scope Blueprint Checklist
+                            </h5>
+                            <p className="text-[10px] text-slate-400 font-sans">
+                              Deliverables are grouped into structured lanes.
+                            </p>
+                          </div>
+                          <span className="text-[10.5px] bg-blue-50 text-blue-700 px-2.5 py-1 rounded-lg font-bold font-mono border border-blue-100 shrink-0">
+                            {(proposal.websiteScope.scopeItems || []).filter(i => i.isSelected).length} / {(proposal.websiteScope.scopeItems || []).length} Selected
                           </span>
                         </div>
 
-                        <div className="space-y-2.5 max-h-[360px] overflow-y-auto pr-1">
-                          {((proposal.websiteScope.scopeItems && proposal.websiteScope.scopeItems.length > 0)
-                            ? proposal.websiteScope.scopeItems
-                            : DEFAULT_SCOPE_TEMPLATES.static.map((item, idx) => ({
-                                id: `scope_static_${idx}`,
-                                title: item.title,
-                                description: item.description,
-                                isSelected: item.isSelected,
-                                isCustom: false
-                              }))
-                          ).map((item, index, arr) => {
-                            const isEditing = editingItemId === item.id;
+                        {/* Page/Section subtabs */}
+                        <div className="grid grid-cols-2 min-[550px]:grid-cols-5 gap-1.5 p-1 bg-slate-50/85 border border-slate-200/50 rounded-2xl">
+                          {(['core', 'features', 'integrations', 'analytics', 'custom'] as const).map((cat) => {
+                            const catLabel = cat === 'core' ? '1. Core Structure' :
+                                             cat === 'features' ? '2. Features' :
+                                             cat === 'integrations' ? '3. Integrations' :
+                                             cat === 'analytics' ? '4. Analytics' : '5. Custom Info';
+                            
+                            const allScopeItems = (proposal.websiteScope.scopeItems && proposal.websiteScope.scopeItems.length > 0)
+                              ? proposal.websiteScope.scopeItems
+                              : DEFAULT_SCOPE_TEMPLATES[proposal.websiteScope.websiteType || 'static'].map((item, idx) => ({
+                                  id: `scope_${proposal.websiteScope.websiteType || 'static'}_${idx}`,
+                                  title: item.title,
+                                  description: item.description,
+                                  isSelected: item.isSelected,
+                                  isCustom: false
+                                }));
+
+                            const catItems = allScopeItems.filter(i => getScopeCategory(i.title, i.isCustom) === cat);
+                            const selectedCount = catItems.filter(i => i.isSelected).length;
+                            const totalCount = catItems.length;
+                            const isActive = activeScopeTab === cat;
+
                             return (
-                              <div 
-                                key={item.id}
-                                className={`p-3.5 border rounded-xl transition-all ${
-                                  item.isSelected 
-                                    ? 'bg-blue-50/10 border-blue-200/80 shadow-xs' 
-                                    : 'bg-slate-50/40 border-slate-150 text-slate-400'
+                              <button
+                                type="button"
+                                key={cat}
+                                onClick={() => setActiveScopeTab(cat)}
+                                className={`text-left p-2.5 rounded-xl flex flex-col justify-between transition-all cursor-pointer ${
+                                  isActive
+                                    ? 'bg-blue-600 border-blue-600 text-white shadow-xs'
+                                    : 'bg-white hover:bg-slate-100 border border-slate-200/30 text-slate-700'
                                 }`}
                               >
-                                {isEditing ? (
-                                  /* Inline editing mode */
-                                  <div className="space-y-3">
-                                    <div className="flex justify-between items-center">
-                                      <span className="text-[10px] font-bold text-blue-600 uppercase font-mono">Editing Scope Item</span>
-                                      <button 
-                                        type="button"
-                                        onClick={() => setEditingItemId(null)}
-                                        className="text-slate-400 hover:text-slate-600 text-xs"
-                                      >
-                                        <X className="h-4 w-4" />
-                                      </button>
-                                    </div>
-                                    <div className="space-y-2">
-                                      <input 
-                                        type="text"
-                                        value={editingItemTitle}
-                                        onChange={(e) => setEditingItemTitle(e.target.value)}
-                                        className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-bold"
-                                        placeholder="Item Title"
-                                      />
-                                      <textarea 
-                                        value={editingItemDesc}
-                                        onChange={(e) => setEditingItemDesc(e.target.value)}
-                                        className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-sans resize-y min-h-[50px]"
-                                        placeholder="Item Description"
-                                      />
-                                    </div>
-                                    <div className="flex gap-2 justify-end">
-                                      <button
-                                        type="button"
-                                        onClick={() => setEditingItemId(null)}
-                                        className="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg"
-                                      >
-                                        Cancel
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          if (!editingItemTitle.trim()) return;
-                                          const updated = arr.map(i => 
-                                            i.id === item.id ? { ...i, title: editingItemTitle, description: editingItemDesc } : i
-                                          );
-                                          setProposal(prev => ({
-                                            ...prev,
-                                            websiteScope: {
-                                              ...prev.websiteScope,
-                                              scopeItems: updated
-                                            }
-                                          }));
-                                          setEditingItemId(null);
-                                        }}
-                                        className="px-3 py-1 bg-blue-650 hover:bg-blue-700 text-white text-xs font-bold rounded-lg"
-                                      >
-                                        Save Changes
-                                      </button>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  /* Normal list display with actions */
-                                  <div className="flex items-start gap-3">
-                                    {/* Select toggle */}
-                                    <input 
-                                      type="checkbox"
-                                      checked={!!item.isSelected}
-                                      id={`check-${item.id}`}
-                                      onChange={(e) => {
-                                        const updated = arr.map(i => 
-                                          i.id === item.id ? { ...i, isSelected: e.target.checked } : i
-                                        );
-                                        setProposal(prev => ({
-                                          ...prev,
-                                          websiteScope: { ...prev.websiteScope, scopeItems: updated }
-                                        }));
-                                      }}
-                                      className="h-4 w-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500 cursor-pointer shrink-0 mt-0.5"
-                                    />
+                                <span className="text-[9.5px] font-bold truncate tracking-tight block">
+                                  {catLabel}
+                                </span>
+                                <span className={`text-[8.5px] mt-1 font-mono font-bold block ${isActive ? 'text-blue-200' : 'text-slate-400'}`}>
+                                  {selectedCount} / {totalCount} select
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
 
-                                    {/* Text Content */}
-                                    <div className="grow">
-                                      <label 
-                                        htmlFor={`check-${item.id}`} 
-                                        className={`text-xs font-bold block cursor-pointer select-none leading-snug ${
-                                          item.isSelected ? 'text-slate-800' : 'text-slate-400 line-through'
-                                        }`}
-                                      >
-                                        {item.title}
-                                        {item.isCustom && (
-                                          <span className="ml-1.5 px-1.5 py-0.5 text-[8.5px] bg-blue-50 border border-blue-100/55 rounded-sm font-bold text-blue-600 uppercase tracking-wider scale-90 inline-block font-sans">
-                                            Custom
-                                          </span>
-                                        )}
-                                      </label>
-                                      <p className={`text-[11px] mt-1 font-sans leading-normal ${
-                                        item.isSelected ? 'text-slate-500' : 'text-slate-400'
-                                      }`}>
-                                        {item.description}
-                                      </p>
-                                    </div>
+                        {/* Current lane's items */}
+                        <div className="space-y-3">
+                          {(() => {
+                            const allScopeItems = (proposal.websiteScope.scopeItems && proposal.websiteScope.scopeItems.length > 0)
+                              ? proposal.websiteScope.scopeItems
+                              : DEFAULT_SCOPE_TEMPLATES[proposal.websiteScope.websiteType || 'static'].map((item, idx) => ({
+                                  id: `scope_${proposal.websiteScope.websiteType || 'static'}_${idx}`,
+                                  title: item.title,
+                                  description: item.description,
+                                  isSelected: item.isSelected,
+                                  isCustom: false
+                                }));
 
-                                    {/* Actions Right (Edit, Reorder Up, Reorder Down, Delete) */}
-                                    <div className="flex items-center gap-1 shrink-0">
-                                      <button
-                                        type="button"
-                                        title="Edit this item"
-                                        onClick={() => {
-                                          setEditingItemId(item.id);
-                                          setEditingItemTitle(item.title);
-                                          setEditingItemDesc(item.description);
-                                        }}
-                                        className="p-1 hover:bg-slate-100/80 rounded text-slate-400 hover:text-slate-700 transition-colors"
-                                      >
-                                        <Edit3 className="h-3 w-3" />
-                                      </button>
+                            const filteredItems = allScopeItems.filter(item => getScopeCategory(item.title, item.isCustom) === activeScopeTab);
+                            
+                            // Visual threshold notice
+                            const exceedsThreshold = filteredItems.filter(i => i.isSelected).length > 3;
+                            const pageSplitsCount = Math.ceil(filteredItems.filter(i => i.isSelected).length / 3);
 
-                                      <button
-                                        type="button"
-                                        title="Move Up"
-                                        disabled={index === 0}
-                                        onClick={() => {
-                                          if (index === 0) return;
-                                          const updated = [...arr];
-                                          const temp = updated[index];
-                                          updated[index] = updated[index - 1];
-                                          updated[index - 1] = temp;
-                                          setProposal(prev => ({
-                                            ...prev,
-                                            websiteScope: { ...prev.websiteScope, scopeItems: updated }
-                                          }));
-                                        }}
-                                        className={`p-1 rounded transition-colors ${
-                                          index === 0 ? 'text-slate-200 cursor-not-allowed' : 'text-slate-400 hover:bg-slate-100/85 hover:text-slate-700'
-                                        }`}
-                                      >
-                                        <ArrowUp className="h-3 w-3" />
-                                      </button>
-
-                                      <button
-                                        type="button"
-                                        title="Move Down"
-                                        disabled={index === arr.length - 1}
-                                        onClick={() => {
-                                          if (index === arr.length - 1) return;
-                                          const updated = [...arr];
-                                          const temp = updated[index];
-                                          updated[index] = updated[index + 1];
-                                          updated[index + 1] = temp;
-                                          setProposal(prev => ({
-                                            ...prev,
-                                            websiteScope: { ...prev.websiteScope, scopeItems: updated }
-                                          }));
-                                        }}
-                                        className={`p-1 rounded transition-colors ${
-                                          index === arr.length - 1 ? 'text-slate-200 cursor-not-allowed' : 'text-slate-400 hover:bg-slate-100/85 hover:text-slate-700'
-                                        }`}
-                                      >
-                                        <ArrowDown className="h-3 w-3" />
-                                      </button>
-
-                                      <button
-                                        type="button"
-                                        title="Delete"
-                                        onClick={() => {
-                                          const updated = arr.filter(i => i.id !== item.id);
-                                          setProposal(prev => ({
-                                            ...prev,
-                                            websiteScope: { ...prev.websiteScope, scopeItems: updated }
-                                          }));
-                                        }}
-                                        className="p-1 hover:bg-red-50 hover:text-red-500 rounded text-slate-400 transition-colors"
-                                      >
-                                        <Trash2 className="h-3 w-3" />
-                                      </button>
+                            return (
+                              <>
+                                {exceedsThreshold && (
+                                  <div className="p-2.5 bg-blue-50/50 border border-blue-100 text-[10px] text-blue-800 rounded-xl leading-normal font-sans flex items-center gap-2 select-none">
+                                    <Sparkles className="h-3.5 w-3.5 shrink-0 text-blue-600" />
+                                    <div>
+                                      <strong>Anti-Clutter Page Split Active:</strong> This lane has {filteredItems.filter(i => i.isSelected).length} selected items (exceeding the visual limit of 3). It will automatically divide into <strong>{pageSplitsCount} split pages</strong> (Pages {activeScopeTab === 'core' ? '1a, 1b' : activeScopeTab === 'features' ? '2a, 2b' : activeScopeTab === 'integrations' ? '3a, 3b' : activeScopeTab === 'analytics' ? '4a, 4b' : '5a, 5b'}) in the generated PDF proposal to preserve pristine design.
                                     </div>
                                   </div>
                                 )}
-                              </div>
+
+                                {filteredItems.length === 0 ? (
+                                  <div className="p-8 text-center border-2 border-dashed border-slate-150 rounded-2xl text-slate-400 text-[11px] font-sans">
+                                    No elements found in this category. Use the custom builder below to inject items.
+                                  </div>
+                                ) : (
+                                  <div className="space-y-2.5 max-h-[360px] overflow-y-auto pr-1">
+                                    {filteredItems.map((item, index) => {
+                                      const isEditing = editingItemId === item.id;
+                                      return (
+                                        <div 
+                                          key={item.id}
+                                          className={`p-3 border rounded-xl transition-all ${
+                                            item.isSelected 
+                                              ? 'bg-blue-50/10 border-blue-200/80 shadow-xs' 
+                                              : 'bg-slate-50/30 border-slate-150 text-slate-400'
+                                          }`}
+                                        >
+                                          {isEditing ? (
+                                            /* Inline editing mode */
+                                            <div className="space-y-3">
+                                              <div className="flex justify-between items-center">
+                                                <span className="text-[10px] font-bold text-blue-600 uppercase font-mono">Editing Scope Item</span>
+                                                <button 
+                                                  type="button"
+                                                  onClick={() => setEditingItemId(null)}
+                                                  className="text-slate-400 hover:text-slate-600 text-xs"
+                                                >
+                                                  <X className="h-4 w-4" />
+                                                </button>
+                                              </div>
+                                              <div className="space-y-2">
+                                                <input 
+                                                  type="text"
+                                                  value={editingItemTitle}
+                                                  onChange={(e) => setEditingItemTitle(e.target.value)}
+                                                  className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-bold"
+                                                  placeholder="Item Title"
+                                                />
+                                                <textarea 
+                                                  value={editingItemDesc}
+                                                  onChange={(e) => setEditingItemDesc(e.target.value)}
+                                                  className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-sans resize-y min-h-[50px]"
+                                                  placeholder="Item Description"
+                                                />
+                                              </div>
+                                              <div className="flex gap-2 justify-end">
+                                                <button
+                                                  type="button"
+                                                  onClick={() => setEditingItemId(null)}
+                                                  className="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg"
+                                                >
+                                                  Cancel
+                                                </button>
+                                                <button
+                                                  type="button"
+                                                  onClick={() => {
+                                                    if (!editingItemTitle.trim()) return;
+                                                    const updated = allScopeItems.map(i => 
+                                                      i.id === item.id ? { ...i, title: editingItemTitle, description: editingItemDesc } : i
+                                                    );
+                                                    setProposal(prev => ({
+                                                      ...prev,
+                                                      websiteScope: {
+                                                        ...prev.websiteScope,
+                                                        scopeItems: updated
+                                                      }
+                                                    }));
+                                                    setEditingItemId(null);
+                                                  }}
+                                                  className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg"
+                                                >
+                                                  Save Changes
+                                                </button>
+                                              </div>
+                                            </div>
+                                          ) : (
+                                            /* Normal list display with actions */
+                                            <div className="flex items-start gap-3">
+                                              {/* Select toggle */}
+                                              <input 
+                                                type="checkbox"
+                                                checked={!!item.isSelected}
+                                                id={`check-${item.id}`}
+                                                onChange={(e) => {
+                                                  const updated = allScopeItems.map(i => 
+                                                    i.id === item.id ? { ...i, isSelected: e.target.checked } : i
+                                                  );
+                                                  setProposal(prev => ({
+                                                    ...prev,
+                                                    websiteScope: { ...prev.websiteScope, scopeItems: updated }
+                                                  }));
+                                                }}
+                                                className="h-4 w-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500 cursor-pointer shrink-0 mt-0.5"
+                                              />
+
+                                              {/* Text Content */}
+                                              <div className="grow">
+                                                <label 
+                                                  htmlFor={`check-${item.id}`} 
+                                                  className={`text-xs font-bold block cursor-pointer select-none leading-snug ${
+                                                    item.isSelected ? 'text-slate-800' : 'text-slate-400 line-through'
+                                                  }`}
+                                                >
+                                                  {item.title}
+                                                  {item.isCustom && (
+                                                    <span className="ml-1.5 px-1.5 py-0.5 text-[8.5px] bg-blue-50 border border-blue-100/55 rounded-sm font-bold text-blue-600 uppercase tracking-wider inline-block font-sans">
+                                                      Custom
+                                                    </span>
+                                                  )}
+                                                </label>
+                                                <p className={`text-[11px] mt-1 font-sans leading-normal ${
+                                                  item.isSelected ? 'text-slate-500' : 'text-slate-400'
+                                                }`}>
+                                                  {item.description}
+                                                </p>
+                                              </div>
+
+                                              {/* Actions Right (Edit, Reorder Up, Reorder Down, Delete) */}
+                                              <div className="flex items-center gap-1 shrink-0">
+                                                <button
+                                                  type="button"
+                                                  title="Edit this item"
+                                                  onClick={() => {
+                                                    setEditingItemId(item.id);
+                                                    setEditingItemTitle(item.title);
+                                                    setEditingItemDesc(item.description);
+                                                  }}
+                                                  className="p-1 hover:bg-slate-100/80 rounded text-slate-400 hover:text-slate-700 transition-colors"
+                                                >
+                                                  <Edit3 className="h-3 w-3" />
+                                                </button>
+
+                                                <button
+                                                  type="button"
+                                                  title="Move Up"
+                                                  disabled={index === 0}
+                                                  onClick={() => {
+                                                    if (index === 0) return;
+                                                    const currentGlobalIdx = allScopeItems.findIndex(i => i.id === item.id);
+                                                    const targetItem = filteredItems[index - 1];
+                                                    const targetGlobalIdx = allScopeItems.findIndex(i => i.id === targetItem.id);
+                                                    if (currentGlobalIdx !== -1 && targetGlobalIdx !== -1) {
+                                                      const updated = [...allScopeItems];
+                                                      const temp = updated[currentGlobalIdx];
+                                                      updated[currentGlobalIdx] = updated[targetGlobalIdx];
+                                                      updated[targetGlobalIdx] = temp;
+                                                      setProposal(prev => ({
+                                                        ...prev,
+                                                        websiteScope: { ...prev.websiteScope, scopeItems: updated }
+                                                      }));
+                                                    }
+                                                  }}
+                                                  className={`p-1 rounded transition-colors ${
+                                                    index === 0 ? 'text-slate-200 cursor-not-allowed' : 'text-slate-400 hover:bg-slate-100/85 hover:text-slate-700'
+                                                  }`}
+                                                >
+                                                  <ArrowUp className="h-3 w-3" />
+                                                </button>
+
+                                                <button
+                                                  type="button"
+                                                  title="Move Down"
+                                                  disabled={index === filteredItems.length - 1}
+                                                  onClick={() => {
+                                                    if (index === filteredItems.length - 1) return;
+                                                    const currentGlobalIdx = allScopeItems.findIndex(i => i.id === item.id);
+                                                    const targetItem = filteredItems[index + 1];
+                                                    const targetGlobalIdx = allScopeItems.findIndex(i => i.id === targetItem.id);
+                                                    if (currentGlobalIdx !== -1 && targetGlobalIdx !== -1) {
+                                                      const updated = [...allScopeItems];
+                                                      const temp = updated[currentGlobalIdx];
+                                                      updated[currentGlobalIdx] = updated[targetGlobalIdx];
+                                                      updated[targetGlobalIdx] = temp;
+                                                      setProposal(prev => ({
+                                                        ...prev,
+                                                        websiteScope: { ...prev.websiteScope, scopeItems: updated }
+                                                      }));
+                                                    }
+                                                  }}
+                                                  className={`p-1 rounded transition-colors ${
+                                                    index === filteredItems.length - 1 ? 'text-slate-200 cursor-not-allowed' : 'text-slate-400 hover:bg-slate-100/85 hover:text-slate-700'
+                                                  }`}
+                                                >
+                                                  <ArrowDown className="h-3 w-3" />
+                                                </button>
+
+                                                <button
+                                                  type="button"
+                                                  title="Delete"
+                                                  onClick={() => {
+                                                    const updated = allScopeItems.filter(i => i.id !== item.id);
+                                                    setProposal(prev => ({
+                                                      ...prev,
+                                                      websiteScope: { ...prev.websiteScope, scopeItems: updated }
+                                                    }));
+                                                  }}
+                                                  className="p-1 hover:bg-red-50 hover:text-red-500 rounded text-slate-400 transition-colors"
+                                                >
+                                                  <Trash2 className="h-3 w-3" />
+                                                </button>
+                                              </div>
+                                            </div>
+                                          )}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </>
                             );
-                          })}
+                          })()}
                         </div>
                       </div>
                     </div>
@@ -1036,11 +1129,117 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
                     </div>
                   </div>
 
-                  {/* Part D: Section-Level Notes */}
+                  {/* Omnichannel E-Commerce System Settings (Only shown for ecommerce type) */}
+                  {proposal.websiteScope.websiteType === 'ecommerce' && (
+                    <div className="border border-blue-200 rounded-2xl p-5 bg-blue-50/10 space-y-5">
+                      <div>
+                        <h4 className="font-sans font-bold text-blue-800 text-xs tracking-wider uppercase mb-1">
+                          4. Omnichannel E-Commerce Sync & Gateways Configuration
+                        </h4>
+                        <p className="text-[11px] text-slate-500 leading-normal font-sans">
+                          Customize backend Odoo ERP syncing points, checkout payment gateways, and core development technology frameworks directly.
+                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        {/* Odoo synchronization */}
+                        <div className="bg-white border border-slate-200/60 p-4 rounded-xl space-y-3">
+                          <label className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider font-mono">
+                            Odoo ERP Active Sync Targets:
+                          </label>
+                          <div className="space-y-2">
+                            {["Product Catalog", "Real-Time Inventory Status", "Sales Orders Processing", "Customer Profiles", "POS Synchronization", "Multi-Branch Routing"].map((mod) => {
+                              const isChecked = (proposal.websiteScope.ecommerceOdooSyncModules || []).includes(mod);
+                              return (
+                                <label key={mod} className="flex items-center gap-2.5 cursor-pointer text-xs font-sans text-slate-600 select-none">
+                                  <input
+                                    type="checkbox"
+                                    checked={isChecked}
+                                    onChange={() => {
+                                      const cur = proposal.websiteScope.ecommerceOdooSyncModules || [];
+                                      const updated = cur.includes(mod) ? cur.filter(m => m !== mod) : [...cur, mod];
+                                      setProposal(prev => ({ ...prev, websiteScope: { ...prev.websiteScope, ecommerceOdooSyncModules: updated } }));
+                                    }}
+                                    className="h-3.5 w-3.5 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                                  />
+                                  <span>{mod}</span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* Supported checkout payment gateways */}
+                        <div className="bg-white border border-slate-200/60 p-4 rounded-xl space-y-3">
+                          <label className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider font-mono">
+                            Online Gateway Integration Scopes:
+                          </label>
+                          <div className="space-y-2">
+                            {["Credit/Debit Cards", "Cash on Delivery (COD)", "Apple Pay", "Google Pay", "Multi-Currency Routing"].map((gw) => {
+                              const isChecked = (proposal.websiteScope.ecommercePaymentGateways || []).includes(gw);
+                              return (
+                                <label key={gw} className="flex items-center gap-2.5 cursor-pointer text-xs font-sans text-slate-600 select-none">
+                                  <input
+                                    type="checkbox"
+                                    checked={isChecked}
+                                    onChange={() => {
+                                      const cur = proposal.websiteScope.ecommercePaymentGateways || [];
+                                      const updated = cur.includes(gw) ? cur.filter(g => g !== gw) : [...cur, gw];
+                                      setProposal(prev => ({ ...prev, websiteScope: { ...prev.websiteScope, ecommercePaymentGateways: updated } }));
+                                    }}
+                                    className="h-3.5 w-3.5 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                                  />
+                                  <span>{gw}</span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* Tech Stack choice block */}
+                        <div className="bg-white border border-slate-200/60 p-4 rounded-xl space-y-3 md:col-span-2">
+                          <label className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider font-mono mb-1">
+                            Architectural System Blueprint:
+                          </label>
+                          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                            {[
+                              { label: "Frontend", key: "website", options: ["React.js / Next.js", "Vue.js / Nuxt.js", "Pure Static SPA"] },
+                              { label: "Mobile Apps", key: "mobile", options: ["Flutter (Android & iOS)", "React Native", "Native iOS/Android"] },
+                              { label: "Backend API", key: "backend", options: ["Node.js", "Laravel", "Python Django"] },
+                              { label: "Database", key: "database", options: ["PostgreSQL", "MySQL", "MongoDB"] },
+                              { label: "Hosting", key: "hosting", options: ["AWS Cloud", "Azure Cloud", "Google Cloud (GCP)"] }
+                            ].map((s) => (
+                              <div key={s.key} className="flex flex-col gap-1">
+                                <span className="text-[9px] font-bold text-slate-400 uppercase font-sans">{s.label}</span>
+                                <select
+                                  value={(proposal.websiteScope.ecommerceTechStack as any)?.[s.key] || s.options[0]}
+                                  onChange={(e) => {
+                                    const stack = proposal.websiteScope.ecommerceTechStack || {};
+                                    setProposal(prev => ({
+                                      ...prev,
+                                      websiteScope: {
+                                        ...prev.websiteScope,
+                                        ecommerceTechStack: { ...stack, [s.key]: e.target.value }
+                                      }
+                                    }));
+                                  }}
+                                  className="px-2 py-1.5 border border-slate-200 text-xs font-sans text-slate-700 rounded-lg bg-slate-50 focus:outline-hidden"
+                                >
+                                  {s.options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                </select>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Part E: Section-Level Notes */}
                   <div className="border border-slate-200 rounded-2xl p-5 bg-white space-y-4">
                     <div>
                       <h4 className="font-sans font-bold text-slate-800 text-xs tracking-wider uppercase mb-1">
-                        4. Section-Level Details & Boundaries
+                        5. Section-Level Details & Boundaries
                       </h4>
                       <p className="text-[11px] text-slate-400 leading-normal font-sans">
                         Control technical clarity and boundary definitions under separate heads. Unpopulated fields are omitted back-end automatically.
@@ -1111,7 +1310,16 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
                     <div className="px-2 pb-1 bg-slate-100 rounded-md py-1 mb-2">
                       <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Interactive Sitemap Blueprint Overview</span>
                     </div>
-                    <SitemapGenerator scope={proposal.websiteScope} projectName={proposal.clientName} />
+                    <SitemapGenerator 
+                      scope={proposal.websiteScope} 
+                      projectName={proposal.clientName} 
+                      onUpdateScope={(updatedScope) => {
+                        setProposal(prev => ({
+                          ...prev,
+                          websiteScope: updatedScope
+                        }));
+                      }}
+                    />
                   </div>
                 </div>
               )}

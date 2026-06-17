@@ -7,6 +7,7 @@ import React from 'react';
 import { BRANDING_TEMPLATES, WEBSITE_TEMPLATES, DEFAULT_SCOPE_TEMPLATES } from '../staticTemplates';
 import { formatQAR, DEFAULT_BRANDING_MILESTONES, DEFAULT_WEBSITE_MILESTONES, triggerAutomatedFollowUp } from '../proposalUtils';
 import SitemapGenerator from './SitemapGenerator';
+import { groupScopeIntoPages } from '../utils/scopeClassifier';
 import { Check, Bookmark, DollarSign, Calendar, Landmark, BookOpen, Signature, Award, ChevronRight, FileText, Printer, Download, History, RotateCcw, Clock, Sliders, Upload } from 'lucide-react';
 import { Proposal, ProposalHistoryEntry, ProposalStatus } from '../types';
 
@@ -556,19 +557,121 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
     }
   };
 
-  // Pre-calculated page items
-  const pagesList = [
-    { id: "cover", title: "Cover Page" },
-    { id: "toc", title: "Table of Contents" },
-    { id: "objectives", title: "Project Objectives" },
-    { id: "exec_summary", title: "Executive Summary" },
-    { id: "approach_process", title: "Strategic Methodology" },
-    { id: "scope", title: "Detailed Scope of Work" },
-    { id: "timeline", title: "Milestone Deliverables" },
-    { id: "financials", title: "Financial Breakdown" },
-    { id: "acceptance", title: "Service Acceptance" },
-    { id: "thank_you", title: "Official Closing" }
-  ];
+  // Pre-calculated page items dynamically computed based on scope configuration
+  const getPagesDefinition = () => {
+    const list: { id: string; title: string; pageNumStr: string }[] = [
+      { id: "cover", title: "Cover Page", pageNumStr: "01" },
+      { id: "toc", title: "Table of Contents", pageNumStr: "02" },
+      { id: "objectives", title: "Project Objectives", pageNumStr: "03" },
+      { id: "exec_summary", title: "Executive Summary", pageNumStr: "04" },
+      { id: "approach_process", title: "Strategic Methodology", pageNumStr: "05" },
+    ];
+
+    let currentNum = 6;
+
+    if (isBranding) {
+      list.push({ id: "scope_branding", title: "Detailed Scope of Work", pageNumStr: String(currentNum).padStart(2, '0') });
+      currentNum++;
+    } else {
+      // Website has Scope Setup page
+      list.push({ id: "scope_setup", title: "Deliverable Parameters & Stack", pageNumStr: String(currentNum).padStart(2, '0') });
+      currentNum++;
+
+      // Website has Sprints pages combined logically on the same pages
+      const activeItems = (proposal.websiteScope.scopeItems && proposal.websiteScope.scopeItems.filter(item => item.isSelected).length > 0)
+        ? proposal.websiteScope.scopeItems.filter(item => item.isSelected)
+        : DEFAULT_SCOPE_TEMPLATES[proposal.websiteScope.websiteType || 'static'].map(item => ({ ...item, id: Math.random().toString() }));
+      const scopePages = groupScopeIntoPages(activeItems, 3);
+      
+      const group1 = scopePages.slice(0, 2);
+      if (group1.length > 0) {
+        const titles = group1.map(g => {
+          let label = g.categoryTitle;
+          if (g.subPageLabel) {
+            label += ` (${g.subPageLabel.toUpperCase()})`;
+          }
+          return label.replace(" & Functionality", "").replace(" Structure", "");
+        }).join(" & ");
+        list.push({ id: "scope_combined_1", title: `Scope Sprints: ${titles}`, pageNumStr: String(currentNum).padStart(2, '0') });
+        currentNum++;
+      }
+
+      const group2 = scopePages.slice(2, 5);
+      if (group2.length > 0) {
+        const titles = group2.map(g => {
+          let label = g.categoryTitle;
+          if (g.subPageLabel) {
+            label += ` (${g.subPageLabel.toUpperCase()})`;
+          }
+          return label.replace(" & Functionality", "").replace(" Structure", "").replace(" & APIs", "");
+        }).join(", ");
+        list.push({ id: "scope_combined_2", title: `Scope Sprints: ${titles}`, pageNumStr: String(currentNum).padStart(2, '0') });
+        currentNum++;
+      }
+
+      const group3 = scopePages.slice(5);
+      if (group3.length > 0) {
+        const titles = group3.map(g => {
+          let label = g.categoryTitle;
+          if (g.subPageLabel) {
+            label += ` (${g.subPageLabel.toUpperCase()})`;
+          }
+          return label.replace(" & Functionality", "").replace(" Structure", "").replace(" & Operational Delivery", "");
+        }).join(" & ");
+        list.push({ id: "scope_combined_3", title: `Scope Sprints: ${titles}`, pageNumStr: String(currentNum).padStart(2, '0') });
+        currentNum++;
+      }
+
+      // Website has Sitemap Page
+      list.push({ id: "scope_sitemap", title: "Interactive Sitemap Blueprint", pageNumStr: String(currentNum).padStart(2, '0') });
+      currentNum++;
+    }
+
+    list.push({ id: "timeline", title: "Timeline & Delivery Sprints", pageNumStr: String(currentNum).padStart(2, '0') });
+    currentNum++;
+
+    list.push({ id: "financials", title: "Proposal Financials", pageNumStr: String(currentNum).padStart(2, '0') });
+    currentNum++;
+
+    list.push({ id: "acceptance", title: "Acceptance & Authorization", pageNumStr: String(currentNum).padStart(2, '0') });
+    currentNum++;
+
+    list.push({ id: "thank_you", title: "Official Closing", pageNumStr: String(currentNum).padStart(2, '0') });
+
+    return list;
+  };
+
+  const pagesList = getPagesDefinition();
+
+  const getPageNumberById = (id: string) => {
+    const item = pagesList.find(p => p.id === id);
+    return item ? item.pageNumStr : "00";
+  };
+
+  const parseDescription = (desc: string) => {
+    if (!desc) return { main: '', subItems: [] };
+    // If there are bullet characters
+    if (desc.includes('•')) {
+      const parts = desc.split('•').map(p => p.trim()).filter(Boolean);
+      return { main: parts[0], subItems: parts.slice(1) };
+    }
+    // If there are newlines
+    if (desc.includes('\n')) {
+      const parts = desc.split('\n').map(p => p.trim()).filter(Boolean);
+      return { main: parts[0], subItems: parts.slice(1) };
+    }
+    // Triggers that introduce lists
+    const triggers = ["featuring ", "including ", "supporting ", "covering "];
+    for (const trigger of triggers) {
+      if (desc.includes(trigger)) {
+        const splitParts = desc.split(trigger);
+        const main = splitParts[0] + trigger.trim() + ":";
+        const subItems = splitParts[1].split(/,|and/).map(s => s.trim().replace(/^\w/, c => c.toUpperCase())).filter(s => s.length > 2);
+        return { main, subItems };
+      }
+    }
+    return { main: desc, subItems: [] };
+  };
 
   return (
     <div id="document-viewer-wrapper" className="flex flex-col gap-8 w-full max-w-5xl mx-auto py-6">
@@ -1028,7 +1131,7 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
                   </div>
                   <div className="flex-grow border-b border-dashed border-slate-200 mx-4 h-1"></div>
                   <span className="font-mono text-xs text-slate-500">
-                    Page 0{idx + 1}
+                    Page {p.pageNumStr}
                   </span>
                 </div>
               ))}
@@ -1049,24 +1152,47 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
           <ProposalPageHeader proposal={proposal} pageNumber="03" />
 
           <div className="my-auto max-w-xl mx-auto w-full relative z-10">
-            <span className="text-xs font-sans tracking-widest text-blue-600 font-bold uppercase mb-2 block">
+            <span className="text-xs font-sans tracking-widest text-[#B8962E] font-bold uppercase mb-2 block">
               PHASE ZERO
             </span>
             <h2 className="font-serif text-3xl font-bold text-slate-900 mb-2">
-              {templates.objectives.title}
+              Project Objectives
             </h2>
-            <p className="font-serif italic text-slate-800 mb-8 border-b border-blue-100 pb-4 text-sm">
-              {templates.objectives.subtitle}
+            <p className="font-serif italic text-slate-800 mb-6 border-b border-light-100 pb-4 text-sm">
+              Aligning our engineering standards with your long-term business roadmap.
             </p>
 
-            <div className="flex flex-col gap-6">
-              {templates.objectives.content.map((p, idx) => (
-                <div key={idx} className="flex gap-4">
-                  <div className="h-6 w-6 rounded-full bg-blue-50 flex items-center justify-center shrink-0 mt-0.5">
-                    <Award className="h-3.5 w-3.5 text-blue-600" />
-                  </div>
-                  <p className="text-sm text-slate-600 leading-relaxed font-sans">
-                    {p}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {[
+                {
+                  icon: "🎯",
+                  text: "To architect a fast, accessible, responsive web platform that merges your business priorities with exceptional user journeys."
+                },
+                {
+                  icon: "📐",
+                  text: "To design intuitive information architecture to optimise user conversion rates, newsletter signups, and service discovery."
+                },
+                {
+                  icon: "📈",
+                  text: "To establish a technically sound, SEO-primed base structure that can scale with your organisation's future growth and product lanes."
+                }
+              ].map((obj, idx) => (
+                <div 
+                  key={idx}
+                  style={{
+                    backgroundColor: '#fafaf8',
+                    borderLeft: '3px solid #B8962E',
+                    borderRadius: '0 8px 8px 0',
+                    padding: '14px 18px',
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '12px',
+                    boxSizing: 'border-box'
+                  }}
+                >
+                  <span style={{ fontSize: '18px', lineHeight: '1', marginTop: '2px' }}>{obj.icon}</span>
+                  <p style={{ fontSize: '11.5px', color: '#4b5563', lineHeight: '1.55', margin: '0' }}>
+                    <strong style={{ color: '#1a2744' }}>Objective:</strong> {obj.text}
                   </p>
                 </div>
               ))}
@@ -1087,31 +1213,71 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
           <ProposalPageHeader proposal={proposal} pageNumber="04" />
 
           <div className="my-auto max-w-xl mx-auto w-full relative z-10">
-            <span className="text-xs font-sans tracking-widest text-blue-600 font-bold uppercase mb-2 block">
+            <span className="text-xs font-sans tracking-widest text-[#B8962E] font-bold uppercase mb-2 block">
               THE OPPORTUNITY
             </span>
             <h2 className="font-serif text-3xl font-bold text-slate-900 mb-6">
               Executive Proposal Summary
             </h2>
             
-            <p className="text-sm text-slate-600 leading-relaxed font-sans mb-8">
+            <p className="text-xs text-slate-600 leading-relaxed font-sans mb-6">
               We appreciate the opportunity to collaborate with <strong>{proposal.clientName}</strong> on this commercial initiative. Guided by your operational boundaries and our high-performance technical frameworks, we have drafted a streamlined strategy designed to create tangible, lasting market differentiation.
             </p>
 
-            <div className="bg-slate-50 border-l-4 border-blue-600 p-6 rounded-r-xl shadow-xs">
-              <p className="text-[10px] font-mono font-bold text-blue-600 tracking-wider uppercase mb-2">
-                PROJECT CLARIFICATIONS
-              </p>
-              <h4 className="font-serif font-bold text-slate-900 text-sm mb-3">
-                Key Business Intent & Desired Outcome
-              </h4>
-              <p className="text-xs text-slate-600 leading-relaxed font-sans font-medium italic">
-                "{proposal.briefDescription || "A bespoke production targeting the launch and alignment of core structural solutions matching operational timelines."}"
+            {/* Navy Callout Block */}
+            <div style={{ backgroundColor: '#1a2744', borderRadius: '10px', padding: '24px 32px', textAlign: 'center', marginBottom: '24px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
+              <span style={{ display: 'block', fontSize: '10px', letterSpacing: '0.15em', color: '#B8962E', fontWeight: 'bold', marginBottom: '8px' }}>
+                KEY BUSINESS INTENT & DESIRED OUTCOME
+              </span>
+              <p style={{ color: '#ffffff', fontSize: '16px', fontStyle: 'italic', margin: '0', lineHeight: '1.5', fontFamily: 'serif' }}>
+                "{proposal.briefDescription || "An interactive, double-language responsive corporate portal built with high speed CMS and custom plugins."}"
               </p>
             </div>
 
-            <p className="text-xs text-slate-400 mt-8 leading-relaxed font-sans border-t border-slate-100 pt-4">
-              *The above descriptions serve as the strict operational limits for product sprints. Any additional capabilities discussed outside this parameter will follow standard change control protocols.
+            {/* Why This Matters Flow */}
+            <div style={{ marginTop: '20px' }}>
+              <span style={{ fontSize: '10px', fontFamily: 'sans-serif', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#B8962E', fontWeight: 'bold', display: 'block', marginBottom: '10px' }}>
+                WHY THIS MATTERS
+              </span>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+                {[
+                  {
+                    icon: "⚡",
+                    title: "Performance",
+                    desc: "High-speed rendering for superior user retention & conversion."
+                  },
+                  {
+                    icon: "🧱",
+                    title: "Scalability",
+                    desc: "Robust architecture ready to grow with your roadmap."
+                  },
+                  {
+                    icon: "🌐",
+                    title: "Market Reach",
+                    desc: "Seamless dual-language indexing for global audience."
+                  }
+                ].map((col, idx) => (
+                  <div
+                    key={idx}
+                    style={{
+                      backgroundColor: '#fafaf8',
+                      border: '1px solid #e0ddd5',
+                      borderRadius: '8px',
+                      padding: '12px 14px',
+                      textAlign: 'left',
+                      boxSizing: 'border-box'
+                    }}
+                  >
+                    <div style={{ fontSize: '18px', marginBottom: '4px' }}>{col.icon}</div>
+                    <h4 style={{ fontSize: '11px', fontWeight: 'bold', color: '#1a2744', marginBottom: '2px' }}>{col.title}</h4>
+                    <p style={{ fontSize: '9.5px', color: '#4b5563', lineHeight: '1.35', margin: '0' }}>{col.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <p className="text-[10px] text-slate-400 mt-6 leading-relaxed font-sans border-t border-slate-100 pt-3">
+              *The above objectives serve as the strict operational boundaries for product sprint delivery tracks.
             </p>
           </div>
 
@@ -1173,26 +1339,25 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
           <ProposalPageFooter proposal={proposal} pageNumber="05" />
         </div>
 
-        {/* --- PAGE 6: DETAILED SCOPE OF WORK --- */}
-        <div id="page-6-scope" className="proposal-page relative flex flex-col justify-between overflow-hidden">
-          {/* Background Watermark */}
-          <ProposalWatermark proposal={proposal} />
-          <ProposalCustomLetterheadBackground proposal={proposal} />
+        {isBranding ? (
+          /* BRANDING SCOPE SHEET - SINGLE COVER-TO-COVER A4 SHEET */
+          <div id={`page-${getPageNumberById("scope_branding")}-scope-branding`} className="proposal-page relative flex flex-col justify-between overflow-hidden">
+            {/* Background Watermark */}
+            <ProposalWatermark proposal={proposal} />
+            <ProposalCustomLetterheadBackground proposal={proposal} />
 
-          {/* Top Letterhead Header */}
-          <ProposalPageHeader proposal={proposal} pageNumber="06" />
+            {/* Top Letterhead Header */}
+            <ProposalPageHeader proposal={proposal} pageNumber={getPageNumberById("scope_branding")} />
 
-          <div className="my-auto w-full relative z-10">
-            <div className="max-w-2xl mx-auto">
-              <span className="text-xs font-sans tracking-widest text-[#d3af00] font-bold uppercase mb-2 block text-center">
-                DELIVERABLE DETAILS
-              </span>
-              <h2 className="font-serif text-3xl font-bold text-slate-900 mb-6 tracking-tight text-center">
-                Scope of Work Definition
-              </h2>
-
-              {isBranding ? (
-                /* BRANDING SCOPE */
+            <div className="my-auto w-full relative z-10">
+              <div className="max-w-2xl mx-auto">
+                <span className="text-xs font-sans tracking-widest text-[#d3af00] font-bold uppercase mb-2 block text-center">
+                  DELIVERABLE DETAILS
+                </span>
+                <h2 className="font-serif text-3xl font-bold text-slate-900 mb-6 tracking-tight text-center">
+                  Scope of Work Definition
+                </h2>
+                
                 <div className="space-y-6">
                   <p className="text-xs text-slate-500 font-sans text-center max-w-md mx-auto mb-4">
                     The requested assets below comprise the complete target design delivery sheet. Undisplayed components represent out-of-scope elements.
@@ -1205,6 +1370,7 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
                         return (
                           <div 
                             key={key} 
+                            style={{ height: "48px" }}
                             className={`p-3 border rounded-xl flex items-center gap-3 transition-all ${
                               isSelected 
                                 ? 'bg-[#d3af00]/10 border-[#d3af00]/30 text-slate-800' 
@@ -1216,7 +1382,7 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
                             }`}>
                               <Check className="h-3 w-3" />
                             </div>
-                            <span className="font-sans font-semibold text-[13px]">
+                            <span className="font-sans font-semibold text-[12.5px] truncate">
                               {wordFormatted}
                             </span>
                           </div>
@@ -1235,41 +1401,128 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
                     </div>
                   )}
                 </div>
-              ) : (
-                /* WEBSITE SCOPE + SITEMAP + DETAILED DELIVERABLES */
-                <div className="space-y-4">
-                  {/* Parameter badges */}
-                  <div className="bg-blue-50/40 p-3 border border-blue-100 rounded-xl grid grid-cols-3 gap-3 text-center">
+              </div>
+            </div>
+
+            {/* Footer */}
+            <ProposalPageFooter proposal={proposal} pageNumber={getPageNumberById("scope_branding")} />
+          </div>
+        ) : (
+          /* WEBSITE SCOPE - MULTI-PAGE FLOW WITH AUTOMATED PAGINATION */
+          <>
+            {/* 1. Scope Setup & Parameters & Tech Stack Page */}
+            <div id={`page-${getPageNumberById("scope_setup")}-scope-setup`} className="proposal-page relative flex flex-col justify-between overflow-hidden" style={{ boxSizing: 'border-box' }}>
+              <ProposalWatermark proposal={proposal} />
+              <ProposalCustomLetterheadBackground proposal={proposal} />
+              <ProposalPageHeader proposal={proposal} pageNumber={getPageNumberById("scope_setup")} />
+
+              <div className="my-auto w-full relative z-10">
+                <div className="max-w-2xl mx-auto space-y-4">
+                  {/* Page header */}
+                  <div className="text-center">
+                    <span style={{ display: 'block', fontSize: '10px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#B8962E', fontWeight: 'bold' }}>
+                      DELIVERABLE DETAILS
+                    </span>
+                    <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#1a2744', marginTop: '2px', fontFamily: 'serif' }}>
+                      Scope & Tech Specifications
+                    </h2>
+                    <p style={{ fontSize: '11px', color: '#4b5563', marginTop: '2px', maxWidth: '440px', marginLeft: 'auto', marginRight: 'auto' }}>
+                      Overview of core setup parameters, content capacity constraints, integrated frameworks, and client-specific boundary guidelines.
+                    </p>
+                  </div>
+
+                  {/* Stat blocks - 3-column row with uppercase muted label above and large bold value below */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', textAlign: 'center', backgroundColor: '#fafaf8', border: '1px solid #e0ddd5', borderRadius: '8px', padding: '14px' }}>
                     <div>
-                      <span className="text-[9px] uppercase font-mono tracking-wider text-slate-450 block mb-0.5">Page Capacity</span>
-                      <strong className="text-sm text-blue-800 font-bold font-sans">{proposal.websiteScope.totalPages} Templates</strong>
+                      <span style={{ display: 'block', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.12em', color: '#9ca3af', fontWeight: 'bold', marginBottom: '4px' }}>Page Capacity</span>
+                      <strong style={{ display: 'block', fontSize: '18px', fontWeight: 'bold', color: '#1a2744' }}>{proposal.websiteScope.totalPages} Templates</strong>
                     </div>
                     <div>
-                      <span className="text-[9px] uppercase font-mono tracking-wider text-slate-450 block mb-0.5">Language Profile</span>
-                      <strong className="text-sm text-blue-800 font-bold font-sans truncate block">{proposal.websiteScope.languages || "English"}</strong>
+                      <span style={{ display: 'block', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.12em', color: '#9ca3af', fontWeight: 'bold', marginBottom: '4px' }}>Language Profile</span>
+                      <strong style={{ display: 'block', fontSize: '18px', fontWeight: 'bold', color: '#1a2744' }}>{proposal.websiteScope.languages || "English"}</strong>
                     </div>
                     <div>
-                      <span className="text-[9px] uppercase font-mono tracking-wider text-slate-450 block mb-0.5">CMS Architecture</span>
-                      <strong className="text-sm text-blue-800 font-bold font-sans truncate block uppercase">{proposal.websiteScope.cmsType}</strong>
+                      <span style={{ display: 'block', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.12em', color: '#9ca3af', fontWeight: 'bold', marginBottom: '4px' }}>CMS Architecture</span>
+                      <strong style={{ display: 'block', fontSize: '18px', fontWeight: 'bold', color: '#1a2744', textTransform: 'uppercase' }}>{proposal.websiteScope.cmsType}</strong>
                     </div>
                   </div>
 
-                  {/* Selected Deliverables List */}
-                  <div className="space-y-1.5">
-                    <span className="text-[9.5px] uppercase font-bold font-sans tracking-widest text-[#d3af00] block mb-1.5">
-                      Included Scope Sprints
-                    </span>
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-2 max-h-[190px] overflow-y-auto pr-1">
-                      {((proposal.websiteScope.scopeItems && proposal.websiteScope.scopeItems.filter(item => item.isSelected).length > 0)
-                        ? proposal.websiteScope.scopeItems.filter(item => item.isSelected)
-                        : DEFAULT_SCOPE_TEMPLATES[proposal.websiteScope.websiteType || 'static'].slice(0, 6)
-                      ).map((item, idx) => (
-                        <div key={(item as any).id || idx} className="flex gap-2 items-start border-b border-slate-100 pb-1.5">
-                          <Check className="h-3 w-3 text-blue-600 mt-0.5 shrink-0" />
-                          <div>
-                            <span className="text-[11px] font-bold text-slate-800 block leading-tight">{item.title}</span>
-                            <span className="text-[9.5px] text-slate-500 font-sans block leading-normal mt-0.5">{item.description}</span>
-                          </div>
+                  {/* Omnichannel E-Commerce Specifications Summary */}
+                  {proposal.websiteScope.websiteType === 'ecommerce' && (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', backgroundColor: '#fafaf8', border: '1px solid #e0ddd5', borderRadius: '8px', padding: '14px' }}>
+                      {/* Column 1: Odoo ERP Sync Targets */}
+                      <div>
+                        <div style={{ marginBottom: '8px' }}>
+                          <span style={{ display: 'block', fontSize: '10px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#B8962E', fontWeight: 'bold' }}>
+                            INTEGRATION PIPELINES
+                          </span>
+                          <h4 style={{ fontSize: '12px', fontWeight: 'bold', color: '#1a2744', marginTop: '2px' }}>
+                            Odoo ERP Sync Targets
+                          </h4>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          {(proposal.websiteScope.ecommerceOdooSyncModules && proposal.websiteScope.ecommerceOdooSyncModules.length > 0
+                            ? proposal.websiteScope.ecommerceOdooSyncModules
+                            : ["Product Catalog", "Real-Time Inventory Status", "Sales Orders Processing", "Customer Profiles"]
+                          ).map((mod) => (
+                            <div key={mod} style={{ display: 'flex', alignItems: 'flex-start', gap: '6px', fontSize: '10.5px', color: '#4b5563' }}>
+                              <span style={{ color: '#B8962E', fontWeight: 'bold' }}>✓</span>
+                              <span>{mod}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Column 2: Payment Gateway Scopes */}
+                      <div>
+                        <div style={{ marginBottom: '8px' }}>
+                          <span style={{ display: 'block', fontSize: '10px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#B8962E', fontWeight: 'bold' }}>
+                            TRANSACTION GATEWAYS
+                          </span>
+                          <h4 style={{ fontSize: '12px', fontWeight: 'bold', color: '#1a2744', marginTop: '2px' }}>
+                            Payment Gateway Scopes
+                          </h4>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          {(proposal.websiteScope.ecommercePaymentGateways && proposal.websiteScope.ecommercePaymentGateways.length > 0
+                            ? proposal.websiteScope.ecommercePaymentGateways
+                            : ["Credit/Debit Cards", "Cash on Delivery (COD)"]
+                          ).map((gw) => (
+                            <div key={gw} style={{ display: 'flex', alignItems: 'flex-start', gap: '6px', fontSize: '10.5px', color: '#4b5563' }}>
+                              <span style={{ color: '#B8962E', fontWeight: 'bold' }}>✓</span>
+                              <span>{gw}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Tech stack: display as a single-row grid of labelled badges, one per technology layer */}
+                  <div style={{ border: '1px solid #e0ddd5', borderRadius: '8px', backgroundColor: '#fafaf8', padding: '14px' }}>
+                    <div style={{ marginBottom: '8px', textAlign: 'left' }}>
+                      <span style={{ display: 'block', fontSize: '10px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#B8962E', fontWeight: 'bold' }}>
+                        SYSTEM INFRASTRUCTURE
+                      </span>
+                      <h4 style={{ fontSize: '12px', fontWeight: 'bold', color: '#1a2744', marginTop: '2px' }}>
+                        Provisioned Container Technology Stack
+                      </h4>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '10px' }}>
+                      {[
+                        { label: "Frontend", val: proposal.websiteScope.ecommerceTechStack?.website || "React / Next.js" },
+                        { label: "Mobile Apps", val: proposal.websiteScope.ecommerceTechStack?.mobile || "Flutter (iOS/Android)" },
+                        { label: "Backend API", val: proposal.websiteScope.ecommerceTechStack?.backend || "Node.js" },
+                        { label: "Database", val: proposal.websiteScope.ecommerceTechStack?.database || "PostgreSQL" },
+                        { label: "Hosting", val: proposal.websiteScope.ecommerceTechStack?.hosting || "AWS Cloud" }
+                      ].map((stackIdx) => (
+                        <div key={stackIdx.label} style={{ backgroundColor: '#ffffff', border: '1px solid #e0ddd5', borderRadius: '6px', padding: '8px', textAlign: 'center', boxSizing: 'border-box' }}>
+                          <span style={{ display: 'block', fontSize: '8px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#B8962E', fontWeight: 'bold' }}>
+                            {stackIdx.label}
+                          </span>
+                          <span style={{ display: 'block', fontSize: '10.5px', fontWeight: 'bold', color: '#1a2744', marginTop: '4px', wordBreak: 'break-word', lineHeight: '1.2' }}>
+                            {stackIdx.val}
+                          </span>
                         </div>
                       ))}
                     </div>
@@ -1277,21 +1530,21 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
 
                   {/* Section-Level Notes & Boundaries Grid */}
                   {proposal.websiteScope.scopeNotes && (
-                    <div className="grid grid-cols-2 gap-3.5 border-t border-slate-150 pt-3">
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                       {/* Project Notes & Client Requirements side by side */}
                       {(proposal.websiteScope.scopeNotes.notes || proposal.websiteScope.scopeNotes.requirements) && (
-                        <div className="bg-slate-50 border border-slate-150 p-2.5 rounded-lg">
-                          <span className="text-[9px] uppercase font-bold font-sans tracking-wider text-slate-500 block mb-1">
-                            Specific Deliverables & Requirements
+                        <div style={{ backgroundColor: '#fafaf8', border: '1px solid #e0ddd5', borderRadius: '8px', padding: '14px', textAlign: 'left' }}>
+                          <span style={{ display: 'block', fontSize: '10px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#B8962E', fontWeight: 'bold', marginBottom: '6px' }}>
+                            Specific Deliverables & Directions
                           </span>
                           {proposal.websiteScope.scopeNotes.notes && (
-                            <p className="text-[10px] text-slate-700 italic font-sans mb-1 leading-normal">
-                              <strong>Notes:</strong> {proposal.websiteScope.scopeNotes.notes}
+                            <p style={{ fontSize: '10px', color: '#4b5563', lineHeight: '1.4', margin: '0 0 6px 0' }}>
+                              <strong style={{ color: '#1a2744' }}>Notes:</strong> {proposal.websiteScope.scopeNotes.notes}
                             </p>
                           )}
                           {proposal.websiteScope.scopeNotes.requirements && (
-                            <p className="text-[10px] text-slate-700 font-sans leading-normal">
-                              <strong>Client Directs:</strong> {proposal.websiteScope.scopeNotes.requirements}
+                            <p style={{ fontSize: '10px', color: '#4b5563', lineHeight: '1.4', margin: '0' }}>
+                              <strong style={{ color: '#1a2744' }}>Client Directs:</strong> {proposal.websiteScope.scopeNotes.requirements}
                             </p>
                           )}
                         </div>
@@ -1299,104 +1552,594 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
 
                       {/* Exclusions & Technical Clarifications side by side */}
                       {(proposal.websiteScope.scopeNotes.exclusions || proposal.websiteScope.scopeNotes.clarifications) && (
-                        <div className="bg-red-50/30 border border-red-100 p-2.5 rounded-lg">
-                          <span className="text-[9px] uppercase font-bold text-red-700 tracking-wider block mb-1">
+                        <div style={{ backgroundColor: '#fafaf8', border: '1px solid #e0ddd5', borderRadius: '8px', padding: '14px', textAlign: 'left' }}>
+                          <span style={{ display: 'block', fontSize: '10px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#B8962E', fontWeight: 'bold', marginBottom: '6px' }}>
                             Technical Constraints & Boundaries
                           </span>
                           {proposal.websiteScope.scopeNotes.exclusions && (
-                            <p className="text-[10px] text-slate-750 font-sans mb-1 leading-normal">
-                              <strong className="text-red-700">Exclusions:</strong> {proposal.websiteScope.scopeNotes.exclusions}
+                            <p style={{ fontSize: '10px', color: '#4b5563', lineHeight: '1.4', margin: '0 0 6px 0' }}>
+                              <strong style={{ color: '#B8962E' }}>Exclusions:</strong> {proposal.websiteScope.scopeNotes.exclusions}
                             </p>
                           )}
                           {proposal.websiteScope.scopeNotes.clarifications && (
-                            <p className="text-[10px] text-slate-755 font-sans leading-normal">
-                              <strong>Clarifications:</strong> {proposal.websiteScope.scopeNotes.clarifications}
+                            <p style={{ fontSize: '10px', color: '#4b5563', lineHeight: '1.4', margin: '0' }}>
+                              <strong style={{ color: '#1a2744' }}>Clarifications:</strong> {proposal.websiteScope.scopeNotes.clarifications}
                             </p>
                           )}
                         </div>
                       )}
                     </div>
                   )}
-
-                  {/* Built sitemap visual */}
-                  <div className="mt-1 border-t border-slate-100 pt-3.5 origin-top">
-                    <span className="text-[9px] uppercase font-mono tracking-widest text-slate-400 block mb-1">
-                      Visual Map Reference:
-                    </span>
-                    <SitemapGenerator scope={proposal.websiteScope} projectName={proposal.clientName} />
-                  </div>
                 </div>
-              )}
-            </div>
-          </div>
+              </div>
 
-          {/* Footer */}
-          <ProposalPageFooter proposal={proposal} pageNumber="06" />
-        </div>
+              <ProposalPageFooter proposal={proposal} pageNumber={getPageNumberById("scope_setup")} />
+            </div>
+
+            {/* 2. Custom Scope Sprint Pages (Combined statically into 3 structured high-density pages to avoid truncation) */}
+            {(() => {
+              const pNumber1 = getPageNumberById("scope_combined_1");
+              const pNumber2 = getPageNumberById("scope_combined_2");
+              const pNumber3 = getPageNumberById("scope_combined_3");
+
+              return (
+                <>
+                  {/* Page 7: Scope Page 1 */}
+                  <div id={`page-${pNumber1}-scope-combined-1`} className="proposal-page relative flex flex-col justify-between overflow-hidden" style={{ boxSizing: 'border-box' }}>
+                    <ProposalWatermark proposal={proposal} />
+                    <ProposalCustomLetterheadBackground proposal={proposal} />
+                    <ProposalPageHeader proposal={proposal} pageNumber={pNumber1} />
+
+                    <div className="my-auto w-full relative z-10 py-1" style={{ padding: '0 24px', boxSizing: 'border-box' }}>
+                      <div className="max-w-2xl mx-auto" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                        
+                        <div style={{ textAlign: 'center', borderBottom: '1px solid #e0ddd5', paddingBottom: '8px', marginBottom: '8px' }}>
+                          <span style={{ display: 'block', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#B8962E', fontWeight: 'bold' }}>
+                            DELIVERABLE TRACK
+                          </span>
+                          <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#1a2744', marginTop: '2px', fontFamily: 'serif' }}>
+                            Foundational Architecture & Interface Framework
+                          </h2>
+                        </div>
+
+                        {/* SECTION 01 */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          <div style={{ borderLeft: '3px solid #B8962E', paddingLeft: '10px', marginBottom: '4px', textAlign: 'left' }}>
+                            <span style={{ display: 'block', fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#B8962E', fontWeight: 'bold' }}>
+                              SECTION 01
+                            </span>
+                            <h3 style={{ fontSize: '13px', fontWeight: 'bold', color: '#1a2744', marginTop: '1px', fontFamily: 'serif' }}>
+                              Core Website Structure
+                            </h3>
+                          </div>
+
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                            <div style={{ backgroundColor: '#ffffff', border: '1px solid #e0ddd5', borderRadius: '8px', padding: '14px 16px', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
+                              <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#1a2744', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <span style={{ color: '#B8962E', fontWeight: 'bold' }}>✓</span> Omnichannel E-Commerce Web Storefront
+                              </h4>
+                              <p style={{ fontSize: '11.5px', color: '#4b5563', lineHeight: '1.55', margin: '0' }}>
+                                Fully responsive, optimised React.js/Next.js store featuring product catalogs, advanced search, multi-branch inventory visibility, and seamless checkout funnels integrated with Odoo ERP.
+                              </p>
+                            </div>
+
+                            <div style={{ backgroundColor: '#ffffff', border: '1px solid #e0ddd5', borderRadius: '8px', padding: '14px 16px', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
+                              <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#1a2744', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <span style={{ color: '#B8962E', fontWeight: 'bold' }}>✓</span> Bilingual iOS & Android Customer Mobile Application
+                              </h4>
+                              <p style={{ fontSize: '11.5px', color: '#4b5563', lineHeight: '1.55', margin: '0' }}>
+                                Bilingual (English & Arabic) native mobile apps with secure profile management, address books, saved card vaults, real-time order tracking, and push notification systems.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* SECTION 02 */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          <div style={{ borderLeft: '3px solid #B8962E', paddingLeft: '10px', marginBottom: '4px', textAlign: 'left' }}>
+                            <span style={{ display: 'block', fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#B8962E', fontWeight: 'bold' }}>
+                              SECTION 02
+                            </span>
+                            <h3 style={{ fontSize: '13px', fontWeight: 'bold', color: '#1a2744', marginTop: '1px', fontFamily: 'serif' }}>
+                              Features & Functionality (Part A)
+                            </h3>
+                          </div>
+
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                            <div style={{ backgroundColor: '#ffffff', border: '1px solid #e0ddd5', borderRadius: '8px', padding: '14px 16px', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
+                              <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#1a2744', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <span style={{ color: '#B8962E', fontWeight: 'bold' }}>✓</span> Real-Time Driver Delivery Tracking Application
+                              </h4>
+                              <p style={{ fontSize: '11.5px', color: '#4b5563', lineHeight: '1.55', margin: '0' }}>
+                                Interactive map-driven mobile application for delivery agents offering instant routing directions, status tags, customer confirmations, and digital proof-of-delivery capture.
+                              </p>
+                            </div>
+
+                            <div style={{ backgroundColor: '#ffffff', border: '1px solid #e0ddd5', borderRadius: '8px', padding: '14px 16px', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
+                              <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#1a2744', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <span style={{ color: '#B8962E', fontWeight: 'bold' }}>✓</span> Centralised Admin Management Portal
+                              </h4>
+                              <p style={{ fontSize: '11.5px', color: '#4b5563', lineHeight: '1.55', margin: '0' }}>
+                                A command centre dashboard displaying sales analytics, revenue reports, branch performances, product catalog controls, staff role permissions, and customer management tools.
+                              </p>
+                            </div>
+
+                            <div style={{ backgroundColor: '#ffffff', border: '1px solid #e0ddd5', borderRadius: '8px', padding: '14px 16px', display: 'flex', flexDirection: 'column', boxSizing: 'border-box', gridColumn: 'span 2' }}>
+                              <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#1a2744', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <span style={{ color: '#B8962E', fontWeight: 'bold' }}>✓</span> Dynamic Multi-Branch Inventory Control
+                              </h4>
+                              <p style={{ fontSize: '11.5px', color: '#4b5563', lineHeight: '1.55', margin: '0' }}>
+                                Automated routing that geolocates buyers, runs stock checks at nearest fulfilment centres, and routes orders to the closest available branch for fastest delivery.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                      </div>
+                    </div>
+
+                    {/* Footer Footnote */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '9px', fontFamily: 'monospace', color: '#9ca3af', borderTop: '1px solid #e0ddd5', padding: '8px 24px 0 24px', marginTop: 'auto', width: '100%', boxSizing: 'border-box' }}>
+                      <span>* Fully authorised work package modules</span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        Continued on Page 8 <ChevronRight style={{ width: '10px', height: '10px' }} />
+                      </span>
+                    </div>
+
+                    <ProposalPageFooter proposal={proposal} pageNumber={pNumber1} />
+                  </div>
+
+                  {/* Page 8: Scope Page 2 */}
+                  <div id={`page-${pNumber2}-scope-combined-2`} className="proposal-page relative flex flex-col justify-between overflow-hidden" style={{ boxSizing: 'border-box' }}>
+                    <ProposalWatermark proposal={proposal} />
+                    <ProposalCustomLetterheadBackground proposal={proposal} />
+                    <ProposalPageHeader proposal={proposal} pageNumber={pNumber2} />
+
+                    <div className="my-auto w-full relative z-10 py-1" style={{ padding: '0 24px', boxSizing: 'border-box' }}>
+                      <div className="max-w-2xl mx-auto" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                        
+                        <div style={{ textAlign: 'center', borderBottom: '1px solid #e0ddd5', paddingBottom: '8px', marginBottom: '8px' }}>
+                          <span style={{ display: 'block', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#B8962E', fontWeight: 'bold' }}>
+                            DELIVERABLE TRACK
+                          </span>
+                          <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#1a2744', marginTop: '2px', fontFamily: 'serif' }}>
+                            Advanced Systems, Service Gateways & Analytics
+                          </h2>
+                        </div>
+
+                        {/* SECTION 03 */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          <div style={{ borderLeft: '3px solid #B8962E', paddingLeft: '10px', marginBottom: '4px', textAlign: 'left' }}>
+                            <span style={{ display: 'block', fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#B8962E', fontWeight: 'bold' }}>
+                              SECTION 03
+                            </span>
+                            <h3 style={{ fontSize: '13px', fontWeight: 'bold', color: '#1a2744', marginTop: '1px', fontFamily: 'serif' }}>
+                              Features & Functionality (Part B)
+                            </h3>
+                          </div>
+
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                            <div style={{ backgroundColor: '#ffffff', border: '1px solid #e0ddd5', borderRadius: '8px', padding: '14px 16px', display: 'flex', flexDirection: 'column', boxSizing: 'border-box', gridColumn: 'span 2' }}>
+                              <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#1a2744', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <span style={{ color: '#B8962E', fontWeight: 'bold' }}>✓</span> Targeted Promotions & Promo Code Engine
+                              </h4>
+                              <p style={{ fontSize: '11.5px', color: '#4b5563', lineHeight: '1.55', margin: '0' }}>
+                                Promo code management module supporting fixed discounts, percentages, first-order incentives, category-specific offers, and time-bound flash sale activations.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* SECTION 04 */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          <div style={{ borderLeft: '3px solid #B8962E', paddingLeft: '10px', marginBottom: '4px', textAlign: 'left' }}>
+                            <span style={{ display: 'block', fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#B8962E', fontWeight: 'bold' }}>
+                              SECTION 04
+                            </span>
+                            <h3 style={{ fontSize: '13px', fontWeight: 'bold', color: '#1a2744', marginTop: '1px', fontFamily: 'serif' }}>
+                              Integrations & APIs
+                            </h3>
+                          </div>
+
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                            <div style={{ backgroundColor: '#ffffff', border: '1px solid #e0ddd5', borderRadius: '8px', padding: '14px 16px', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
+                              <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#1a2744', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <span style={{ color: '#B8962E', fontWeight: 'bold' }}>✓</span> Odoo ERP API Integration Gateway
+                              </h4>
+                              <p style={{ fontSize: '11.5px', color: '#4b5563', lineHeight: '1.55', margin: '0' }}>
+                                API-based bidirectional integration between E-Commerce engines and the Client's existing Odoo ERP system, syncing product data, inventory levels, sales orders, and customer profiles in real time.
+                              </p>
+                            </div>
+
+                            <div style={{ backgroundColor: '#ffffff', border: '1px solid #e0ddd5', borderRadius: '8px', padding: '14px 16px', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
+                              <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#1a2744', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <span style={{ color: '#B8962E', fontWeight: 'bold' }}>✓</span> Integrated Payment Processor & COD
+                              </h4>
+                              <p style={{ fontSize: '11.5px', color: '#4b5563', lineHeight: '1.55', margin: '0' }}>
+                                Secure integration of approved credit/debit card payment gateways and optional Cash on Delivery (COD) logic with automated order confirmation and receipt generation.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* SECTION 05 */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          <div style={{ borderLeft: '3px solid #B8962E', paddingLeft: '10px', marginBottom: '4px', textAlign: 'left' }}>
+                            <span style={{ display: 'block', fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#B8962E', fontWeight: 'bold' }}>
+                              SECTION 05
+                            </span>
+                            <h3 style={{ fontSize: '13px', fontWeight: 'bold', color: '#1a2744', marginTop: '1px', fontFamily: 'serif' }}>
+                              Analytics & Tracking
+                            </h3>
+                          </div>
+
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                            <div style={{ backgroundColor: '#ffffff', border: '1px solid #e0ddd5', borderRadius: '8px', padding: '14px 16px', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
+                              <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#1a2744', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <span style={{ color: '#B8962E', fontWeight: 'bold' }}>✓</span> Enterprise-Grade Security & Audit Suite
+                              </h4>
+                              <p style={{ fontSize: '11.5px', color: '#4b5563', lineHeight: '1.55', margin: '0' }}>
+                                Implementation of secure protocol architectures (SSL, JWT auth tokens, granular RBAC permissions, client data encryption) and a compliance audit trail module.
+                              </p>
+                            </div>
+
+                            <div style={{ backgroundColor: '#ffffff', border: '1px solid #e0ddd5', borderRadius: '8px', padding: '14px 16px', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
+                              <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#1a2744', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <span style={{ color: '#B8962E', fontWeight: 'bold' }}>✓</span> High-Availability Database & Cloud Hosting
+                              </h4>
+                              <p style={{ fontSize: '11.5px', color: '#4b5563', lineHeight: '1.55', margin: '0' }}>
+                                Staging and production deployment of Node.js backend pipelines and PostgreSQL/MySQL databases on high-availability AWS or equivalent cloud infrastructure.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                      </div>
+                    </div>
+
+                    {/* Footer Footnote */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '9px', fontFamily: 'monospace', color: '#9ca3af', borderTop: '1px solid #e0ddd5', padding: '8px 24px 0 24px', marginTop: 'auto', width: '100%', boxSizing: 'border-box' }}>
+                      <span>* Fully authorised work package modules</span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        Continued on Page 9 <ChevronRight style={{ width: '10px', height: '10px' }} />
+                      </span>
+                    </div>
+
+                    <ProposalPageFooter proposal={proposal} pageNumber={pNumber2} />
+                  </div>
+
+                  {/* Page 9: Scope Page 3 */}
+                  <div id={`page-${pNumber3}-scope-combined-3`} className="proposal-page relative flex flex-col justify-between overflow-hidden" style={{ boxSizing: 'border-box' }}>
+                    <ProposalWatermark proposal={proposal} />
+                    <ProposalCustomLetterheadBackground proposal={proposal} />
+                    <ProposalPageHeader proposal={proposal} pageNumber={pNumber3} />
+
+                    <div className="my-auto w-full relative z-10 py-1" style={{ padding: '0 24px', boxSizing: 'border-box' }}>
+                      <div className="max-w-2xl mx-auto" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                        
+                        <div style={{ textAlign: 'center', borderBottom: '1px solid #e0ddd5', paddingBottom: '8px', marginBottom: '8px' }}>
+                          <span style={{ display: 'block', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#B8962E', fontWeight: 'bold' }}>
+                            DELIVERABLE TRACK
+                          </span>
+                          <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#1a2744', marginTop: '2px', fontFamily: 'serif' }}>
+                            Operational Handover & Production Standards
+                          </h2>
+                        </div>
+
+                        {/* SECTION 06 */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          <div style={{ borderLeft: '3px solid #B8962E', paddingLeft: '10px', marginBottom: '4px', textAlign: 'left' }}>
+                            <span style={{ display: 'block', fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#B8962E', fontWeight: 'bold' }}>
+                              SECTION 06
+                            </span>
+                            <h3 style={{ fontSize: '13px', fontWeight: 'bold', color: '#1a2744', marginTop: '1px', fontFamily: 'serif' }}>
+                              Custom & Operational Delivery (Part A)
+                            </h3>
+                          </div>
+
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                            <div style={{ backgroundColor: '#ffffff', border: '1px solid #e0ddd5', borderRadius: '8px', padding: '14px 16px', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
+                              <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#1a2744', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <span style={{ color: '#B8962E', fontWeight: 'bold' }}>✓</span> User Guides & Technical Documentation
+                              </h4>
+                              <p style={{ fontSize: '11.5px', color: '#4b5563', lineHeight: '1.55', margin: '0' }}>
+                                Publication of operator user onboarding guides, developer system maps, data dictionaries, API path references, and admin panel walkthrough documentation.
+                              </p>
+                            </div>
+
+                            <div style={{ backgroundColor: '#ffffff', border: '1px solid #e0ddd5', borderRadius: '8px', padding: '14px 16px', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
+                              <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#1a2744', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <span style={{ color: '#B8962E', fontWeight: 'bold' }}>✓</span> Corporate Staff Training & Maintenance Support
+                              </h4>
+                              <p style={{ fontSize: '11.5px', color: '#4b5563', lineHeight: '1.55', margin: '0' }}>
+                                Live interactive training workshops for administrators and branch agents, plus initial post-launch AMC support covering bug resolution and performance monitoring.
+                              </p>
+                            </div>
+
+                            <div style={{ backgroundColor: '#ffffff', border: '1px solid #e0ddd5', borderRadius: '8px', padding: '14px 16px', display: 'flex', flexDirection: 'column', boxSizing: 'border-box', gridColumn: 'span 2' }}>
+                              <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#1a2744', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <span style={{ color: '#B8962E', fontWeight: 'bold' }}>✓</span> Multilingual Language Routing & Translation
+                              </h4>
+                              <p style={{ fontSize: '11.5px', color: '#4b5563', lineHeight: '1.55', margin: '0' }}>
+                                Comprehensive dual-language subfolder routing containing a clean visual menu language switcher to support full English and Arabic content delivery across all pages.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* SECTION 07 */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          <div style={{ borderLeft: '3px solid #B8962E', paddingLeft: '10px', marginBottom: '4px', textAlign: 'left' }}>
+                            <span style={{ display: 'block', fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#B8962E', fontWeight: 'bold' }}>
+                              SECTION 07
+                            </span>
+                            <h3 style={{ fontSize: '13px', fontWeight: 'bold', color: '#1a2744', marginTop: '1px', fontFamily: 'serif' }}>
+                              Custom & Operational Delivery (Part B)
+                            </h3>
+                          </div>
+
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                            <div style={{ backgroundColor: '#ffffff', border: '1px solid #e0ddd5', borderRadius: '8px', padding: '14px 16px', display: 'flex', flexDirection: 'column', boxSizing: 'border-box', gridColumn: 'span 2' }}>
+                              <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#1a2744', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <span style={{ color: '#B8962E', fontWeight: 'bold' }}>✓</span> HubSpot CRM Sync & WhatsApp Live Support
+                              </h4>
+                              <p style={{ fontSize: '11.5px', color: '#4b5563', lineHeight: '1.55', margin: '0' }}>
+                                Dynamic live chat popups linking direct with localised client WhatsApp triggers, paired with secure custom HubSpot CRM pipeline integrations for lead capture and client follow-up automation.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                      </div>
+                    </div>
+
+                    {/* Footer Footnote */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '9px', fontFamily: 'monospace', color: '#9ca3af', borderTop: '1px solid #e0ddd5', padding: '8px 24px 0 24px', marginTop: 'auto', width: '100%', boxSizing: 'border-box' }}>
+                      <span>* Fully authorised work package modules</span>
+                      <span>End of Scope Sprints list</span>
+                    </div>
+
+                    <ProposalPageFooter proposal={proposal} pageNumber={pNumber3} />
+                  </div>
+                </>
+              );
+            })()}
+
+            {/* 3. Dedicated Visual Sitemap Blueprint Page */}
+            <div id={`page-${getPageNumberById("scope_sitemap")}-scope-sitemap`} className="proposal-page relative flex flex-col justify-between overflow-hidden" style={{ boxSizing: 'border-box' }}>
+              <ProposalWatermark proposal={proposal} />
+              <ProposalCustomLetterheadBackground proposal={proposal} />
+              <ProposalPageHeader proposal={proposal} pageNumber={getPageNumberById("scope_sitemap")} />
+
+              <div className="my-auto w-full relative z-10" style={{ padding: '0 20px' }}>
+                <div className="max-w-2xl mx-auto space-y-4">
+                  
+                  {/* Section header styled exactly as specified */}
+                  <div style={{ textAlign: 'center', marginBottom: '8px' }}>
+                    <span style={{ display: 'block', fontSize: '10px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#B8962E', fontWeight: 'bold' }}>
+                      ARCHITECTURAL BLUEPRINT
+                    </span>
+                    <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#1a2744', marginTop: '2px', fontFamily: 'serif' }}>
+                      Sitemap & User Flow Hierarchy
+                    </h2>
+                    <p style={{ fontSize: '11px', color: '#4b5563', marginTop: '2px', maxWidth: '500px', marginLeft: 'auto', marginRight: 'auto' }}>
+                      Detailed sitemap layout depicting page levels, custom form placements, shopping funnels, and supplementary structural links.
+                    </p>
+                  </div>
+
+                  {/* 2-Column Grid of static clean cards matching the layout rules */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', textAlign: 'left' }}>
+                    {[
+                      { id: "1", title: "1. Home Page", description: "Main landing experience, hero section, corporate summary, and core pillars.", children: [] },
+                      { id: "2", title: "2. About Us & Services", description: "Company journey, executive bios, and specialised business offerings page.", children: [] },
+                      { id: "3", title: "3. Contact Us", description: "Direct localisation map, office address coordinates, and active inquiry dispatch form.", children: [] },
+                      { id: "4", title: "4. Media Portfolio", description: "Visual grid with filter categories and touch-responsive lightbox galleries.", children: [] },
+                      { id: "5", title: "5. E-Commerce Product Catalog", description: "Responsive catalog supporting categories, subcategories, custom attributes, filters, search, and sorting.", children: ["Category Filtering Layout", "Advanced Smart Search"] },
+                      { id: "6", title: "6. Product Details & Reviews", description: "Page showcasing variants, multi-image gallery zoom, customer video support, reviews, and question forums.", children: ["Variant Selector Module", "Interactive Visual Gallery Slider"] },
+                      { id: "7", title: "7. Shopping Cart & Checkout", description: "Optimised omnichannel checkout funnel including coupons, shipping rate calculators, and secure gateways.", children: ["Coupon Validation Portal", "Integrated Gateway Handler"] },
+                      { id: "8", title: "8. Real-Time Tracking & Account", description: "Customer accounts listing purchase histories, interactive delivery routes, return requests, and PDF invoices.", children: ["Order Status Dispatcher", "Automated PDF Invoice Printer"] },
+                      { id: "9", title: "9. Admin & Branch Management", description: "Centralised command portal monitoring sales metrics, branch inventory pools, driver assignments, and refunds.", children: [] },
+                    ].map((node) => (
+                      <div 
+                        key={node.id} 
+                        style={{ 
+                          backgroundColor: '#ffffff', 
+                          border: '1px solid #e0ddd5', 
+                          borderRadius: '8px', 
+                          padding: '10px 14px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'space-between',
+                          boxSizing: 'border-box'
+                        }}
+                        className={node.id === "9" ? "col-span-1 md:col-span-2" : ""}
+                      >
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                            <span style={{ display: 'inline-block', width: '3px', height: '10px', backgroundColor: '#B8962E', borderRadius: '1px' }}></span>
+                            <h3 style={{ fontSize: '11.5px', fontWeight: 'bold', color: '#1a2744', margin: 0 }}>
+                              {node.title}
+                            </h3>
+                          </div>
+                          <p style={{ fontSize: '9.5px', color: '#4b5563', lineHeight: '1.4', margin: 0 }}>
+                            {node.description}
+                          </p>
+                          {node.children && node.children.length > 0 && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginTop: '4px' }}>
+                              {node.children.map((child, i) => (
+                                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '9px', color: '#4b5563' }}>
+                                  <span style={{ color: '#B8962E', fontWeight: 'bold' }}>↳</span>
+                                  <span>{child}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Footnote */}
+                  <div style={{ textAlign: 'center', paddingTop: '6px', fontSize: '9.5px', color: '#9ca3af', borderTop: '1px solid #e0ddd5', marginTop: '4px' }}>
+                    * All pages are customisable. Additional sub-pages and structural links can be added upon request.
+                  </div>
+
+                </div>
+              </div>
+
+              <ProposalPageFooter proposal={proposal} pageNumber={getPageNumberById("scope_sitemap")} />
+            </div>
+          </>
+        )}
 
         {/* --- PAGE 7: TIMELINE & MILESTONES --- */}
-        <div id="page-7-timeline" className="proposal-page relative flex flex-col justify-between overflow-hidden">
+        <div id={`page-${getPageNumberById("timeline")}-timeline`} className="proposal-page relative flex flex-col justify-between overflow-hidden" style={{ boxSizing: 'border-box' }}>
           {/* Background Watermark */}
           <ProposalWatermark proposal={proposal} />
           <ProposalCustomLetterheadBackground proposal={proposal} />
 
           {/* Top Letterhead Header */}
-          <ProposalPageHeader proposal={proposal} pageNumber="07" />
+          <ProposalPageHeader proposal={proposal} pageNumber={getPageNumberById("timeline")} />
 
-          <div className="my-auto w-full max-w-xl mx-auto relative z-10">
-            <span className="text-xs font-sans tracking-widest text-[#d3af00] font-bold uppercase mb-2 block">
-              THE MILESTONE HIGHWAYS
-            </span>
-            <h2 className="font-serif text-3xl font-bold text-slate-900 mb-2">
-              Timeline & Delivery Sprints
-            </h2>
-            <p className="font-serif italic text-slate-800 mb-6 border-b border-blue-100 pb-3 text-xs">
-              Project spans a planned duration of exactly <span className="font-bold underline text-blue-600">{proposal.weeks} Weeks</span>.
-            </p>
+          <div className="my-auto w-full relative z-10" style={{ padding: '0 24px', boxSizing: 'border-box' }}>
+            <div className="max-w-2xl mx-auto space-y-4">
+              
+              {/* Existing section header style */}
+              <div style={{ textAlign: 'center', marginBottom: '8px' }}>
+                <span style={{ display: 'block', fontSize: '10px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#B8962E', fontWeight: 'bold' }}>
+                  THE MILESTONE HIGHWAYS
+                </span>
+                <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#1a2744', marginTop: '2px', fontFamily: 'serif' }}>
+                  Timeline & Delivery Sprints
+                </h2>
+              </div>
 
-            <div className="relative border-l border-blue-100 pl-6 ml-3 space-y-6">
-              {proposal.milestones && proposal.milestones.length > 0 ? (
-                proposal.milestones.map((milestone, idx) => (
-                  <div key={milestone.id} className="relative">
-                    {/* Ring indicator */}
-                    <div className="absolute -left-[30px] top-1 bg-white h-4 w-4 rounded-full border-2 border-blue-600 flex items-center justify-center">
-                      <div className="h-1.5 w-1.5 rounded-full bg-blue-600"></div>
-                    </div>
+              {/* Stat block for total duration */}
+              <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+                <span style={{ display: 'block', fontSize: '10px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#9ca3af', fontWeight: 'bold' }}>
+                  TOTAL DURATION
+                </span>
+                <strong style={{ display: 'block', fontSize: '28px', fontWeight: 'bold', color: '#1a2744', marginTop: '2px' }}>
+                  8 WEEKS
+                </strong>
+              </div>
 
-                    <div className="flex flex-col">
-                      <span className="font-mono text-[11px] font-bold text-blue-700 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-sm w-fit mb-1">
-                        {milestone.week}
+              {/* Gantt bar container */}
+              <div style={{ width: '100%' }}>
+                <div style={{ display: 'flex', width: '100%', height: '32px', borderRadius: '6px', overflow: 'hidden', boxSizing: 'border-box', border: '1px solid #e0ddd5', marginBottom: '6px' }}>
+                  {/* Phase 1 (2 weeks = 25%) */}
+                  <div style={{ width: '25%', backgroundColor: '#faeeda', borderRight: '1.5px solid #B8962E', display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box' }}>
+                    <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#1a2744' }}>PH 1</span>
+                  </div>
+                  {/* Phase 2 (3 weeks = 37.5%) */}
+                  <div style={{ width: '37.5%', backgroundColor: '#1a2744', display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box' }}>
+                    <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#ffffff' }}>PH 2</span>
+                  </div>
+                  {/* Phase 3 (2 weeks = 25%) */}
+                  <div style={{ width: '25%', backgroundColor: '#B8962E', display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box' }}>
+                    <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#ffffff' }}>PH 3</span>
+                  </div>
+                  {/* Phase 4 (1 week = 12.5%) */}
+                  <div style={{ width: '12.5%', backgroundColor: '#0f1f3d', display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box' }}>
+                    <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#ffffff' }}>PH 4</span>
+                  </div>
+                </div>
+
+                {/* Week labels */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', width: '100%', textAlign: 'center', marginBottom: '20px' }}>
+                  <span style={{ fontSize: '9px', color: '#9ca3af', fontWeight: 'bold' }}>Week 1</span>
+                  <span style={{ fontSize: '9px', color: '#9ca3af', fontWeight: 'bold' }}>Week 2</span>
+                  <span style={{ fontSize: '9px', color: '#9ca3af', fontWeight: 'bold' }}>Week 3</span>
+                  <span style={{ fontSize: '9px', color: '#9ca3af', fontWeight: 'bold' }}>Week 4</span>
+                  <span style={{ fontSize: '9px', color: '#9ca3af', fontWeight: 'bold' }}>Week 5</span>
+                  <span style={{ fontSize: '9px', color: '#9ca3af', fontWeight: 'bold' }}>Week 6</span>
+                  <span style={{ fontSize: '9px', color: '#9ca3af', fontWeight: 'bold' }}>Week 7</span>
+                  <span style={{ fontSize: '9px', color: '#9ca3af', fontWeight: 'bold' }}>Week 8</span>
+                </div>
+              </div>
+
+              {/* Phase cards list */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {[
+                  {
+                    ph: "PH 1",
+                    title: "Wireframes & Visual Direction",
+                    weeks: "Weeks 1–2",
+                    desc: "Structuring information architecture, customised maps, sitemaps, and core theme approval."
+                  },
+                  {
+                    ph: "PH 2",
+                    title: "Component Engineering & Alpha Development",
+                    weeks: "Weeks 3–5",
+                    desc: "Implementing custom React structures, high-performance layouts, and responsive component code."
+                  },
+                  {
+                    ph: "PH 3",
+                    title: "Plugin Integrations & Content Setup",
+                    weeks: "Weeks 6–7",
+                    desc: "Integrating CMS modules, dynamic blog/careers boards, analytic triggers, and SEO metadata."
+                  },
+                  {
+                    ph: "PH 4",
+                    title: "Quality Assurance, Optimisations & Launch",
+                    weeks: "Week 8",
+                    desc: "Cross-platform speed checks, DNS cutover, staging migration, and direct search engine indexing hooks."
+                  }
+                ].map((phase, i) => (
+                  <div 
+                    key={phase.ph}
+                    style={{ 
+                      display: 'flex', 
+                      alignItems: 'flex-start',
+                      gap: '16px', 
+                      backgroundColor: '#fafaf8', 
+                      border: '1px solid #e0ddd5', 
+                      borderRadius: '8px', 
+                      padding: '14px 18px', 
+                      boxSizing: 'border-box' 
+                    }}
+                  >
+                    {/* Left side: gold phase label + bold navy phase name */}
+                    <div style={{ width: '30%', flexShrink: 0, textAlign: 'left' }}>
+                      <span style={{ display: 'block', fontSize: '10px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#B8962E', fontWeight: 'bold' }}>
+                        {phase.ph}
                       </span>
-                      <h4 className="font-sans font-bold text-slate-800 text-sm">
-                        {milestone.title}
-                      </h4>
-                      <p className="text-xs text-slate-500 leading-normal mt-1.5">
-                        {milestone.description}
+                      <h3 style={{ fontSize: '12px', fontWeight: 'bold', color: '#1a2744', marginTop: '2px', lineHeight: '1.3' }}>
+                        {phase.title}
+                      </h3>
+                    </div>
+                    
+                    {/* Right side: week range in small muted text + description paragraph */}
+                    <div style={{ flexGrow: 1, textAlign: 'left' }}>
+                      <span style={{ display: 'block', fontSize: '9.5px', color: '#9ca3af', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '3px' }}>
+                        {phase.weeks}
+                      </span>
+                      <p style={{ fontSize: '11px', color: '#4b5563', lineHeight: '1.4', margin: 0 }}>
+                        {phase.desc}
                       </p>
                     </div>
                   </div>
-                ))
-              ) : (
-                <p className="text-xs font-sans text-slate-400">No milestones calculated.</p>
-              )}
+                ))}
+              </div>
+
             </div>
           </div>
 
           {/* Footer */}
-          <ProposalPageFooter proposal={proposal} pageNumber="07" />
+          <ProposalPageFooter proposal={proposal} pageNumber={getPageNumberById("timeline")} />
         </div>
 
         {/* --- PAGE 8: FINANCIAL BLUEPRINT --- */}
-        <div id="page-8-financials" className="proposal-page relative flex flex-col justify-between overflow-hidden">
+        <div id={`page-${getPageNumberById("financials")}-financials`} className="proposal-page relative flex flex-col justify-between overflow-hidden">
           {/* Background Watermark */}
           <ProposalWatermark proposal={proposal} />
           <ProposalCustomLetterheadBackground proposal={proposal} />
 
           {/* Top Letterhead Header */}
-          <ProposalPageHeader proposal={proposal} pageNumber="08" />
+          <ProposalPageHeader proposal={proposal} pageNumber={getPageNumberById("financials")} />
 
           <div className="my-auto w-full max-w-xl mx-auto relative z-10">
-            <span className="text-xs font-sans tracking-widest text-blue-600 font-bold uppercase mb-2 block">
+            <span className="text-xs font-sans tracking-widest text-[#B8962E] font-bold uppercase mb-2 block">
               INVESTMENT ALLOCATION
             </span>
             <h2 className="font-serif text-3xl font-bold text-slate-900 mb-6 tracking-tight">
@@ -1456,41 +2199,133 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
             )}
 
             {/* Total Block */}
-            <div className="p-4 bg-blue-50 border border-blue-150 rounded-xl flex items-center justify-between mb-6">
+            <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between mb-4">
               <span className="font-sans font-bold text-slate-800 uppercase text-xs tracking-wider">
                 TOTAL CONTRACT VALUE:
               </span>
-              <strong className="font-serif text-2xl font-bold text-blue-700">
+              <strong className="font-serif text-2xl font-bold text-[#1a2744]">
                 {formatQAR(proposal.totalCost)} QAR
               </strong>
             </div>
 
             {/* Terms text */}
-            <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl text-[11px] font-sans text-slate-500 leading-relaxed">
+            <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-[11px] font-sans text-slate-500 leading-relaxed mb-4">
               <h4 className="font-bold uppercase text-slate-700 tracking-wide mb-1">
                 Payment Terms & Invoicing
               </h4>
               <p className="pr-2">{proposal.paymentTerms}</p>
             </div>
+
+            {/* What Your Investment Covers */}
+            <div style={{ marginBottom: '16px' }}>
+              <span style={{ display: 'block', fontSize: '9.5px', fontFamily: 'sans-serif', letterSpacing: '0.15em', textTransform: 'uppercase', color: '#B8962E', fontWeight: 'bold', marginBottom: '6px' }}>
+                WHAT YOUR INVESTMENT COVERS
+              </span>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
+                {[
+                  { icon: "🎨", title: "UX/UI Design", desc: "Wireframes, visual design, and component architecture" },
+                  { icon: "⚙️", title: "Development", desc: "Full-stack build, integrations, and QA" },
+                  { icon: "🛡️", title: "Support", desc: "3-month maintenance, training, and AMC coverage" }
+                ].map((item, idx) => (
+                  <div
+                    key={idx}
+                    style={{
+                      backgroundColor: '#fafaf8',
+                      border: '1px solid #e0ddd5',
+                      borderRadius: '8px',
+                      padding: '12px 10px',
+                      textAlign: 'center',
+                      boxSizing: 'border-box'
+                    }}
+                  >
+                    <div style={{ fontSize: '15px', marginBottom: '3px' }}>{item.icon}</div>
+                    <h5 style={{ fontSize: '10.5px', fontWeight: 'bold', color: '#1a2744', marginBottom: '2px' }}>{item.title}</h5>
+                    <p style={{ fontSize: '9px', color: '#6b7280', lineHeight: '1.25', margin: '0' }}>{item.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Visual Payment Milestone Strip */}
+            <div>
+              <span style={{ display: 'block', fontSize: '9.5px', fontFamily: 'sans-serif', letterSpacing: '0.15em', textTransform: 'uppercase', color: '#B8962E', fontWeight: 'bold', marginBottom: '6px' }}>
+                MILESTONE INVESTMENT TIMELINE
+              </span>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
+                
+                {/* Milestone 1: First Navy */}
+                <div style={{ 
+                  flex: '1', 
+                  backgroundColor: '#1a2744', 
+                  color: '#ffffff', 
+                  borderRadius: '6px', 
+                  padding: '10px 8px', 
+                  textAlign: 'center', 
+                  boxSizing: 'border-box' 
+                }}>
+                  <div style={{ fontSize: '13px', fontWeight: 'bold' }}>50%</div>
+                  <div style={{ fontSize: '9px', color: '#cbd5e1', textTransform: 'uppercase', fontWeight: 'medium', marginTop: '2px' }}>On Signing</div>
+                </div>
+
+                {/* Arrow */}
+                <div style={{ color: '#B8962E', fontWeight: 'bold', fontSize: '14px' }}>→</div>
+
+                {/* Milestone 2: Gold */}
+                <div style={{ 
+                  flex: '1', 
+                  backgroundColor: '#B8962E', 
+                  color: '#ffffff', 
+                  borderRadius: '6px', 
+                  padding: '10px 8px', 
+                  textAlign: 'center', 
+                  boxSizing: 'border-box' 
+                }}>
+                  <div style={{ fontSize: '13px', fontWeight: 'bold' }}>25%</div>
+                  <div style={{ fontSize: '9px', color: '#ffffff', textTransform: 'uppercase', fontWeight: 'medium', marginTop: '2px' }}>Design Approval</div>
+                </div>
+
+                {/* Arrow */}
+                <div style={{ color: '#B8962E', fontWeight: 'bold', fontSize: '14px' }}>→</div>
+
+                {/* Milestone 3: Second Navy */}
+                <div style={{ 
+                  flex: '1', 
+                  backgroundColor: '#1a2744', 
+                  color: '#ffffff', 
+                  borderRadius: '6px', 
+                  padding: '10px 8px', 
+                  textAlign: 'center', 
+                  boxSizing: 'border-box' 
+                }}>
+                  <div style={{ fontSize: '13px', fontWeight: 'bold' }}>25%</div>
+                  <div style={{ fontSize: '9px', color: '#cbd5e1', textTransform: 'uppercase', fontWeight: 'medium', marginTop: '2px' }}>On Launch</div>
+                </div>
+
+              </div>
+            </div>
           </div>
 
           {/* Footer */}
-          <ProposalPageFooter proposal={proposal} pageNumber="08" />
+          <ProposalPageFooter proposal={proposal} pageNumber={getPageNumberById("financials")} />
         </div>
 
         {/* --- PAGE 9: ACCEPTANCE PAGE --- */}
-        <div id="page-9-acceptance" className="proposal-page relative flex flex-col justify-between overflow-hidden">
+        <div id={`page-${getPageNumberById("acceptance")}-acceptance`} className="proposal-page relative flex flex-col justify-between overflow-hidden">
           {/* Background Watermark */}
           <ProposalWatermark proposal={proposal} />
           <ProposalCustomLetterheadBackground proposal={proposal} />
 
           {/* Top Letterhead Header */}
-          <ProposalPageHeader proposal={proposal} pageNumber="09" />
+          <ProposalPageHeader proposal={proposal} pageNumber={getPageNumberById("acceptance")} />
 
-          <div className="my-auto w-full max-w-xl mx-auto font-sans relative z-10">
-            <span className="text-xs tracking-widest font-sans font-bold text-blue-600 uppercase mb-2 block">
+          {/* Thin full-width navy header band */}
+          <div className="mx-[-20mm] print:mx-[-15mm] bg-[#1a2744] py-1.5 text-center mt-3 mb-5">
+            <span className="text-[10px] font-sans tracking-[0.25em] font-bold text-[#B8962E] block">
               OFFICIAL RATIFICATION
             </span>
+          </div>
+
+          <div className="my-auto w-full max-w-xl mx-auto font-sans relative z-10">
             <h2 className="font-serif text-3xl font-bold text-slate-950 mb-6">
               Acceptance & Authorization
             </h2>
@@ -1538,33 +2373,81 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
           </div>
 
           {/* Footer */}
-          <ProposalPageFooter proposal={proposal} pageNumber="09" />
+          <ProposalPageFooter proposal={proposal} pageNumber={getPageNumberById("acceptance")} />
         </div>
 
         {/* --- PAGE 10: THANK YOU PAGE --- */}
-        <div id="page-10-thanks" className="proposal-page relative flex flex-col justify-between overflow-hidden">
+        <div id={`page-${getPageNumberById("thank_you")}-thanks`} className="proposal-page relative flex flex-col justify-between overflow-hidden">
           {/* Background Watermark */}
           <ProposalWatermark proposal={proposal} />
           <ProposalCustomLetterheadBackground proposal={proposal} />
 
           {/* Top Letterhead Header */}
-          <ProposalPageHeader proposal={proposal} pageNumber="10" />
+          <ProposalPageHeader proposal={proposal} pageNumber={getPageNumberById("thank_you")} />
 
-          <div className="my-auto py-12 text-center max-w-lg mx-auto relative z-10">
-            <h2 className="font-serif italic text-4xl text-[#d3af00] mb-4 block font-extrabold">
+          <div className="my-auto py-12 text-center max-w-lg mx-auto relative z-10" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+            <h2 style={{
+              fontFamily: 'serif',
+              fontSize: '42px',
+              fontWeight: 'bold',
+              color: '#B8962E',
+              margin: '0 0 8px 0',
+              textAlign: 'center'
+            }}>
               Thank You.
             </h2>
-            <p className="font-serif text-xl tracking-tight text-slate-800 mb-6 font-medium">
-              We look forward to creating stellar digital value with your team.
+
+            <p style={{
+              fontSize: '18px',
+              color: '#1a2744',
+              fontStyle: 'normal',
+              fontWeight: '500',
+              margin: '0 0 20px 0',
+              textAlign: 'center'
+            }}>
+              We look forward to creating digital value with your team.
             </p>
-            <div className="w-12 h-0.5 bg-slate-200 mx-auto mb-8 rounded-full"></div>
-            <p className="text-xs text-slate-550 leading-relaxed max-w-sm mx-auto font-sans">
-              For immediate support escalations or procedural assistance, contact us at <span className="text-[#d3af00] font-semibold underline">info@technoastra.com</span> or dial our hotline number <span className="font-semibold text-slate-700">4440 0100</span>.
+
+            <div style={{
+              width: '80px',
+              height: '1px',
+              backgroundColor: '#B8962E',
+              margin: '0 auto 24px auto'
+            }}></div>
+
+            <div style={{
+              backgroundColor: '#fafaf8',
+              border: '1px solid #e0ddd5',
+              borderRadius: '8px',
+              padding: '16px 24px',
+              textAlign: 'center',
+              boxSizing: 'border-box',
+              width: '100%',
+              maxWidth: '380px',
+              marginBottom: '24px'
+            }}>
+              <p style={{ fontSize: '13px', color: '#4b5563', margin: '0', fontWeight: '500', fontFamily: 'sans-serif' }}>
+                <span style={{ color: '#B8962E', fontWeight: 'bold' }}>info@technoastra.com</span>
+                <span style={{ color: '#d1d5db', margin: '0 12px' }}>|</span>
+                <span style={{ color: '#1a2744', fontWeight: 'bold' }}>4440 0100</span>
+              </p>
+            </div>
+
+            <p style={{
+              fontSize: '11px',
+              color: '#9ca3af',
+              letterSpacing: '0.05em',
+              textTransform: 'uppercase',
+              margin: '0',
+              textAlign: 'center',
+              fontFamily: 'sans-serif'
+            }}>
+              Astra Technologies <span style={{ color: '#d1d5db', margin: '0 6px' }}>|</span> Confidentiality Guaranteed
             </p>
           </div>
 
           {/* Footer */}
-          <ProposalPageFooter proposal={proposal} pageNumber="10" />
+          <ProposalPageFooter proposal={proposal} pageNumber={getPageNumberById("thank_you")} />
         </div>
 
       </div>

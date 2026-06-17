@@ -160,14 +160,18 @@ export const DEFAULT_SCOPE_TEMPLATES: Record<'static' | 'dynamic' | 'ecommerce',
     { title: "Advanced SEO configuration", description: "Automatic dynamic XML sitemaps, structured local schema metadata markups, and search console registration.", isSelected: true }
   ],
   ecommerce: [
-    { title: "Product catalog structure", description: "Categories, custom attributes (size, colour), tags, customizable items collections, and filtering controls.", isSelected: true },
-    { title: "Shopping cart & checkout system", description: "Professional, multi-step checkout funnel designed to maximize user completed transactions.", isSelected: true },
-    { title: "Payment gateway integration", description: "Seamless connection to major card processors like Stripe, PayPal, or regional merchants.", isSelected: true },
-    { title: "Order management system", description: "Backoffice dashboards for tracking new orders, customer details, and payment/fulfillment states.", isSelected: true },
-    { title: "Inventory management", description: "Automated stock reduction tracking, custom alert limits, and product option levels control.", isSelected: true },
-    { title: "Customer login/registration", description: "Dedicated customer area logging historical orders, checking statuses, and managing checkout profiles.", isSelected: true },
-    { title: "Shipping configuration", description: "Complex dynamic shipping rules, flat rates, free shipping benchmarks, and regional tracking parameters.", isSelected: true },
-    { title: "Invoice generation system", description: "Automatic checkout system PDF invoices or custom emailed receipts triggered post-purchase.", isSelected: true }
+    { title: "Omnichannel E-Commerce Web Storefront", description: "Fully responsive, optimized React.js/Next.js store featuring product catalogs, advanced categories/subcategories, filtering, search, sorting, zoomable media galleries, and verified reviews.", isSelected: true },
+    { title: "Bilingual iOS & Android Customer Mobile Applications", description: "Bilingual (English & Arabic) native mobile apps with secure profile management, address books, saved card tokens, wishlists, order histories, and push notifications.", isSelected: true },
+    { title: "Real-Time Driver Delivery Tracking App", description: "Interactive map-driven mobile application for delivery agents offering instant routing directions, status tags, and automated nearest-driver assignment logic.", isSelected: true },
+    { title: "Centralized Admin Management Portal", description: "A command center dashboard displaying sales analytics, revenue reports, branch performances, product catalog uploads, and secure refund/cancellation controls.", isSelected: true },
+    { title: "Dynamic Multi-Branch Inventory Control", description: "Automated routing that geolocates buyers, runs stock-checks at nearest fulfillment centers, and routes order tracking branch-wise to optimize delivery speed.", isSelected: true },
+    { title: "Targeted Promotions & Promo Code Engine", description: "Promo code management module supporting fixed discounts, percentages, first-order incentives, category-based triggers, and segmented customer campaign rules.", isSelected: true },
+    { title: "Odoo ERP API Integration Gateway", description: "API-based bidirectional integration between E-Commerce engines and Client's existing Odoo ERP environment for customer profiles, stock, and orders synchronization.", isSelected: true },
+    { title: "Integrated Payment Processor & COD", description: "Secure integration of approved credit/debit card payment gateways and optional Cash on Delivery (COD) workflows with checkout validations.", isSelected: true },
+    { title: "Enterprise-Grade Security & Audit Suite", description: "Implementation of secure protocol architectures (SSL, JWT auth tokens, granular RBAC permissions, client data protection policies, and immutable system audit logs).", isSelected: true },
+    { title: "High-Availability Database & Cloud Hosting", description: "Staging and production deployment of Node.js backend pipelines and PostgreSQL/MySQL databases on high-uptime hosting systems with auto-backups.", isSelected: true },
+    { title: "User Guides & Technical Documentation", description: "Publication of operator user onboarding guides, developer system maps, data dictionaries, API path descriptions, and administrator training instructions.", isSelected: true },
+    { title: "Corporate Staff Training & Maintenance Support", description: "Live interactive training workshops for administrators and branch agents, plus initial post-launch AMC support covering fixes and optimization monitoring.", isSelected: true }
   ]
 };
 

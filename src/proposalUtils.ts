@@ -104,6 +104,15 @@ export function createDefaultProposal(type: ProposalType): Proposal {
         exclusions: "",
         requirements: "",
         clarifications: ""
+      },
+      ecommerceOdooSyncModules: ["Product Catalog", "Real-Time Inventory Status", "Sales Orders Processing", "Customer Profiles"],
+      ecommercePaymentGateways: ["Credit/Debit Cards", "Cash on Delivery (COD)"],
+      ecommerceTechStack: {
+        website: "React.js / Next.js",
+        mobile: "Flutter (Android & iOS)",
+        backend: "Node.js",
+        database: "PostgreSQL",
+        hosting: "AWS / Cloud Infrastructure"
       }
     },
     
