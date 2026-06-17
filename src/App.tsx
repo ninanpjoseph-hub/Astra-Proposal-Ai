@@ -191,17 +191,25 @@ export default function App() {
 
   // Save proposals helper
   const handleSaveProposal = async (savedProp: Proposal) => {
-    // Ensure proposal is bound to the logged-in user if it does not have a creator set
-    if (currentUser && !savedProp.preparedByUserId) {
-      savedProp.preparedByUserId = currentUser.id;
-      if (!savedProp.preparedByName) {
-        savedProp.preparedByName = currentUser.name;
+    // Ensure proposal is bound to the logged-in user if it does not have a creator or assignee set
+    if (currentUser) {
+      if (!savedProp.preparedByUserId) {
+        savedProp.preparedByUserId = currentUser.id;
+        if (!savedProp.preparedByName) {
+          savedProp.preparedByName = currentUser.name;
+        }
+        if (!savedProp.preparedByCompany) {
+          savedProp.preparedByCompany = "Astra Technologies";
+        }
+        if (!savedProp.preparedByTitle) {
+          savedProp.preparedByTitle = currentUser.role === UserRole.SALES ? "Sales Executive" : currentUser.role;
+        }
       }
-      if (!savedProp.preparedByCompany) {
-        savedProp.preparedByCompany = "Astra Technologies";
-      }
-      if (!savedProp.preparedByTitle) {
-        savedProp.preparedByTitle = currentUser.role === UserRole.SALES ? "Sales Executive" : currentUser.role;
+      if (!savedProp.assignedUserId) {
+        savedProp.assignedUserId = currentUser.id;
+        if (!savedProp.assignedUserName) {
+          savedProp.assignedUserName = currentUser.name;
+        }
       }
     }
 
@@ -370,6 +378,8 @@ export default function App() {
       blank.preparedByName = currentUser.name;
       blank.preparedByCompany = "Astra Technologies";
       blank.preparedByTitle = currentUser.role === UserRole.SALES ? "Sales Executive" : currentUser.role;
+      blank.assignedUserId = currentUser.id;
+      blank.assignedUserName = currentUser.name;
     }
     setEditingProposal(blank);
     setIsCreating(true);

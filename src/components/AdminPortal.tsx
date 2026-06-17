@@ -1137,7 +1137,7 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
                     </h4>
                     <div className="mt-3 divide-y divide-slate-200/80">
                       {users.map(u => {
-                        const count = proposals.filter(p => p.assignedUserId === u.id).length;
+                        const count = proposals.filter(p => p.assignedUserId === u.id || p.preparedByUserId === u.id).length;
                         return (
                           <div key={u.id} className="flex justify-between items-center py-2">
                             <div className="flex items-center gap-2">
@@ -1467,6 +1467,7 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
                       <th className="py-3 px-4 font-bold">Team Member</th>
                       <th className="py-3 px-4 font-bold">Email handle</th>
                       <th className="py-3 px-4 font-bold">Role & Password</th>
+                      <th className="py-3 px-4 font-bold">Allocated Projects</th>
                       <th className="py-3 px-4 font-bold">Admin Status</th>
                       <th className="py-3 px-4 text-right pr-6 font-bold">Manage Tools</th>
                     </tr>
@@ -1516,7 +1517,7 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
                                 />
                               </div>
                             </td>
-                            <td colSpan={1} className="py-3 px-3 text-xs text-slate-400 italic">
+                            <td colSpan={2} className="py-3 px-3 text-xs text-slate-400 italic">
                               Editing Profile...
                             </td>
                             <td className="py-3 px-3 text-right pr-6">
@@ -1573,6 +1574,16 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
                                 Key: <span className="text-blue-600 font-bold">{resolvedPass}</span>
                               </span>
                             </div>
+                          </td>
+                          <td className="py-4 px-4 font-mono text-xs">
+                            {(() => {
+                              const count = proposals.filter(p => p.assignedUserId === u.id || p.preparedByUserId === u.id).length;
+                              return (
+                                <span className="inline-flex items-center gap-1 font-semibold text-slate-700 bg-slate-100 px-2 py-1 border border-slate-200 rounded font-mono text-[9px] tracking-wide uppercase">
+                                  {count} {count === 1 ? 'project' : 'projects'}
+                                </span>
+                              );
+                            })()}
                           </td>
                           <td className="py-4 px-4">
                             <button

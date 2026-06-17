@@ -251,15 +251,17 @@ INSERT INTO `activity_log` (`id`, `timestamp`, `user_id`, `user_name`, `user_rol
 CREATE TABLE IF NOT EXISTS `proposal_payments` (
   `id` VARCHAR(50) NOT NULL,
   `proposal_id` VARCHAR(50) NOT NULL,
+  `payment_number` INT NOT NULL,
   `amount` DECIMAL(12,2) NOT NULL DEFAULT 0.00,
   `payment_date` DATE NOT NULL,
-  `reference` VARCHAR(255) NULL,
-  `method` VARCHAR(100) NOT NULL DEFAULT 'Bank Transfer',
-  `type` VARCHAR(50) NOT NULL DEFAULT 'Advance',
+  `payment_reference` VARCHAR(255) NULL,
+  `payment_method` VARCHAR(100) NOT NULL DEFAULT 'Bank Transfer',
   `notes` TEXT NULL,
-  `recorded_by` VARCHAR(100) NULL,
+  `recorded_by` VARCHAR(50) NULL,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  FOREIGN KEY (`proposal_id`) REFERENCES `proposals`(`id`) ON DELETE CASCADE
+  KEY `idx_proposal_id` (`proposal_id`),
+  CONSTRAINT `fk_proposal_payments_proposal` FOREIGN KEY (`proposal_id`) REFERENCES `proposals` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_proposal_payments_user` FOREIGN KEY (`recorded_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

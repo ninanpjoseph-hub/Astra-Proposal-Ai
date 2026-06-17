@@ -14,22 +14,28 @@ const router = express.Router();
   }
 
   try {
+    // Drop old table to ensure we recreate it with the precise requested structure and constraint keys
+    await query("DROP TABLE IF EXISTS `proposal_payments`");
+    
     await query(`
-      CREATE TABLE IF NOT EXISTS \`proposal_payments\` (
+      CREATE TABLE \`proposal_payments\` (
         \`id\` VARCHAR(50) NOT NULL,
         \`proposal_id\` VARCHAR(50) NOT NULL,
+        \`payment_number\` INT NOT NULL,
         \`amount\` DECIMAL(12,2) NOT NULL DEFAULT 0.00,
         \`payment_date\` DATE NOT NULL,
-        \`reference\` VARCHAR(255) NULL,
-        \`method\` VARCHAR(100) NOT NULL DEFAULT 'Bank Transfer',
-        \`type\` VARCHAR(50) NOT NULL DEFAULT 'Advance',
+        \`payment_reference\` VARCHAR(255) NULL,
+        \`payment_method\` VARCHAR(100) NOT NULL DEFAULT 'Bank Transfer',
         \`notes\` TEXT NULL,
-        \`recorded_by\` VARCHAR(100) NULL,
+        \`recorded_by\` VARCHAR(50) NULL,
         \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        PRIMARY KEY (\`id\`)
+        PRIMARY KEY (\`id\`),
+        KEY \`idx_proposal_id\` (\`proposal_id\`),
+        CONSTRAINT \`fk_proposal_payments_proposal\` FOREIGN KEY (\`proposal_id\`) REFERENCES \`proposals\` (\`id\`) ON DELETE CASCADE,
+        CONSTRAINT \`fk_proposal_payments_user\` FOREIGN KEY (\`recorded_by\`) REFERENCES \`users\` (\`id\`) ON DELETE SET NULL
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
-    console.log("✔️ [Migration] Managed successfully: proposal_payments table checked/created.");
+    console.log("✔️ [Migration] Managed successfully: proposal_payments table dropped and recreated with requested constraints, columns, and indexes.");
   } catch (err: any) {
     console.error("Migration error creating proposal_payments table:", err);
   }
