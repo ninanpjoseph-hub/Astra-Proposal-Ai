@@ -8,8 +8,8 @@ import { BRANDING_TEMPLATES, WEBSITE_TEMPLATES, DEFAULT_SCOPE_TEMPLATES } from '
 import { formatQAR, DEFAULT_BRANDING_MILESTONES, DEFAULT_WEBSITE_MILESTONES, triggerAutomatedFollowUp } from '../proposalUtils';
 import SitemapGenerator from './SitemapGenerator';
 import { groupScopeIntoPages } from '../utils/scopeClassifier';
-import { Check, Bookmark, DollarSign, Calendar, Landmark, BookOpen, Signature, Award, ChevronRight, FileText, Printer, Download, History, RotateCcw, Clock, Sliders, Upload, Trash2, Plus, AlertCircle, Coins, CreditCard } from 'lucide-react';
-import { Proposal, ProposalHistoryEntry, ProposalStatus, PaymentEntry } from '../types';
+import { Check, Bookmark, DollarSign, Calendar, Landmark, BookOpen, Signature, Award, ChevronRight, FileText, Printer, Download, History, RotateCcw, Clock, Sliders, Upload, Trash2, Plus, AlertCircle, Coins, CreditCard, Shield, Users } from 'lucide-react';
+import { Proposal, ProposalHistoryEntry, ProposalStatus, PaymentEntry, UserRole } from '../types';
 
 interface ProposalDocumentViewProps {
   proposal: Proposal;
@@ -279,6 +279,126 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
   const isBranding = proposal.type === 'branding';
   const templates = isBranding ? BRANDING_TEMPLATES : WEBSITE_TEMPLATES;
   
+  const [allUsers, setAllUsers] = React.useState<any[]>([]);
+
+  React.useEffect(() => {
+    if (currentUser?.role === UserRole.ADMIN) {
+      fetch('/api/users')
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data)) {
+            setAllUsers(data);
+          }
+        })
+        .catch(err => console.warn("Failed to fetch users list for administration tasks:", err.message));
+    }
+  }, [currentUser]);
+
+  const handleAdminApprove = () => {
+    if (!currentUser || currentUser.role !== UserRole.ADMIN) return;
+    
+    const historyEntry: ProposalHistoryEntry = {
+      versionId: Math.random().toString(36).substring(2, 10).toUpperCase(),
+      timestamp: new Date().toISOString(),
+      summary: `Proposal approved, sealed, and finalized in administrative session by Admin: ${currentUser.name}`,
+      proposalState: JSON.parse(JSON.stringify(proposal))
+    };
+    
+    const updatedProposal: Proposal = {
+      ...proposal,
+      status: ProposalStatus.COMPLETED,
+      updatedAt: new Date().toISOString(),
+      history: [historyEntry, ...(proposal.history || [])]
+    };
+    
+    if (onUpdateProposal) {
+      onUpdateProposal(updatedProposal);
+      alert(`Proposal status successfully updated to "Completed" and sealed as an administrative revision.`);
+    }
+  };
+
+  const handleAdminStatusChange = (newStatus: ProposalStatus) => {
+    if (!currentUser || currentUser.role !== UserRole.ADMIN) return;
+    if (proposal.status === newStatus) return;
+
+    const historyEntry: ProposalHistoryEntry = {
+      versionId: Math.random().toString(36).substring(2, 10).toUpperCase(),
+      timestamp: new Date().toISOString(),
+      summary: `Administrative Update: Status: ${proposal.status || 'Draft'} → ${newStatus} (Modified by Admin: ${currentUser.name})`,
+      proposalState: JSON.parse(JSON.stringify(proposal))
+    };
+
+    const updatedProposal: Proposal = {
+      ...proposal,
+      status: newStatus,
+      updatedAt: new Date().toISOString(),
+      history: [historyEntry, ...(proposal.history || [])]
+    };
+
+    if (onUpdateProposal) {
+      onUpdateProposal(updatedProposal);
+    }
+  };
+
+  const handleAdminAssigneeChange = (assigneeId: string) => {
+    if (!currentUser || currentUser.role !== UserRole.ADMIN) return;
+    if (proposal.assignedUserId === assigneeId) return;
+
+    const targetUser = allUsers.find(u => u.id === assigneeId);
+    const assigneeName = targetUser ? targetUser.name : undefined;
+
+    const historyEntry: ProposalHistoryEntry = {
+      versionId: Math.random().toString(36).substring(2, 10).toUpperCase(),
+      timestamp: new Date().toISOString(),
+      summary: `Administrative Update: Assignment changed to ${assigneeName || 'Unassigned'} (Modified by Admin: ${currentUser.name})`,
+      proposalState: JSON.parse(JSON.stringify(proposal))
+    };
+
+    const updatedProposal: Proposal = {
+      ...proposal,
+      assignedUserId: assigneeId || undefined,
+      assignedUserName: assigneeName,
+      updatedAt: new Date().toISOString(),
+      history: [historyEntry, ...(proposal.history || [])]
+    };
+
+    if (onUpdateProposal) {
+      onUpdateProposal(updatedProposal);
+    }
+  };
+
+  const handleAdminToggleShare = (sharedUserId: string) => {
+    if (!currentUser || currentUser.role !== UserRole.ADMIN) return;
+    const currentShared = proposal.sharedUserIds || [];
+    let updatedShared: string[];
+    
+    if (currentShared.includes(sharedUserId)) {
+      updatedShared = currentShared.filter(id => id !== sharedUserId);
+    } else {
+      updatedShared = [...currentShared, sharedUserId];
+    }
+
+    const userNameStr = allUsers.find(u => u.id === sharedUserId)?.name || sharedUserId;
+
+    const historyEntry: ProposalHistoryEntry = {
+      versionId: Math.random().toString(36).substring(2, 10).toUpperCase(),
+      timestamp: new Date().toISOString(),
+      summary: `Administrative Update: Sharing settings updated for user ${userNameStr} (Modified by Admin: ${currentUser.name})`,
+      proposalState: JSON.parse(JSON.stringify(proposal))
+    };
+
+    const updatedProposal: Proposal = {
+      ...proposal,
+      sharedUserIds: updatedShared,
+      updatedAt: new Date().toISOString(),
+      history: [historyEntry, ...(proposal.history || [])]
+    };
+
+    if (onUpdateProposal) {
+      onUpdateProposal(updatedProposal);
+    }
+  };
+
   // Format dates beautifully
   const formatFriendlyDate = (dateStr: string) => {
     if (!dateStr) return '';
@@ -802,6 +922,113 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
       <p className={`no-print text-center text-xs text-slate-500 font-sans font-medium bg-slate-100 py-2 rounded-lg border border-dashed border-slate-200 ${activeTab === 'document' ? 'block' : 'hidden'}`}>
         💡 <strong>Pro-Tip:</strong> Set the page margins to <strong>None/Minimum</strong> and check <strong>Background Graphics</strong> in your printer settings for accurate high-fidelity PDF output.
       </p>
+
+      {/* ADMINISTRATOR CONTROL PANEL - Persistent Audit revisions generator */}
+      {activeTab === 'document' && currentUser?.role === UserRole.ADMIN && (
+        <div id="admin-action-center-panel" className="no-print bg-amber-50/45 border border-amber-200 rounded-2xl p-5 mb-4 font-sans shadow-xs select-none">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-amber-200/60 pb-4 mb-4">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 bg-amber-500/10 text-amber-700 rounded-xl">
+                <Shield className="h-5 w-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h4 className="text-sm font-extrabold text-slate-800">Administrative Workspace Operations</h4>
+                  <span className="bg-amber-100 text-amber-800 border border-amber-300 text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded">
+                    Admin Active
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500">View, edit, assign, grant shares, and finalize any team proposal with automatic revision logging</p>
+              </div>
+            </div>
+
+            <div className="flex gap-2 shrink-0">
+              {proposal.status !== ProposalStatus.COMPLETED && (
+                <button
+                  type="button"
+                  onClick={handleAdminApprove}
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-sm flex items-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <Check className="h-4 w-4" />
+                  Approve & Finalize
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Status Manager */}
+            <div>
+              <label className="block text-[10px] font-mono uppercase font-bold text-slate-500 mb-1.5">
+                Proposal Status Tag
+              </label>
+              <select
+                value={proposal.status || ProposalStatus.DRAFT}
+                onChange={(e) => handleAdminStatusChange(e.target.value as ProposalStatus)}
+                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-700 font-semibold focus:outline-hidden focus:ring-1 focus:ring-amber-400"
+              >
+                {Object.values(ProposalStatus).map((status) => (
+                  <option key={status} value={status}>
+                    {status}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Team Assignee Direct Override */}
+            <div>
+              <label className="block text-[10px] font-mono uppercase font-bold text-slate-500 mb-1.5">
+                Assigned Team Lead
+              </label>
+              <select
+                value={proposal.assignedUserId || ''}
+                onChange={(e) => handleAdminAssigneeChange(e.target.value)}
+                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-700 font-semibold focus:outline-hidden focus:ring-1 focus:ring-amber-400"
+              >
+                <option value="">Unassigned / No Active Lead</option>
+                {allUsers.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.name} ({u.role})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Share Access Rights */}
+            <div>
+              <label className="block text-[10px] font-mono uppercase font-bold text-slate-500 mb-1.5">
+                Cooperation Sharing Board
+              </label>
+              {allUsers.length === 0 ? (
+                <span className="text-slate-400 text-xs font-sans italic">Loading teammates list...</span>
+              ) : (
+                <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pt-0.5">
+                  {allUsers
+                    .filter((u) => u.id !== proposal.preparedByUserId) // exclude prep agent for sharing list
+                    .map((u) => {
+                      const isShared = (proposal.sharedUserIds || []).includes(u.id);
+                      return (
+                        <button
+                          key={u.id}
+                          type="button"
+                          onClick={() => handleAdminToggleShare(u.id)}
+                          className={`px-2 py-1 rounded-sm text-[10px] font-bold flex items-center gap-1 transition-all ${
+                            isShared
+                              ? 'bg-amber-100 border border-amber-300 text-amber-800'
+                              : 'bg-slate-50 border border-slate-200 text-slate-500 hover:bg-slate-100 hover:text-slate-800'
+                          }`}
+                        >
+                          <Users className="h-3 w-3 shrink-0" />
+                          <span>{u.name.split(' ')[0]}</span>
+                        </button>
+                      );
+                    })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Dynamic letterhead and styling customization card - Hidden when printing */}
       {activeTab === 'document' && (

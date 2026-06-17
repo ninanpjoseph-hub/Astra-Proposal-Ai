@@ -212,11 +212,14 @@ export default function App() {
       if (idx !== -1) {
         const previousVer = prev[idx];
         
+        const isAdmin = currentUser?.role === UserRole.ADMIN;
+        const summary = generateEditSummary(previousVer, savedProp) + (isAdmin ? ` (Approved/Draft updated by Admin: ${currentUser.name})` : '');
+        
         // Structure history entry for tracking previous edit state
         const historyEntry: ProposalHistoryEntry = {
           versionId: Math.random().toString(36).substring(2, 10).toUpperCase(),
           timestamp: previousVer.updatedAt || previousVer.createdAt || new Date().toISOString(),
-          summary: generateEditSummary(previousVer, savedProp),
+          summary,
           proposalState: JSON.parse(JSON.stringify(previousVer)),
         };
         
@@ -568,18 +571,44 @@ export default function App() {
               initialTab={proposalViewTab}
               onUpdateProposal={(updated) => {
                 setProposals(prev => {
-                  const updatedList = prev.map(p => p.id === updated.id ? updated : p);
+                  const idx = prev.findIndex(p => p.id === updated.id);
+                  if (idx === -1) return prev;
+                  const previousVer = prev[idx];
+                  
+                  let finalizedUpdated = { ...updated };
+                  
+                  const isUserAdmin = currentUser?.role === UserRole.ADMIN;
+                  if (isUserAdmin) {
+                    const prevHistoryLen = (previousVer.history || []).length;
+                    const nextHistoryLen = (updated.history || []).length;
+                    
+                    if (prevHistoryLen === nextHistoryLen) {
+                      const historyEntry: ProposalHistoryEntry = {
+                        versionId: Math.random().toString(36).substring(2, 10).toUpperCase(),
+                        timestamp: new Date().toISOString(),
+                        summary: `Administrative Update: Visual configuration / document styles customized (Modified by Admin: ${currentUser.name})`,
+                        proposalState: JSON.parse(JSON.stringify(previousVer)),
+                      };
+                      finalizedUpdated.history = [historyEntry, ...(previousVer.history || [])];
+                      finalizedUpdated.updatedAt = new Date().toISOString();
+                    }
+                  }
+                  
+                  const updatedList = prev.map(p => p.id === updated.id ? finalizedUpdated : p);
                   localStorage.setItem('prowess_proposals_v1', JSON.stringify(updatedList));
+                  
+                  // Instantly update current view page
+                  setViewingProposal(finalizedUpdated);
+                  
+                  // Synchronize proposal state in host database dynamically
+                  fetch('/api/proposals', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(finalizedUpdated)
+                  }).catch(err => console.warn("Failed to update proposal state in database:", err.message));
+                  
                   return updatedList;
                 });
-                setViewingProposal(updated);
-                
-                // Synchronize proposal state in host database dynamically
-                fetch('/api/proposals', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify(updated)
-                }).catch(err => console.warn("Failed to update proposal state in database:", err.message));
               }}
             />
           </div>
@@ -691,11 +720,40 @@ export default function App() {
               <AdminPortal 
                 proposals={proposals}
                 onUpdateProposals={(updated) => {
-                  setProposals(updated);
-                  localStorage.setItem('prowess_proposals_v1', JSON.stringify(updated));
+                  const isUserAdmin = currentUser?.role === UserRole.ADMIN;
+                  
+                  const processedUpdated = updated.map(updatedProp => {
+                    const originalProp = proposals.find(p => p.id === updatedProp.id);
+                    if (originalProp) {
+                      const hasChanged = originalProp.status !== updatedProp.status || 
+                                         originalProp.assignedUserId !== updatedProp.assignedUserId || 
+                                         JSON.stringify(originalProp.sharedUserIds || []) !== JSON.stringify(updatedProp.sharedUserIds || []);
+                                         
+                      if (hasChanged && isUserAdmin) {
+                        const historyEntry: ProposalHistoryEntry = {
+                          versionId: Math.random().toString(36).substring(2, 10).toUpperCase(),
+                          timestamp: originalProp.updatedAt || originalProp.createdAt || new Date().toISOString(),
+                          summary: `Administrative Control Update: Status: ${originalProp.status || 'Draft'} → ${updatedProp.status || 'Draft'}` + 
+                                   (originalProp.assignedUserId !== updatedProp.assignedUserId ? `, Assignee updated` : '') + 
+                                   ` (Modified by Admin: ${currentUser?.name || 'Administrator'})`,
+                          proposalState: JSON.parse(JSON.stringify(originalProp)),
+                        };
+                        const currentHistory = originalProp.history || [];
+                        return {
+                          ...updatedProp,
+                          history: [historyEntry, ...currentHistory],
+                          updatedAt: new Date().toISOString()
+                        };
+                      }
+                    }
+                    return updatedProp;
+                  });
+
+                  setProposals(processedUpdated);
+                  localStorage.setItem('prowess_proposals_v1', JSON.stringify(processedUpdated));
 
                   // Asynchronously push any modified proposals to the backend MySQL database
-                  updated.forEach(async (updatedProp) => {
+                  processedUpdated.forEach(async (updatedProp) => {
                     const originalProp = proposals.find(p => p.id === updatedProp.id);
                     if (!originalProp || 
                         originalProp.status !== updatedProp.status || 
