@@ -2032,7 +2032,19 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
 
         {/* TAB 5: PAYMENT TRACKER PAGE */}
         {activeTab === 'payments' && (() => {
-          const activeProposalsForStats = proposals.filter(p => p.status !== ProposalStatus.CANCELLED);
+          const isPowerUser = currentUser && (currentUser.role === UserRole.ADMIN || currentUser.role === UserRole.MANAGER);
+
+          const activeProposalsForStats = proposals.filter(p => {
+            if (p.status === ProposalStatus.CANCELLED) return false;
+            if (isPowerUser) return true;
+            if (!currentUser) return false;
+
+            const isPreparedBy = p.preparedByUserId === currentUser.id;
+            const isAssignedTo = p.assignedUserId === currentUser.id;
+            const isShared = p.sharedUserIds && p.sharedUserIds.includes(currentUser.id);
+            return isPreparedBy || isAssignedTo || isShared;
+          });
+
           let totalContractValueSum = 0;
           let totalCollectedSum = 0;
           let totalPendingSum = 0;
@@ -2052,6 +2064,16 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
 
           const filteredPayProps = proposals.filter(p => {
             if (p.status === ProposalStatus.CANCELLED) return false;
+
+            // Filter by user permissions if not Admin/Manager
+            if (!isPowerUser && currentUser) {
+              const isPreparedBy = p.preparedByUserId === currentUser.id;
+              const isAssignedTo = p.assignedUserId === currentUser.id;
+              const isShared = p.sharedUserIds && p.sharedUserIds.includes(currentUser.id);
+              if (!(isPreparedBy || isAssignedTo || isShared)) {
+                return false;
+              }
+            }
             
             // Calculate stats inline
             const list = p.paymentEntries || [];
@@ -2111,30 +2133,56 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* Card 1: Total Contract Value */}
                 <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col justify-between shadow-3xs">
-                  <span className="text-[10px] uppercase font-mono tracking-wider text-slate-450 block mb-1 font-bold">Total Contract Value</span>
+                  <span className="text-[10px] uppercase font-mono tracking-wider text-slate-450 block mb-1 font-bold">
+                    {isPowerUser ? "Total Contract Value" : "My Proposals Value"}
+                  </span>
                   <strong className="text-lg font-bold text-slate-800 font-sans">{formatQAR(totalContractValueSum)} QAR</strong>
-                  <span className="text-[9px] text-slate-400 mt-1 block">All {activeProposalsForStats.length} active projects combined</span>
+                  <span className="text-[9px] text-slate-400 mt-1 block">
+                    {isPowerUser 
+                      ? `All ${activeProposalsForStats.length} active projects combined`
+                      : `${activeProposalsForStats.length} of your active projects`}
+                  </span>
                 </div>
 
                 {/* Card 2: Total Collected */}
                 <div className="bg-emerald-50/50 border border-emerald-100 rounded-xl p-4 flex flex-col justify-between shadow-3xs">
-                  <span className="text-[10px] uppercase font-mono tracking-wider text-emerald-750 block mb-1 font-bold">Total Collected (Received)</span>
+                  <span className="text-[10px] uppercase font-mono tracking-wider text-emerald-750 block mb-1 font-bold">
+                    {isPowerUser ? "Total Collected (Received)" : "Available Cash Balance"}
+                  </span>
                   <strong className="text-lg font-bold text-emerald-600 font-sans">{formatQAR(totalCollectedSum)} QAR</strong>
-                  <span className="text-[9px] text-emerald-600/80 mt-1 block">Sum of all transaction ledger entries</span>
+                  <span className="text-[9px] text-emerald-600/80 mt-1 block">
+                    {isPowerUser 
+                      ? "Sum of all transaction ledger entries"
+                      : "Total collected from your proposals"}
+                  </span>
                 </div>
 
                 {/* Card 3: Total Pending */}
                 <div className="bg-rose-50/50 border border-rose-100 rounded-xl p-4 flex flex-col justify-between shadow-3xs">
-                  <span className="text-[10px] uppercase font-mono tracking-wider text-rose-700 block mb-1 font-bold">Total Pending Balances</span>
+                  <span className="text-[10px] uppercase font-mono tracking-wider text-rose-700 block mb-1 font-bold">
+                    {isPowerUser ? "Total Pending Balances" : "Pending Amounts"}
+                  </span>
                   <strong className="text-lg font-bold text-rose-600 font-sans">{formatQAR(totalPendingSum)} QAR</strong>
-                  <span className="text-[9px] text-rose-600/80 mt-1 block font-semibold font-sans">Outstanding customer balance</span>
+                  <span className="text-[9px] text-rose-600/80 mt-1 block font-semibold font-sans">
+                    {isPowerUser 
+                      ? "Outstanding customer balance"
+                      : "Outstanding balance on your projects"}
+                  </span>
                 </div>
 
                 {/* Card 4: Fully Paid Projects */}
                 <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-4 flex flex-col justify-between shadow-3xs">
-                  <span className="text-[10px] uppercase font-mono tracking-wider text-blue-750 block mb-1 font-bold">Fully Paid Projects</span>
-                  <strong className="text-lg font-bold text-blue-700 font-sans">{fullyPaidCount} Active Projects</strong>
-                  <span className="text-[9px] text-blue-600/85 mt-1 block">100% financial settlement rate</span>
+                  <span className="text-[10px] uppercase font-mono tracking-wider text-blue-750 block mb-1 font-bold">
+                    {isPowerUser ? "Fully Paid Projects" : "My Fully Paid Projects"}
+                  </span>
+                  <strong className="text-lg font-bold text-blue-700 font-sans">
+                    {fullyPaidCount} {fullyPaidCount === 1 ? 'Active Project' : 'Active Projects'}
+                  </strong>
+                  <span className="text-[9px] text-blue-600/85 mt-1 block">
+                    {isPowerUser 
+                      ? "100% financial settlement rate"
+                      : "Paid in full status projects"}
+                  </span>
                 </div>
               </div>
 
