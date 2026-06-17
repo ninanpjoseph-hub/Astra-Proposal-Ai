@@ -36,6 +36,9 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
     return initialProposal ? initialProposal.type : 'branding';
   });
 
+  const [isGeneratingAI, setIsGeneratingAI] = useState<boolean>(false);
+  const [aiError, setAiError] = useState<string>("");
+
   // Track if user has changed fields, reset milestones if type changes
   const handleTypeSelect = (type: ProposalType) => {
     if (type === proposal.type) return;
@@ -508,6 +511,84 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
                   <span className="text-[10px] text-slate-400 italic">
                     💡 High-quality brief translates into higher customer value perception. Keep it outcome-focused.
                   </span>
+
+                  <div className="mt-3 p-3 bg-blue-50/50 border border-blue-100 rounded-xl flex flex-col gap-2">
+                    <div className="flex justify-between items-center sm:flex-row flex-col gap-2">
+                      <span className="text-[11px] font-sans font-medium text-blue-800 flex items-center gap-1.5">
+                        <Sparkles className="h-3.5 w-3.5 text-blue-600 animate-pulse" />
+                        Astra AI Copilot Assist
+                      </span>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (!proposal.clientName || !proposal.companyName) {
+                            alert("Please provide the Client Name and Company Name in Step 1 first.");
+                            return;
+                          }
+                          setIsGeneratingAI(true);
+                          setAiError("");
+                          try {
+                            const res = await fetch('/api/proposals/generate', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                clientName: proposal.clientName,
+                                companyName: proposal.companyName,
+                                briefDescription: proposal.briefDescription,
+                                type: proposal.type
+                              })
+                            });
+                            
+                            if (!res.ok) {
+                              const errorData = await res.json();
+                              throw new Error(errorData.error || "Generation endpoint returned status " + res.status);
+                            }
+                            
+                            const data = await res.json();
+                            if (data.success) {
+                              setProposal(prev => ({
+                                ...prev,
+                                briefDescription: data.executiveSummary || prev.briefDescription,
+                                milestones: data.milestones ? data.milestones.map((m: any, idx: number) => ({
+                                  id: `${prev.id}_m_ai_${idx}`,
+                                  week: m.week,
+                                  title: m.title,
+                                  description: m.description
+                                })) : prev.milestones
+                              }));
+                            } else {
+                              throw new Error(data.error || "Abnormal generation response.");
+                            }
+                          } catch (err: any) {
+                            console.warn("Gemini connection error: ", err);
+                            setAiError(err.message || "Could not link to backend Gemini proxy. Fallback outline loaded.");
+                            
+                            // Let's do a mock elegant description in case database/key is missing in workspace
+                            setProposal(prev => ({
+                              ...prev,
+                              briefDescription: isBranding
+                                ? `Our visual brand identity design for ${proposal.companyName} is optimized to maximize positioning for ${proposal.clientName} in Qatar's growing commercial landscape. We will orchestrate premium iconography, typography, layouts, and brand asset guidelines designed to capture attention and promote long-term buyer trust.`
+                                : `Our engineering framework for ${proposal.companyName} delivers a tailored, responsive digital platform optimized for ${proposal.clientName}. It features fluid dual-language support, modern CMS editing dashboards, semantic SEO profiles, and secure cloud layouts to maximize lead capture.`
+                            }));
+                          } finally {
+                            setIsGeneratingAI(false);
+                          }
+                        }}
+                        disabled={isGeneratingAI}
+                        className="w-full sm:w-auto px-4 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-bold text-[10px] rounded-lg transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                      >
+                        {isGeneratingAI ? "AI Consulting..." : "Auto-Generate with Gemini AI"}
+                      </button>
+                    </div>
+                    {aiError && (
+                      <span className="text-[10px] text-rose-600 font-sans block">{aiError}</span>
+                    )}
+                    {!aiError && isGeneratingAI && (
+                      <span className="text-[10px] text-blue-600 font-sans block animate-pulse">
+                        Analyzing briefing profile, structuring weekly roadmap, and formulating premium copy points on the fly...
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

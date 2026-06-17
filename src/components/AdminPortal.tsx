@@ -90,37 +90,87 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
 
   // Load backend systems on startup from local storage or defaults
   useEffect(() => {
-    // 1. Users
-    const cachedUsers = localStorage.getItem('prowess_admin_users');
-    if (cachedUsers) {
+    async function loadDataFromDb() {
+      // 1. Users list sync
       try {
-        setUsers(JSON.parse(cachedUsers));
-      } catch {
-        setUsers(DEFAULT_USERS);
-        localStorage.setItem('prowess_admin_users', JSON.stringify(DEFAULT_USERS));
+        const res = await fetch('/api/users');
+        if (res.ok) {
+          const rawUsers = await res.json();
+          if (Array.isArray(rawUsers) && rawUsers.length > 0) {
+            const packedUsers = rawUsers.map((u: any) => ({
+              id: u.id,
+              name: u.name,
+              email: u.email,
+              role: u.role,
+              isActive: u.is_active === 1,
+              password: u.password || undefined
+            }));
+            setUsers(packedUsers);
+            localStorage.setItem('prowess_admin_users', JSON.stringify(packedUsers));
+          } else {
+            const cachedUsers = localStorage.getItem('prowess_admin_users');
+            if (cachedUsers) setUsers(JSON.parse(cachedUsers));
+            else {
+              setUsers(DEFAULT_USERS);
+              localStorage.setItem('prowess_admin_users', JSON.stringify(DEFAULT_USERS));
+            }
+          }
+        } else {
+          throw new Error("HTTP failure");
+        }
+      } catch (err) {
+        console.warn("Could not retrieve users from database, using cached backup:", err);
+        const cachedUsers = localStorage.getItem('prowess_admin_users');
+        if (cachedUsers) {
+          try { setUsers(JSON.parse(cachedUsers)); } catch { setUsers(DEFAULT_USERS); }
+        } else {
+          setUsers(DEFAULT_USERS);
+          localStorage.setItem('prowess_admin_users', JSON.stringify(DEFAULT_USERS));
+        }
       }
-    } else {
-      setUsers(DEFAULT_USERS);
-      localStorage.setItem('prowess_admin_users', JSON.stringify(DEFAULT_USERS));
+
+      // 2. Activity Logs sync
+      try {
+        const res = await fetch('/api/activity-logs');
+        if (res.ok) {
+          const rawLogs = await res.json();
+          if (Array.isArray(rawLogs) && rawLogs.length > 0) {
+            const packedLogs = rawLogs.map((l: any) => ({
+              id: l.id,
+              timestamp: l.timestamp,
+              userId: l.user_id,
+              userName: l.user_name,
+              userRole: l.user_role,
+              action: l.action,
+              details: l.details
+            }));
+            setActivityLogs(packedLogs);
+            localStorage.setItem('prowess_admin_logs', JSON.stringify(packedLogs));
+          } else {
+            const cachedLogs = localStorage.getItem('prowess_admin_logs');
+            if (cachedLogs) {
+              try { setActivityLogs(JSON.parse(cachedLogs)); } catch { setActivityLogs([]); }
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("Could not retrieve logs from database, using cached backup:", err);
+        const cachedLogs = localStorage.getItem('prowess_admin_logs');
+        if (cachedLogs) {
+          try { setActivityLogs(JSON.parse(cachedLogs)); } catch { setActivityLogs([]); }
+        }
+      }
     }
 
-    // 2. Reminders
+    loadDataFromDb();
+
+    // 3. Reminders System Loads
     const cachedReminders = localStorage.getItem('prowess_admin_reminders');
     if (cachedReminders) {
       try {
         setReminders(JSON.parse(cachedReminders));
       } catch {
         setReminders([]);
-      }
-    }
-
-    // 3. Activity Logs
-    const cachedLogs = localStorage.getItem('prowess_admin_logs');
-    if (cachedLogs) {
-      try {
-        setActivityLogs(JSON.parse(cachedLogs));
-      } catch {
-        setActivityLogs([]);
       }
     }
 
@@ -204,7 +254,7 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
   };
 
   // Log action helper
-  const addLog = (action: string, details: string) => {
+  const addLog = async (action: string, details: string) => {
     const actor = currentUser || { id: 'system', name: 'Anonymous User', role: UserRole.SALES };
     const newEntry: ActivityLog = {
       id: 'log_' + Math.random().toString(36).substring(2, 10),
@@ -217,6 +267,16 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
     };
     const updated = [newEntry, ...activityLogs];
     saveLogs(updated);
+
+    try {
+      await fetch('/api/activity-logs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newEntry)
+      });
+    } catch (err: any) {
+      console.warn("Could not push administrative activity log, staying local:", err.message);
+    }
   };
 
   // Login handler
@@ -267,7 +327,7 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
   };
 
   // User CRUD operations
-  const handleAddUser = (e: React.FormEvent) => {
+  const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newUserName.trim() || !newUserEmail.trim()) return;
 
@@ -290,6 +350,18 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
     const updated = [...users, newUser];
     saveUsers(updated);
     addLog('Create User', `Registered user "${newUser.name}" with role "${newUser.role}". Password was ${customPass ? 'set manually' : 'determined by role default'}.`);
+
+    try {
+      await fetch('/api/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(newUser)
+      });
+    } catch (err: any) {
+      console.warn("Could not save new user to database server:", err.message);
+    }
     
     setNewUserName('');
     setNewUserEmail('');
@@ -315,7 +387,7 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
     setEditingUserPassword(currentPass);
   };
 
-  const handleEditUserSave = (e: React.FormEvent | React.MouseEvent) => {
+  const handleEditUserSave = async (e: React.FormEvent | React.MouseEvent) => {
     e.preventDefault();
     if (!editingUserId || !editingUserName.trim() || !editingUserEmail.trim()) return;
 
@@ -339,6 +411,21 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
 
     saveUsers(updated);
     addLog('Update User Profile', `Admin updated profile/password for "${editingUserName}".`);
+
+    const editedUser = updated.find(u => u.id === editingUserId);
+    if (editedUser) {
+      try {
+        await fetch('/api/users', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(editedUser)
+        });
+      } catch (err: any) {
+        console.warn("Could not edit user on database server:", err.message);
+      }
+    }
     
     // Clear state
     setEditingUserId(null);
@@ -347,7 +434,7 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
     setEditingUserPassword('');
   };
 
-  const handleToggleUserActive = (userId: string) => {
+  const handleToggleUserActive = async (userId: string) => {
     const userToEdit = users.find(u => u.id === userId);
     if (!userToEdit) return;
     if (userId === currentUser?.id) {
@@ -358,9 +445,24 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
     const updated = users.map(u => u.id === userId ? { ...u, isActive: !u.isActive } : u);
     saveUsers(updated);
     addLog('User Account Status', `Toggled activation status for ${userToEdit.name} (Now: ${!userToEdit.isActive ? 'Inactive' : 'Active'})`);
+
+    const editedUser = updated.find(u => u.id === userId);
+    if (editedUser) {
+      try {
+        await fetch('/api/users', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(editedUser)
+        });
+      } catch (err: any) {
+        console.warn("Could not toggle user active state on database server:", err.message);
+      }
+    }
   };
 
-  const handleDeleteUser = (userId: string) => {
+  const handleDeleteUser = async (userId: string) => {
     const userToDel = users.find(u => u.id === userId);
     if (!userToDel) return;
     if (userId === currentUser?.id) {
@@ -372,6 +474,14 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
       const updated = users.filter(u => u.id !== userId);
       saveUsers(updated);
       addLog('Remove User', `Permanently removed account ${userToDel.name}.`);
+
+      try {
+        await fetch(`/api/users/${userId}`, {
+          method: 'DELETE'
+        });
+      } catch (err: any) {
+        console.warn("Could not delete user from database server:", err.message);
+      }
     }
   };
 

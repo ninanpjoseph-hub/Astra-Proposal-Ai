@@ -43,6 +43,9 @@ function generateEditSummary(oldProp: Proposal, newProp: Proposal): string {
 export default function App() {
   // Central proposals memory state
   const [proposals, setProposals] = useState<Proposal[]>([]);
+  const [isDbConnected, setIsDbConnected] = useState<boolean>(false);
+  const [dbStatusDetails, setDbStatusDetails] = useState<string>("Detecting connection...");
+
   // Team active login session
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
     const cached = localStorage.getItem('prowess_session_user');
@@ -57,7 +60,7 @@ export default function App() {
   });
 
   // Log login helper
-  const logLoginEvent = (actor: User) => {
+  const logLoginEvent = async (actor: User) => {
     const cachedLogs = localStorage.getItem('prowess_admin_logs');
     let logs = [];
     if (cachedLogs) {
@@ -77,6 +80,16 @@ export default function App() {
       details: `${actor.name} (${actor.role}) logged in securely via the main gateway landing page.`
     };
     localStorage.setItem('prowess_admin_logs', JSON.stringify([newEntry, ...logs]));
+
+    try {
+      await fetch('/api/activity-logs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newEntry)
+      });
+    } catch (err) {
+      console.warn("Could not push login activity to database server.");
+    }
   };
   // Wizard creation/editing state
   const [isCreating, setIsCreating] = useState<boolean>(false);
@@ -90,23 +103,93 @@ export default function App() {
   
   // Pre-populate database memory with sample values on load
   useEffect(() => {
-    const cached = localStorage.getItem('prowess_proposals_v1');
-    if (cached) {
+    async function loadDataAndVerifyDb() {
       try {
-        setProposals(JSON.parse(cached));
-      } catch (err) {
-        console.error("Cache parsing issues", err);
+        // Test database status
+        const dbTestRes = await fetch('/api/proposals/test-db');
+        const dbTestData = await dbTestRes.json();
+        
+        if (dbTestData && dbTestData.success) {
+          setIsDbConnected(true);
+          setDbStatusDetails("Hostinger Connected");
+        } else {
+          setIsDbConnected(false);
+          setDbStatusDetails(dbTestData?.message || "Missing configs");
+        }
+
+        // Fetch proposals from API
+        const response = await fetch('/api/proposals');
+        if (response.ok) {
+          const rawProposalsList = await response.json();
+          if (Array.isArray(rawProposalsList) && rawProposalsList.length > 0) {
+            // Unpack database JSON records safely and normalize field casing
+            const unpackedProposalsList = rawProposalsList.map((item: any) => ({
+              id: item.id,
+              type: item.type,
+              status: item.status,
+              createdAt: item.created_at,
+              updatedAt: item.updated_at,
+              clientName: item.client_name,
+              companyName: item.company_name,
+              proposalDate: item.proposal_date,
+              briefDescription: item.brief_description,
+              brandingScope: typeof item.branding_scope === 'string' ? JSON.parse(item.branding_scope) : (item.branding_scope || {}),
+              websiteScope: typeof item.website_scope === 'string' ? JSON.parse(item.website_scope) : (item.website_scope || {}),
+              milestones: typeof item.milestones === 'string' ? JSON.parse(item.milestones) : (item.milestones || []),
+              resourceCosts: typeof item.resource_costs === 'string' ? JSON.parse(item.resource_costs) : (item.resource_costs || []),
+              weeks: item.weeks,
+              developmentCost: parseFloat(item.development_cost || 0),
+              pluginCost: parseFloat(item.plugin_cost || 0),
+              maintenanceCost: parseFloat(item.maintenance_cost || 0),
+              additionalCost: parseFloat(item.additional_cost || 0),
+              totalCost: parseFloat(item.total_cost || 0),
+              paymentTerms: item.payment_terms,
+              preparedByName: item.prepared_by_name,
+              preparedByCompany: item.prepared_by_company,
+              preparedByTitle: item.prepared_by_title,
+              preparedByUserId: item.prepared_by_user_id,
+              assignedUserId: item.assigned_user_id,
+              assignedUserName: item.assigned_user_name,
+              sharedUserIds: typeof item.shared_user_ids === 'string' ? JSON.parse(item.shared_user_ids) : (item.shared_user_ids || []),
+              customLetterhead: item.custom_letterhead,
+              letterheadHeight: item.letterhead_height,
+              letterheadMode: item.letterhead_mode,
+              letterheadFullPage: item.letterhead_full_page === 1,
+              showWatermark: item.show_watermark === 1,
+              customWatermarkText: item.custom_watermark_text,
+            }));
+            
+            setProposals(unpackedProposalsList);
+            localStorage.setItem('prowess_proposals_v1', JSON.stringify(unpackedProposalsList));
+            return;
+          }
+        }
+      } catch (err: any) {
+        console.warn("Could not leverage Hostinger MySQL backend, relying on local state cache:", err.message);
+        setDbStatusDetails("Offline Mode");
+      }
+
+      // Offline Cache Fallback load
+      const cached = localStorage.getItem('prowess_proposals_v1');
+      if (cached) {
+        try {
+          setProposals(JSON.parse(cached));
+        } catch (err) {
+          setProposals(SAMPLE_PROPOSALS);
+          localStorage.setItem('prowess_proposals_v1', JSON.stringify(SAMPLE_PROPOSALS));
+        }
+      } else {
         setProposals(SAMPLE_PROPOSALS);
         localStorage.setItem('prowess_proposals_v1', JSON.stringify(SAMPLE_PROPOSALS));
       }
-    } else {
-      setProposals(SAMPLE_PROPOSALS);
-      localStorage.setItem('prowess_proposals_v1', JSON.stringify(SAMPLE_PROPOSALS));
     }
+    
+    loadDataAndVerifyDb();
   }, []);
 
   // Save proposals helper
-  const handleSaveProposal = (savedProp: Proposal) => {
+  const handleSaveProposal = async (savedProp: Proposal) => {
+    // A. Update local React state instantly for high responsiveness
     setProposals(prev => {
       const idx = prev.findIndex(p => p.id === savedProp.id);
       let updated;
@@ -134,6 +217,38 @@ export default function App() {
       localStorage.setItem('prowess_proposals_v1', JSON.stringify(updated));
       return updated;
     });
+
+    // B. Push proposal payload to the backend database server asynchronously
+    try {
+      const saveRes = await fetch('/api/proposals', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(savedProp)
+      });
+      
+      if (saveRes.ok) {
+        // Successful DB synchronization, log client activity audit in background
+        const logEntry = {
+          id: 'log_' + Math.random().toString(36).substring(2, 10),
+          timestamp: new Date().toISOString(),
+          userId: currentUser?.id,
+          userName: currentUser?.name || 'System',
+          userRole: currentUser?.role || UserRole.SALES,
+          action: 'Modify Proposal',
+          details: `Synchronized ${savedProp.type === 'branding' ? 'branding' : 'website'} proposal ID "${savedProp.id}" for client "${savedProp.clientName}" successfully in Hostinger MySQL.`
+        };
+        
+        await fetch('/api/activity-logs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(logEntry)
+        });
+      }
+    } catch (dbErr: any) {
+      console.warn("Could not store proposal in backend database:", dbErr.message);
+    }
     
     // Close modal, open document in viewer of step 6/7 or direct preview in Document View
     setIsCreating(false);
@@ -170,7 +285,7 @@ export default function App() {
     });
   };
 
-  const handleDeleteProposal = (id: string, e: React.MouseEvent) => {
+  const handleDeleteProposal = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (confirm("Are you sure you want to permanently delete this proposal from memory?")) {
       setProposals(prev => {
@@ -181,6 +296,31 @@ export default function App() {
       // Clear viewing if deleted active
       if (viewingProposal?.id === id) {
         setViewingProposal(null);
+      }
+
+      try {
+        await fetch(`/api/proposals/${id}`, {
+          method: 'DELETE'
+        });
+
+        // Register deletion log
+        const logEntry = {
+          id: 'log_' + Math.random().toString(36).substring(2, 10),
+          timestamp: new Date().toISOString(),
+          userId: currentUser?.id,
+          userName: currentUser?.name || 'System',
+          userRole: currentUser?.role || UserRole.SALES,
+          action: 'Delete Proposal',
+          details: `Permanently deleted proposal ID "${id}" from database.`
+        };
+
+        await fetch('/api/activity-logs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(logEntry)
+        });
+      } catch (err: any) {
+        console.warn("Could not delete from backend database:", err.message);
       }
     }
   };
@@ -309,6 +449,13 @@ export default function App() {
             <span className="font-mono bg-slate-800 text-slate-200 px-2.5 py-1 rounded-md border border-slate-700">
               {currentUser?.email}
             </span>
+            
+            {/* Hostinger DB connection badge */}
+            <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-[10px] font-mono font-medium ${isDbConnected ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-amber-500/10 border-amber-500/20 text-amber-400'}`} title={dbStatusDetails}>
+              <span className={`h-1.5 w-1.5 rounded-full ${isDbConnected ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span>
+              <span className="hidden lg:inline">{isDbConnected ? 'Hostinger DB' : 'Offline Cache'}</span>
+            </div>
+
             <button 
               onClick={() => {
                 // Log action in audit trail before clearing session
