@@ -3,7 +3,7 @@ import {
   Plus, Trash2, Calendar, CheckSquare, Square, Users, Mail, ShieldAlert, 
   BarChart3, Activity, Bell, Lock, Unlock, LogOut, Check, ChevronDown, 
   Clock, RefreshCw, AlertCircle, TrendingUp, Sparkles, UserCheck, UserX,
-  FileText, Shield, Sparkle
+  FileText, Shield, Sparkle, Coins, DollarSign, Wallet, CreditCard
 } from 'lucide-react';
 import { Proposal, User, UserRole, ProposalStatus, Reminder, ActivityLog } from '../types';
 import { formatQAR, generateId, triggerAutomatedFollowUp } from '../proposalUtils';
@@ -13,6 +13,7 @@ interface AdminPortalProps {
   onUpdateProposals: (updatedList: Proposal[]) => void;
   currentUser: User | null;
   onLoginUser: (user: User | null) => void;
+  onViewProposalDetail?: (proposal: Proposal, tab?: 'document' | 'history' | 'payment') => void;
 }
 
 const DEFAULT_USERS: User[] = [
@@ -22,7 +23,7 @@ const DEFAULT_USERS: User[] = [
   { id: 'user_lina', name: 'Lina Vance', email: 'lina@astra.tech', role: UserRole.DESIGNER, isActive: true },
 ];
 
-export default function AdminPortal({ proposals, onUpdateProposals, currentUser, onLoginUser }: AdminPortalProps) {
+export default function AdminPortal({ proposals, onUpdateProposals, currentUser, onLoginUser, onViewProposalDetail }: AdminPortalProps) {
   // Systems States
   const [users, setUsers] = useState<User[]>([]);
   const [reminders, setReminders] = useState<Reminder[]>([]);
@@ -54,7 +55,7 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
   const [smtpFromName, setSmtpFromName] = useState<string>('Astra Automated Delivery');
 
   // Local UI States
-  const [activeTab, setActiveTab] = useState<'overview' | 'proposals' | 'users' | 'reminders' | 'logs'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'proposals' | 'users' | 'reminders' | 'logs' | 'payments'>('overview');
   const [showLoginModal, setShowLoginModal] = useState<boolean>(false);
   
   // Login credentials mock state
@@ -86,6 +87,10 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
   const [newReminderDate, setNewReminderDate] = useState<string>('');
   const [newReminderNotes, setNewReminderNotes] = useState<string>('');
   const [reminderProposalId, setReminderProposalId] = useState<string>('');
+
+  // Payment Tracker tab states
+  const [payFilter, setPayFilter] = useState<'all' | 'pending' | 'paid' | 'overdue'>('all');
+  const [paySort, setPaySort] = useState<'latest' | 'value' | 'pendingAmount'>('latest');
 
   // Search & Filters in Admin space
   const [adminSearch, setAdminSearch] = useState<string>('');
@@ -813,6 +818,42 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
 
   const noticeAlarms = getNotificationAlarms();
 
+  // Payments helper functions
+  const getDeliveryStage = (status: ProposalStatus | undefined) => {
+    switch (status) {
+      case ProposalStatus.DRAFT: return "Preparation";
+      case ProposalStatus.UNDER_REVIEW: return "Design Stage";
+      case ProposalStatus.UNDER_PROCESS: return "Development";
+      case ProposalStatus.AWAITING_CLIENT_FEEDBACK: return "Testing & Feedback";
+      case ProposalStatus.COMPLETED: return "Delivered & Live";
+      case ProposalStatus.CLOSED: return "Archived";
+      case ProposalStatus.CANCELLED: return "Cancelled";
+      default: return "Design Stage";
+    }
+  };
+
+  const getProposalPaymentsAndBalances = (p: Proposal) => {
+    const list = p.paymentEntries || [];
+    const totalPaid = list.reduce((sum, pay) => sum + Number(pay.amount), 0);
+    const totalCost = p.totalCost || 0;
+    const pendingBalance = Math.max(0, totalCost - totalPaid);
+    const paidPercent = totalCost > 0 ? Math.min(100, Math.round((totalPaid / totalCost) * 100)) : 0;
+    
+    // Payment stages
+    const hasAdvance = list.some(pay => pay.type === 'Advance');
+    const hasSecond = list.some(pay => pay.type === 'Second');
+    const hasFinal = list.some(pay => pay.type === 'Final');
+    
+    return {
+      totalPaid,
+      pendingBalance,
+      paidPercent,
+      hasAdvance,
+      hasSecond,
+      hasFinal
+    };
+  };
+
   // Color mappings for proposal status badges
   const getStatusBadgeStyles = (status: ProposalStatus) => {
     switch (status) {
@@ -949,18 +990,16 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
           )}
         </button>
 
-        {currentUser?.role === UserRole.ADMIN && (
-          <button
-            onClick={() => setActiveTab('logs')}
-            className={`px-3 py-1.5 rounded-lg text-xs leading-none font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-              activeTab === 'logs' 
-                ? 'bg-white border border-slate-200 text-slate-900 shadow-xs' 
-                : 'text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <Activity className="h-3.5 w-3.5" /> Audit Activity Trails
-          </button>
-        )}
+        <button
+          onClick={() => setActiveTab('payments')}
+          className={`px-3 py-1.5 rounded-lg text-xs leading-none font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+            activeTab === 'payments' 
+              ? 'bg-white border border-slate-200 text-slate-900 shadow-xs' 
+              : 'text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          <Coins className="h-3.5 w-3.5 font-bold" /> Payment Tracker
+        </button>
       </div>
 
       {/* Primary Display Center */}
@@ -1980,64 +2019,294 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
           </div>
         )}
 
-        {/* TAB 5: AUDIT LOGS TRAIL */}
-        {activeTab === 'logs' && currentUser?.role === UserRole.ADMIN && (
-          <div className="space-y-4">
-            
-            <div className="flex justify-between items-center px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg">
-              <span className="text-[10px] font-bold font-mono text-slate-400 uppercase">
-                Collaboration Ledger Logs ({activityLogs.length} events logged)
-              </span>
-              <button
-                onClick={() => {
-                  if (confirm('Verify: Clear the entire collaborative audit trail from memory? This is destructive.')) {
-                    saveLogs([]);
-                  }
-                }}
-                className="px-2.5 py-1 text-xs border border-rose-200 hover:bg-rose-50 text-rose-600 rounded-lg transition-colors cursor-pointer font-bold leading-normal"
-              >
-                Clear Ledger History
-              </button>
-            </div>
+        {/* TAB 5: PAYMENT TRACKER PAGE */}
+        {activeTab === 'payments' && (() => {
+          const activeProposalsForStats = proposals.filter(p => p.status !== ProposalStatus.CANCELLED);
+          let totalContractValueSum = 0;
+          let totalCollectedSum = 0;
+          let totalPendingSum = 0;
+          let fullyPaidCount = 0;
 
-            <div className="bg-slate-950 text-slate-200 font-mono text-xs rounded-xl overflow-hidden p-5 shadow-inner">
-              <div className="flex justify-between items-center text-[10px] text-slate-500 border-b border-slate-800 pb-2 mb-4">
-                <span>TIMESTAMP & PROCESS</span>
-                <span>ACCOUNT ID ACTIONS</span>
-              </div>
+          activeProposalsForStats.forEach(p => {
+            totalContractValueSum += (p.totalCost || 0);
+            const paymentsList = p.paymentEntries || [];
+            const collectedForProp = paymentsList.reduce((sum, item) => sum + Number(item.amount), 0);
+            totalCollectedSum += collectedForProp;
+            const pendingForProp = Math.max(0, (p.totalCost || 0) - collectedForProp);
+            totalPendingSum += pendingForProp;
+            if (pendingForProp === 0 && (p.totalCost || 0) > 0) {
+              fullyPaidCount += 1;
+            }
+          });
+
+          const filteredPayProps = proposals.filter(p => {
+            if (p.status === ProposalStatus.CANCELLED) return false;
+            
+            // Calculate stats inline
+            const list = p.paymentEntries || [];
+            const totalPaid = list.reduce((sum, pay) => sum + Number(pay.amount), 0);
+            const totalCost = p.totalCost || 0;
+            const pendingBalance = Math.max(0, totalCost - totalPaid);
+            
+            if (payFilter === 'pending') {
+              return pendingBalance > 0;
+            }
+            if (payFilter === 'paid') {
+              return pendingBalance === 0;
+            }
+            if (payFilter === 'overdue') {
+              const pDate = new Date(p.proposalDate || p.createdAt);
+              const now = new Date();
+              const diffTime = Math.abs(now.getTime() - pDate.getTime());
+              const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+              return pendingBalance > 0 && diffDays > 30;
+            }
+            return true;
+          });
+
+          const sortedPayProps = [...filteredPayProps].sort((a, b) => {
+            const listA = a.paymentEntries || [];
+            const totalPaidA = listA.reduce((sum, pay) => sum + Number(pay.amount), 0);
+            const pendingBalanceA = Math.max(0, (a.totalCost || 0) - totalPaidA);
+
+            const listB = b.paymentEntries || [];
+            const totalPaidB = listB.reduce((sum, pay) => sum + Number(pay.amount), 0);
+            const pendingBalanceB = Math.max(0, (b.totalCost || 0) - totalPaidB);
+            
+            if (paySort === 'value') {
+              return (b.totalCost || 0) - (a.totalCost || 0);
+            }
+            if (paySort === 'pendingAmount') {
+              return pendingBalanceB - pendingBalanceA;
+            }
+            // Default 'latest'
+            const dateA = new Date(a.proposalDate || a.createdAt).getTime();
+            const dateB = new Date(b.proposalDate || b.createdAt).getTime();
+            return dateB - dateA;
+          });
+
+          return (
+            <div className="space-y-6">
               
-              <div className="space-y-3 max-h-[450px] overflow-y-auto font-mono scrollbar-thin scrollbar-thumb-slate-800 pr-1 select-text">
-                {activityLogs.length > 0 ? (
-                  activityLogs.map((log) => (
-                    <div key={log.id} className="text-[11px] leading-relaxed border-b border-slate-900/40 pb-2 flex flex-col md:flex-row md:items-start justify-between gap-2 md:gap-4">
-                      <div className="flex items-start gap-2.5">
-                        <span className="text-blue-400 shrink-0 select-none">
-                          [{new Date(log.timestamp).toLocaleString()}]
-                        </span>
-                        <div>
-                          <span className="text-emerald-400 mr-2 uppercase font-bold text-[10px]">
-                            {log.action}
+              {/* Header info */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-5">
+                <h2 className="text-slate-800 font-serif font-bold text-lg leading-tight">Payment Tracker & Financial Overviews</h2>
+                <p className="text-xs text-slate-500 font-sans mt-1">
+                  Track active contracts value, pending customer balances, incoming transactions and milestone schedule completions in QAR.
+                </p>
+              </div>
+
+              {/* 4 Stat Cards Summary Strip */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Card 1: Total Contract Value */}
+                <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col justify-between shadow-3xs">
+                  <span className="text-[10px] uppercase font-mono tracking-wider text-slate-450 block mb-1 font-bold">Total Contract Value</span>
+                  <strong className="text-lg font-bold text-slate-800 font-sans">{formatQAR(totalContractValueSum)} QAR</strong>
+                  <span className="text-[9px] text-slate-400 mt-1 block">All {activeProposalsForStats.length} active projects combined</span>
+                </div>
+
+                {/* Card 2: Total Collected */}
+                <div className="bg-emerald-50/50 border border-emerald-100 rounded-xl p-4 flex flex-col justify-between shadow-3xs">
+                  <span className="text-[10px] uppercase font-mono tracking-wider text-emerald-750 block mb-1 font-bold">Total Collected (Received)</span>
+                  <strong className="text-lg font-bold text-emerald-600 font-sans">{formatQAR(totalCollectedSum)} QAR</strong>
+                  <span className="text-[9px] text-emerald-600/80 mt-1 block">Sum of all transaction ledger entries</span>
+                </div>
+
+                {/* Card 3: Total Pending */}
+                <div className="bg-rose-50/50 border border-rose-100 rounded-xl p-4 flex flex-col justify-between shadow-3xs">
+                  <span className="text-[10px] uppercase font-mono tracking-wider text-rose-700 block mb-1 font-bold">Total Pending Balances</span>
+                  <strong className="text-lg font-bold text-rose-600 font-sans">{formatQAR(totalPendingSum)} QAR</strong>
+                  <span className="text-[9px] text-rose-600/80 mt-1 block font-semibold font-sans">Outstanding customer balance</span>
+                </div>
+
+                {/* Card 4: Fully Paid Projects */}
+                <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-4 flex flex-col justify-between shadow-3xs">
+                  <span className="text-[10px] uppercase font-mono tracking-wider text-blue-750 block mb-1 font-bold">Fully Paid Projects</span>
+                  <strong className="text-lg font-bold text-blue-700 font-sans">{fullyPaidCount} Active Projects</strong>
+                  <span className="text-[9px] text-blue-600/85 mt-1 block">100% financial settlement rate</span>
+                </div>
+              </div>
+
+              {/* Filters and sorting strip */}
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 py-3 px-4 border border-slate-200 bg-slate-50/50 rounded-xl">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <span className="text-[10px] font-bold text-slate-400 font-mono uppercase tracking-wider">Filter SOWs:</span>
+                  <div className="flex bg-slate-100 rounded-lg p-0.5 border border-slate-200">
+                    <button
+                      onClick={() => setPayFilter('all')}
+                      className={`px-2.5 py-1 rounded-md text-[10px] font-semibold cursor-pointer transition-all ${
+                        payFilter === 'all' ? 'bg-white text-slate-900 shadow-3xs' : 'text-slate-500 hover:text-slate-800'
+                      }`}
+                    >
+                      All Projects
+                    </button>
+                    <button
+                      onClick={() => setPayFilter('pending')}
+                      className={`px-2.5 py-1 rounded-md text-[10px] font-semibold cursor-pointer transition-all ${
+                        payFilter === 'pending' ? 'bg-white text-slate-900 shadow-3xs' : 'text-slate-500 hover:text-slate-800'
+                      }`}
+                    >
+                      Pending Payment
+                    </button>
+                    <button
+                      onClick={() => setPayFilter('paid')}
+                      className={`px-2.5 py-1 rounded-md text-[10px] font-semibold cursor-pointer transition-all ${
+                        payFilter === 'paid' ? 'bg-white text-slate-900 shadow-3xs' : 'text-slate-500 hover:text-slate-800'
+                      }`}
+                    >
+                      Fully Paid
+                    </button>
+                    <button
+                      onClick={() => setPayFilter('overdue')}
+                      className={`px-2.5 py-1 rounded-md text-[10px] font-semibold cursor-pointer transition-all ${
+                        payFilter === 'overdue' ? 'bg-white text-slate-900 shadow-3xs' : 'text-slate-500 hover:text-slate-800'
+                      }`}
+                    >
+                      {"Overdue (>30d)"}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] font-bold text-slate-400 font-mono uppercase tracking-wider">Sort List:</span>
+                  <select
+                    value={paySort}
+                    onChange={(e) => setPaySort(e.target.value as any)}
+                    className="bg-white border border-slate-200 rounded-lg py-1 px-2.5 text-xs font-sans text-slate-750 focus:outline-hidden"
+                  >
+                    <option value="latest">Latest First</option>
+                    <option value="value">Highest Contract Value</option>
+                    <option value="pendingAmount">Most Pending Amount</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* SOW Project Card Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {sortedPayProps.map(p => {
+                  const { totalPaid, pendingBalance, paidPercent, hasAdvance, hasSecond, hasFinal } = getProposalPaymentsAndBalances(p);
+                  const isBranding = p.type === 'branding';
+                  const deliveryStage = getDeliveryStage(p.status);
+                  
+                  return (
+                    <div key={p.id} className="bg-white border border-slate-200/80 hover:border-blue-300 rounded-2xl p-5 shadow-3xs hover:shadow-xs transition-all flex flex-col justify-between">
+                      <div>
+                        {/* Top line with code and stage */}
+                        <div className="flex items-center justify-between gap-2 mb-3">
+                          <span className="font-mono text-[10px] font-bold text-slate-400 uppercase bg-slate-100 px-2 py-0.5 rounded">
+                            {p.id}
                           </span>
-                          <p className="text-slate-300 inline font-sans whitespace-pre-wrap">{log.details}</p>
+                          <span className="text-[9.5px] font-sans font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
+                            {deliveryStage}
+                          </span>
+                        </div>
+
+                        {/* Client & Company */}
+                        <div className="mb-4">
+                          <strong className="font-serif text-slate-800 text-sm block leading-tight">{p.clientName}</strong>
+                          <span className="text-[11px] text-slate-500 font-sans block mt-0.5">{p.companyName}</span>
+                          <span className="text-[10px] text-slate-400 font-mono block mt-1.5 font-semibold">
+                            {isBranding ? 'Branding & Identity SOW' : 'Website Development SOW'}
+                          </span>
+                        </div>
+
+                        {/* Financial Highlights */}
+                        <div className="grid grid-cols-3 gap-2 py-3 border-t border-b border-dashed border-slate-100 mb-4 bg-slate-50/50 px-2.5 rounded-xl">
+                          <div>
+                            <span className="text-[8px] text-slate-450 font-mono uppercase tracking-wider block font-bold">Total Contract</span>
+                            <strong className="text-xs font-bold text-slate-800 font-sans">{formatQAR(p.totalCost)}</strong>
+                          </div>
+                          <div>
+                            <span className="text-[8px] text-emerald-600 font-mono uppercase tracking-wider block font-bold">Received (Green)</span>
+                            <strong className="text-xs font-bold text-emerald-600 font-sans">{formatQAR(totalPaid)}</strong>
+                          </div>
+                          <div>
+                            <span className="text-[8px] text-rose-500 font-mono uppercase tracking-wider block font-extrabold">Pending (Red)</span>
+                            <strong className="text-xs font-extrabold text-rose-650 font-sans">{formatQAR(pendingBalance)}</strong>
+                          </div>
+                        </div>
+
+                        {/* Progress Bar */}
+                        <div className="space-y-1 mb-4">
+                          <div className="flex justify-between items-center text-[10px] font-semibold text-slate-650">
+                            <span>Payment Completion Progress</span>
+                            <span className="text-slate-800 font-mono font-bold">{paidPercent}%</span>
+                          </div>
+                          <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                            <div 
+                              className={`h-full rounded-full transition-all ${
+                                paidPercent === 100 ? 'bg-emerald-500' : 'bg-blue-600'
+                              }`} 
+                              style={{ width: `${paidPercent}%` }}
+                            ></div>
+                          </div>
+                        </div>
+
+                        {/* Payment Stages Indicators */}
+                        <div className="space-y-1.5 mb-5 bg-slate-50/30 p-2.5 rounded-lg border border-slate-150">
+                          <span className="text-[8.5px] uppercase font-mono tracking-wider text-slate-400 block font-bold mb-1">Payment Stage Gates:</span>
+                          
+                          <div className="flex items-center justify-between text-[10px]">
+                            <span className="text-slate-500 flex items-center gap-1">
+                              <Check className={`h-3 w-3 ${hasAdvance ? 'text-emerald-500 font-extrabold' : 'text-slate-300'}`} />
+                              <span>Advance payment (typically 50%)</span>
+                            </span>
+                            <span className={`text-[9px] font-bold uppercase font-mono ${hasAdvance ? 'text-emerald-600' : 'text-slate-400'}`}>
+                              {hasAdvance ? '✓ Paid' : 'Pending'}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center justify-between text-[10px] border-t border-slate-100/60 pt-1">
+                            <span className="text-slate-500 flex items-center gap-1">
+                              <Check className={`h-3 w-3 ${hasSecond ? 'text-emerald-500 font-extrabold' : 'text-slate-300'}`} />
+                              <span>Second payment (typically 25%)</span>
+                            </span>
+                            <span className={`text-[9px] font-bold uppercase font-mono ${hasSecond ? 'text-emerald-600' : 'text-slate-400'}`}>
+                              {hasSecond ? '✓ Paid' : 'Pending'}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center justify-between text-[10px] border-t border-slate-100/60 pt-1">
+                            <span className="text-slate-500 flex items-center gap-1">
+                              <Check className={`h-3 w-3 ${hasFinal ? 'text-emerald-500 font-extrabold' : 'text-slate-300'}`} />
+                              <span>Final delivery balance (typically 25%)</span>
+                            </span>
+                            <span className={`text-[9px] font-bold uppercase font-mono ${hasFinal ? 'text-emerald-600' : 'text-slate-400'}`}>
+                              {hasFinal ? '✓ Paid' : 'Pending'}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                      <div className="shrink-0 self-end md:self-auto">
-                        <span className="bg-slate-900 border border-slate-800 text-slate-400 rounded px-1.5 py-0.5 text-[9px] font-bold font-mono">
-                          @{log.userName} ({log.userRole})
-                        </span>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="py-8 text-center text-slate-500 font-mono italic">
-                    - Ledger memory has been purged. No events currently indexed -
-                  </div>
-                )}
-              </div>
-            </div>
 
-          </div>
-        )}
+                      {/* Action Button */}
+                      <button
+                        onClick={() => {
+                          if (onViewProposalDetail) {
+                            onViewProposalDetail(p, 'payment');
+                          } else {
+                            alert(`Please navigate to raw details view manually for proposal ${p.id}.`);
+                          }
+                        }}
+                        className="w-full py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-xl shadow-xs hover:shadow-sm transition-all text-center cursor-pointer flex items-center justify-center gap-1.5"
+                      >
+                        <CreditCard className="h-3.5 w-3.5" /> View Details & Breakdown
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {sortedPayProps.length === 0 && (
+                <div className="p-12 border border-dashed border-slate-200 bg-slate-50/50 rounded-2xl text-center">
+                  <Coins className="h-8 w-8 text-slate-300 mx-auto mb-2" />
+                  <strong className="text-xs text-slate-650 block">No matching projects found</strong>
+                  <span className="text-3xs text-slate-400 block mt-0.5">Try altering the filter query values.</span>
+                </div>
+              )}
+
+            </div>
+          );
+        })()}
 
       </div>
 

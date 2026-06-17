@@ -18,6 +18,7 @@ interface ProposalDocumentViewProps {
   onRevert?: (targetHistory: ProposalHistoryEntry) => void;
   onUpdateProposal?: (updated: Proposal) => void;
   currentUser?: any;
+  initialTab?: 'document' | 'history' | 'payment';
 }
 
 // Helper functions to convert oklch to rgb to prevent html2canvas color parsing crashes
@@ -274,7 +275,7 @@ export function AstraFooter({ pageNumber }: { pageNumber: string }) {
   return null;
 }
 
-export default function ProposalDocumentView({ proposal, onBack, showBackBtn = true, onRevert, onUpdateProposal, currentUser }: ProposalDocumentViewProps) {
+export default function ProposalDocumentView({ proposal, onBack, showBackBtn = true, onRevert, onUpdateProposal, currentUser, initialTab = 'document' }: ProposalDocumentViewProps) {
   const isBranding = proposal.type === 'branding';
   const templates = isBranding ? BRANDING_TEMPLATES : WEBSITE_TEMPLATES;
   
@@ -317,6 +318,12 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
   const [isGenerating, setIsGenerating] = React.useState(false);
   const [progressText, setProgressText] = React.useState('');
   const [activeTab, setActiveTab] = React.useState<'document' | 'history' | 'payment'>('document');
+
+  React.useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
 
   const handleDownloadPDF = async () => {
     const originalTab = activeTab;

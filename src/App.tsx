@@ -97,6 +97,7 @@ export default function App() {
   const [editingProposal, setEditingProposal] = useState<Proposal | null>(null);
   // Separate view screen for reading & printing document
   const [viewingProposal, setViewingProposal] = useState<Proposal | null>(null);
+  const [proposalViewTab, setProposalViewTab] = useState<'document' | 'history' | 'payment'>('document');
   
   // Search state
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -526,6 +527,7 @@ export default function App() {
               onBack={() => setViewingProposal(null)} 
               onRevert={handleRevertProposal}
               currentUser={currentUser}
+              initialTab={proposalViewTab}
               onUpdateProposal={(updated) => {
                 setProposals(prev => {
                   const updatedList = prev.map(p => p.id === updated.id ? updated : p);
@@ -656,6 +658,10 @@ export default function App() {
                 }}
                 currentUser={currentUser}
                 onLoginUser={setCurrentUser}
+                onViewProposalDetail={(prop, tab) => {
+                  setViewingProposal(prop);
+                  setProposalViewTab(tab || 'document');
+                }}
               />
             </div>
 
@@ -717,7 +723,10 @@ export default function App() {
                     return (
                       <div 
                         key={prop.id}
-                        onClick={() => setViewingProposal(prop)}
+                        onClick={() => {
+                          setProposalViewTab('document');
+                          setViewingProposal(prop);
+                        }}
                         className="bg-white border border-slate-200 p-5 rounded-2xl hover:border-blue-300 hover:shadow-md transition-all cursor-pointer relative group flex flex-col justify-between"
                       >
                         {/* Type Tag indicator */}
@@ -776,6 +785,7 @@ export default function App() {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
+                                setProposalViewTab('document');
                                 setViewingProposal(prop);
                               }}
                               className="p-1.5 hover:bg-slate-100 text-slate-500 hover:text-blue-600 rounded-md transition-colors"
