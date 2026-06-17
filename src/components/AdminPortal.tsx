@@ -350,6 +350,10 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
   // User CRUD operations
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (currentUser?.role !== UserRole.ADMIN) {
+      alert('Permission Denied: Only administrators are authorized to register new user accounts.');
+      return;
+    }
     if (!newUserName.trim() || !newUserEmail.trim()) return;
 
     if (users.find(u => u.email.toLowerCase() === newUserEmail.toLowerCase().trim())) {
@@ -390,6 +394,10 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
   };
 
   const handleStartEditUser = (u: User) => {
+    if (currentUser?.role !== UserRole.ADMIN) {
+      alert('Permission Denied: Only administrators are authorized to modify user profiles.');
+      return;
+    }
     setEditingUserId(u.id);
     setEditingUserName(u.name);
     setEditingUserEmail(u.email);
@@ -410,6 +418,10 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
 
   const handleEditUserSave = async (e: React.FormEvent | React.MouseEvent) => {
     e.preventDefault();
+    if (currentUser?.role !== UserRole.ADMIN) {
+      alert('Permission Denied: Only administrators are authorized to save custom user changes.');
+      return;
+    }
     if (!editingUserId || !editingUserName.trim() || !editingUserEmail.trim()) return;
 
     if (users.some(u => u.id !== editingUserId && u.email.toLowerCase() === editingUserEmail.toLowerCase().trim())) {
@@ -456,6 +468,10 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
   };
 
   const handleToggleUserActive = async (userId: string) => {
+    if (currentUser?.role !== UserRole.ADMIN) {
+      alert('Permission Denied: Only administrators are authorized to toggle user active status.');
+      return;
+    }
     const userToEdit = users.find(u => u.id === userId);
     if (!userToEdit) return;
     if (userId === currentUser?.id) {
@@ -484,6 +500,10 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
   };
 
   const handleDeleteUser = async (userId: string) => {
+    if (currentUser?.role !== UserRole.ADMIN) {
+      alert('Permission Denied: Only administrators are authorized to delete user profiles.');
+      return;
+    }
     const userToDel = users.find(u => u.id === userId);
     if (!userToDel) return;
     if (userId === currentUser?.id) {
@@ -1407,7 +1427,8 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
                       value={newUserName}
                       onChange={(e) => setNewUserName(e.target.value)}
                       required
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs leading-normal font-sans focus:outline-hidden bg-white"
+                      disabled={currentUser?.role !== UserRole.ADMIN}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs leading-normal font-sans focus:outline-hidden bg-white disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-slate-100"
                       id="input_admin_username"
                     />
                   </div>
@@ -1420,7 +1441,8 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
                       value={newUserEmail}
                       onChange={(e) => setNewUserEmail(e.target.value)}
                       required
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs leading-normal font-sans focus:outline-hidden bg-white"
+                      disabled={currentUser?.role !== UserRole.ADMIN}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs leading-normal font-sans focus:outline-hidden bg-white disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-slate-100"
                       id="input_admin_useremail"
                     />
                   </div>
@@ -1430,7 +1452,8 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
                     <select
                       value={newUserRole}
                       onChange={(e) => setNewUserRole(e.target.value as UserRole)}
-                      className="w-full px-3 py-2 border border-slate-300 bg-white rounded-lg text-xs leading-normal font-sans focus:outline-hidden"
+                      disabled={currentUser?.role !== UserRole.ADMIN}
+                      className="w-full px-3 py-2 border border-slate-300 bg-white rounded-lg text-xs leading-normal font-sans focus:outline-hidden disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-slate-100"
                     >
                       {Object.values(UserRole).map(role => (
                         <option key={role} value={role}>{role}</option>
@@ -1445,7 +1468,8 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
                       placeholder="e.g. securePass123 (Optional)"
                       value={newUserPassword}
                       onChange={(e) => setNewUserPassword(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs leading-normal font-sans focus:outline-hidden bg-white"
+                      disabled={currentUser?.role !== UserRole.ADMIN}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs leading-normal font-sans focus:outline-hidden bg-white disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-slate-100"
                       id="input_admin_userpassword"
                     />
                     <span className="text-[9.5px] text-slate-400">If left blank, role-default (e.g., "sales123") is active.</span>
@@ -1453,9 +1477,10 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
 
                   <button
                     type="submit"
-                    className="w-full py-2 bg-slate-900 hover:bg-slate-850 text-white font-semibold text-xs rounded-xl shadow-xs transition-colors cursor-pointer"
+                    disabled={currentUser?.role !== UserRole.ADMIN}
+                    className="w-full py-2 bg-slate-900 hover:bg-slate-850 disabled:bg-slate-300 text-white disabled:text-slate-500 font-semibold text-xs rounded-xl shadow-xs transition-colors cursor-pointer disabled:cursor-not-allowed"
                   >
-                    Add Team Member
+                    {currentUser?.role === UserRole.ADMIN ? 'Add Team Member' : 'Locked — Admin Only'}
                   </button>
                 </form>
               </div>
@@ -1589,12 +1614,15 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
                           <td className="py-4 px-4">
                             <button
                               onClick={() => handleToggleUserActive(u.id)}
+                              disabled={currentUser?.role !== UserRole.ADMIN}
                               className={`px-2 py-1 rounded text-[9px] tracking-wider font-bold transition-all cursor-pointer font-sans leading-none border uppercase ${
-                                u.isActive 
-                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200' 
-                                  : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200'
+                                currentUser?.role !== UserRole.ADMIN
+                                  ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
+                                  : u.isActive 
+                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200' 
+                                    : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200'
                               }`}
-                              title="Deactivate / Reactivate account"
+                              title={currentUser?.role === UserRole.ADMIN ? "Deactivate / Reactivate account" : "Administrators only"}
                             >
                               {u.isActive ? 'Active' : 'Inactive'}
                             </button>
@@ -1603,15 +1631,17 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
                             <div className="flex items-center justify-end gap-2">
                               <button
                                 onClick={() => handleStartEditUser(u)}
-                                className="px-2.5 py-1 text-[10px] font-semibold font-sans border border-slate-200 rounded-md text-slate-500 hover:text-blue-600 hover:border-blue-200 cursor-pointer"
-                                title="Edit profile and update password"
+                                disabled={currentUser?.role !== UserRole.ADMIN}
+                                className="px-2.5 py-1 text-[10px] font-semibold font-sans border border-slate-200 rounded-md text-slate-500 hover:text-blue-600 hover:border-blue-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                                title={currentUser?.role === UserRole.ADMIN ? "Edit profile and update password" : "Administrators only"}
                               >
                                 Edit
                               </button>
                               <button
                                 onClick={() => handleDeleteUser(u.id)}
-                                className="p-1.5 hover:bg-slate-50 border border-transparent hover:border-slate-200 text-slate-400 hover:text-rose-600 rounded cursor-pointer"
-                                title="Delete user record"
+                                disabled={currentUser?.role !== UserRole.ADMIN}
+                                className="p-1.5 hover:bg-slate-50 border border-transparent hover:border-slate-200 text-slate-400 hover:text-rose-600 disabled:opacity-40 disabled:hover:text-slate-400 disabled:hover:bg-transparent disabled:hover:border-transparent disabled:cursor-not-allowed rounded cursor-pointer"
+                                title={currentUser?.role === UserRole.ADMIN ? "Delete user record" : "Administrators only"}
                               >
                                 <Trash2 className="h-3.5 w-3.5" />
                               </button>
