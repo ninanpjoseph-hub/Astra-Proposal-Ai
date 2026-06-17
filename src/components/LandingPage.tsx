@@ -123,11 +123,11 @@ export default function LandingPage({ onLogin }: LandingPageProps) {
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="bg-blue-600 h-9 w-9 rounded-lg flex items-center justify-center font-bold font-serif italic text-white text-lg shadow-lg">
-              Pr
+              As
             </div>
             <div>
               <h1 className="font-serif font-bold text-base md:text-lg tracking-tight leading-none text-slate-100">
-                Prowess Strategic Builder
+                Astra Tech
               </h1>
               <p className="text-[9px] font-mono text-blue-400 mt-1 uppercase tracking-widest block font-bold">
                 Automated Client Proposal Space
@@ -261,7 +261,7 @@ export default function LandingPage({ onLogin }: LandingPageProps) {
       {/* Footer */}
       <footer className="relative bg-slate-950 text-slate-500 text-xs text-center py-6 border-t border-slate-900 font-sans z-10 no-print">
         <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <span>© 2026 Prowess Strategic Builder. All rights reserved. Registered trademark of Qatar.</span>
+          <span>© 2026 Astra Tech. All rights reserved. Registered trademark of Qatar.</span>
           <div className="flex gap-4">
             <span className="hover:text-slate-400 cursor-pointer text-slate-500 select-none">Security Assurance</span>
             <span>•</span>

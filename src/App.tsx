@@ -483,11 +483,11 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="bg-blue-600 h-9 w-9 rounded-lg flex items-center justify-center font-bold font-serif italic text-white text-lg animate-none">
-              Pr
+              As
             </div>
             <div>
               <h1 className="font-serif font-bold text-base md:text-lg tracking-tight leading-none text-slate-100">
-                Prowess Strategic Builder
+                Astra Tech
               </h1>
               <p className="text-[10px] font-mono text-slate-400 mt-1 uppercase tracking-widest">
                 Automated Client Proposal Workspace
@@ -987,7 +987,7 @@ export default function App() {
       {/* FOOTER - Hidden during printing */}
       <footer className="no-print bg-white border-t border-slate-200 py-6 text-slate-400 text-xs text-center mt-8 font-sans">
         <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <span>© 2026 Prowess Strategic Builder. All rights reserved. Registered trademark of Qatar.</span>
+          <span>© 2026 Astra Tech. All rights reserved. Registered trademark of Qatar.</span>
           <div className="flex gap-4">
             <span className="hover:text-slate-600 transition-colors cursor-pointer">Security Cert</span>
             <span>•</span>
