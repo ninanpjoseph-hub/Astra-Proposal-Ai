@@ -282,7 +282,7 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
   const [allUsers, setAllUsers] = React.useState<any[]>([]);
 
   React.useEffect(() => {
-    if (currentUser?.role === UserRole.ADMIN) {
+    if (currentUser?.role === UserRole.ADMIN || currentUser?.role === UserRole.MANAGER) {
       fetch('/api/users')
         .then(res => res.json())
         .then(data => {
@@ -295,12 +295,13 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
   }, [currentUser]);
 
   const handleAdminApprove = () => {
-    if (!currentUser || currentUser.role !== UserRole.ADMIN) return;
+    if (!currentUser || (currentUser.role !== UserRole.ADMIN && currentUser.role !== UserRole.MANAGER)) return;
     
+    const isManager = currentUser.role === UserRole.MANAGER;
     const historyEntry: ProposalHistoryEntry = {
       versionId: Math.random().toString(36).substring(2, 10).toUpperCase(),
       timestamp: new Date().toISOString(),
-      summary: `Proposal approved, sealed, and finalized in administrative session by Admin: ${currentUser.name}`,
+      summary: `Proposal approved, sealed, and finalized in administrative session by ${isManager ? 'Manager' : 'Admin'}: ${currentUser.name}`,
       proposalState: JSON.parse(JSON.stringify(proposal))
     };
     
@@ -318,13 +319,16 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
   };
 
   const handleAdminStatusChange = (newStatus: ProposalStatus) => {
-    if (!currentUser || currentUser.role !== UserRole.ADMIN) return;
+    if (!currentUser) return;
     if (proposal.status === newStatus) return;
+
+    const isPowerUser = currentUser.role === UserRole.ADMIN || currentUser.role === UserRole.MANAGER;
+    const authorType = isPowerUser ? 'Administrative Update' : 'Account Lead ';
 
     const historyEntry: ProposalHistoryEntry = {
       versionId: Math.random().toString(36).substring(2, 10).toUpperCase(),
       timestamp: new Date().toISOString(),
-      summary: `Administrative Update: Status: ${proposal.status || 'Draft'} → ${newStatus} (Modified by Admin: ${currentUser.name})`,
+      summary: `${authorType}: Status: ${proposal.status || 'Draft'} → ${newStatus} (Modified by ${currentUser.role}: ${currentUser.name})`,
       proposalState: JSON.parse(JSON.stringify(proposal))
     };
 
@@ -341,7 +345,7 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
   };
 
   const handleAdminAssigneeChange = (assigneeId: string) => {
-    if (!currentUser || currentUser.role !== UserRole.ADMIN) return;
+    if (!currentUser || (currentUser.role !== UserRole.ADMIN && currentUser.role !== UserRole.MANAGER)) return;
     if (proposal.assignedUserId === assigneeId) return;
 
     const targetUser = allUsers.find(u => u.id === assigneeId);
@@ -350,7 +354,7 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
     const historyEntry: ProposalHistoryEntry = {
       versionId: Math.random().toString(36).substring(2, 10).toUpperCase(),
       timestamp: new Date().toISOString(),
-      summary: `Administrative Update: Assignment changed to ${assigneeName || 'Unassigned'} (Modified by Admin: ${currentUser.name})`,
+      summary: `Administrative Update: Assignment changed to ${assigneeName || 'Unassigned'} (Modified by Admin/Manager: ${currentUser.name})`,
       proposalState: JSON.parse(JSON.stringify(proposal))
     };
 
@@ -368,7 +372,7 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
   };
 
   const handleAdminToggleShare = (sharedUserId: string) => {
-    if (!currentUser || currentUser.role !== UserRole.ADMIN) return;
+    if (!currentUser || (currentUser.role !== UserRole.ADMIN && currentUser.role !== UserRole.MANAGER)) return;
     const currentShared = proposal.sharedUserIds || [];
     let updatedShared: string[];
     
@@ -383,7 +387,7 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
     const historyEntry: ProposalHistoryEntry = {
       versionId: Math.random().toString(36).substring(2, 10).toUpperCase(),
       timestamp: new Date().toISOString(),
-      summary: `Administrative Update: Sharing settings updated for user ${userNameStr} (Modified by Admin: ${currentUser.name})`,
+      summary: `Administrative Update: Sharing settings updated for user ${userNameStr} (Modified by Admin/Manager: ${currentUser.name})`,
       proposalState: JSON.parse(JSON.stringify(proposal))
     };
 

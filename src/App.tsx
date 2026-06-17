@@ -396,7 +396,7 @@ export default function App() {
   // Security Access Control: Filter proposals based on active session role cards
   const visibleProposals = proposals.filter(p => {
     if (!currentUser) return true; // Show all to non-logged users/guests by default
-    if (currentUser.role === UserRole.ADMIN) return true;
+    if (currentUser.role === UserRole.ADMIN || currentUser.role === UserRole.MANAGER) return true;
 
     // Standard users can see proposals prepared by them, assigned to them, or explicitly shared with them
     const isPreparedBy = p.preparedByUserId === currentUser.id;
@@ -587,7 +587,7 @@ export default function App() {
                   
                   let finalizedUpdated = { ...updated };
                   
-                  const isUserAdmin = currentUser?.role === UserRole.ADMIN;
+                  const isUserAdmin = currentUser?.role === UserRole.ADMIN || currentUser?.role === UserRole.MANAGER;
                   if (isUserAdmin) {
                     const prevHistoryLen = (previousVer.history || []).length;
                     const nextHistoryLen = (updated.history || []).length;
@@ -596,7 +596,7 @@ export default function App() {
                       const historyEntry: ProposalHistoryEntry = {
                         versionId: Math.random().toString(36).substring(2, 10).toUpperCase(),
                         timestamp: new Date().toISOString(),
-                        summary: `Administrative Update: Visual configuration / document styles customized (Modified by Admin: ${currentUser.name})`,
+                        summary: `Administrative Update: Visual configuration / document styles customized (Modified by Admin/Manager: ${currentUser.name})`,
                         proposalState: JSON.parse(JSON.stringify(previousVer)),
                       };
                       finalizedUpdated.history = [historyEntry, ...(previousVer.history || [])];
@@ -730,8 +730,6 @@ export default function App() {
               <AdminPortal 
                 proposals={proposals}
                 onUpdateProposals={(updated) => {
-                  const isUserAdmin = currentUser?.role === UserRole.ADMIN;
-                  
                   const processedUpdated = updated.map(updatedProp => {
                     const originalProp = proposals.find(p => p.id === updatedProp.id);
                     if (originalProp) {
@@ -739,13 +737,16 @@ export default function App() {
                                          originalProp.assignedUserId !== updatedProp.assignedUserId || 
                                          JSON.stringify(originalProp.sharedUserIds || []) !== JSON.stringify(updatedProp.sharedUserIds || []);
                                          
-                      if (hasChanged && isUserAdmin) {
+                      if (hasChanged) {
+                        const isUserAdmin = currentUser?.role === UserRole.ADMIN || currentUser?.role === UserRole.MANAGER;
+                        const roleLabel = isUserAdmin ? 'Administrative Control' : 'Account Lead';
+                        
                         const historyEntry: ProposalHistoryEntry = {
                           versionId: Math.random().toString(36).substring(2, 10).toUpperCase(),
-                          timestamp: originalProp.updatedAt || originalProp.createdAt || new Date().toISOString(),
-                          summary: `Administrative Control Update: Status: ${originalProp.status || 'Draft'} → ${updatedProp.status || 'Draft'}` + 
+                          timestamp: new Date().toISOString(),
+                          summary: `${roleLabel} Update: Status: ${originalProp.status || 'Draft'} → ${updatedProp.status || 'Draft'}` + 
                                    (originalProp.assignedUserId !== updatedProp.assignedUserId ? `, Assignee updated` : '') + 
-                                   ` (Modified by Admin: ${currentUser?.name || 'Administrator'})`,
+                                   ` (Modified by ${currentUser?.name || 'User'} [${currentUser?.role || 'Guest'}])`,
                           proposalState: JSON.parse(JSON.stringify(originalProp)),
                         };
                         const currentHistory = originalProp.history || [];

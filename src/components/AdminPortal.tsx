@@ -251,9 +251,9 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
     };
   }, []);
 
-  // Tab access reset if user role changes or is not admin
+  // Tab access reset if user role changes or is not admin/manager
   useEffect(() => {
-    if (currentUser?.role !== UserRole.ADMIN && (activeTab === 'users' || activeTab === 'logs')) {
+    if (currentUser?.role !== UserRole.ADMIN && currentUser?.role !== UserRole.MANAGER && (activeTab === 'users' || activeTab === 'logs')) {
       setActiveTab('overview');
     }
   }, [currentUser, activeTab]);
@@ -305,8 +305,8 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
     e.preventDefault();
     setLoginErr('');
 
-    if (currentUser && currentUser.role !== UserRole.ADMIN) {
-      alert('Permission Denied: Only administrators are authorized to switch user sessions.');
+    if (currentUser && currentUser.role !== UserRole.ADMIN && currentUser.role !== UserRole.MANAGER) {
+      alert('Permission Denied: Only administrators or managers are authorized to switch user sessions.');
       return;
     }
     
@@ -713,7 +713,7 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
   // Filter core proposals for standard user roles
   const visibleProposals = proposals.filter(p => {
     if (!currentUser) return true;
-    if (currentUser.role === UserRole.ADMIN) return true;
+    if (currentUser.role === UserRole.ADMIN || currentUser.role === UserRole.MANAGER) return true;
 
     const isPreparedBy = p.preparedByUserId === currentUser.id;
     const isAssignedTo = p.assignedUserId === currentUser.id;
@@ -766,7 +766,7 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
 
   // Filter reminders based on role access
   const visibleReminders = reminders.filter(r => {
-    if (!currentUser || currentUser.role === UserRole.ADMIN) return true;
+    if (!currentUser || currentUser.role === UserRole.ADMIN || currentUser.role === UserRole.MANAGER) return true;
     return proposals.some(p => p.id === r.proposalId);
   });
 
@@ -906,7 +906,7 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
               </div>
               
               <div className="flex gap-1.5">
-                {currentUser?.role === UserRole.ADMIN && (
+                {(currentUser?.role === UserRole.ADMIN || currentUser?.role === UserRole.MANAGER) && (
                   <button
                     onClick={() => setShowLoginModal(true)}
                     className="px-2.5 py-1.5 border border-slate-700 rounded-lg hover:border-slate-500 hover:bg-slate-800 text-[10px] text-slate-300 font-semibold cursor-pointer flex items-center gap-1"
@@ -961,7 +961,7 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
           <FileText className="h-3.5 w-3.5" /> Pipeline Controller
         </button>
 
-        {currentUser?.role === UserRole.ADMIN && (
+        {(currentUser?.role === UserRole.ADMIN || currentUser?.role === UserRole.MANAGER) && (
           <button
             onClick={() => setActiveTab('users')}
             className={`px-3 py-1.5 rounded-lg text-xs leading-none font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
@@ -1287,7 +1287,8 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
                                   <select
                                     value={selectedAssigneeId}
                                     onChange={(e) => setSelectedAssigneeId(e.target.value)}
-                                    className="bg-white border border-slate-300 rounded-lg p-1 text-xs font-sans text-slate-700 w-full"
+                                    disabled={!(currentUser?.role === UserRole.ADMIN || currentUser?.role === UserRole.MANAGER)}
+                                    className="bg-white border border-slate-300 rounded-lg p-1 text-xs font-sans text-slate-700 w-full disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-slate-50"
                                   >
                                     <option value="">Unassigned</option>
                                     {users.map(u => (
@@ -1295,7 +1296,7 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
                                     ))}
                                   </select>
                                   
-                                  {currentUser?.role === UserRole.ADMIN && (
+                                  {(currentUser?.role === UserRole.ADMIN || currentUser?.role === UserRole.MANAGER) && (
                                     <div className="bg-slate-50 border border-slate-200 rounded-lg p-2 mt-1 w-full max-w-[220px] text-left">
                                       <span className="text-[9px] font-bold text-slate-400 font-mono uppercase block mb-1">
                                         Explicit Share Access:
@@ -1355,7 +1356,7 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
                                   >
                                     Manage
                                   </button>
-                                  {currentUser?.role === UserRole.ADMIN && (
+                                  {(currentUser?.role === UserRole.ADMIN || currentUser?.role === UserRole.MANAGER) && (
                                     <button
                                       onClick={() => handleAdminDeleteProposal(p.id, p.clientName)}
                                       className="p-1.5 hover:bg-rose-50 text-slate-300 hover:text-rose-600 rounded transition-colors"
@@ -1386,7 +1387,7 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
         )}
 
         {/* TAB 3: USER COLLABORATION & INTEGRITY */}
-        {activeTab === 'users' && currentUser?.role === UserRole.ADMIN && (
+        {activeTab === 'users' && currentUser && (currentUser.role === UserRole.ADMIN || currentUser.role === UserRole.MANAGER) && (
           <div className="space-y-6">
             
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -2389,7 +2390,7 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
             <div className="p-6 space-y-4 font-sans">
               
               {/* Simple accounts switch buttons */}
-              {(!currentUser || currentUser.role === UserRole.ADMIN) && (
+              {(!currentUser || currentUser.role === UserRole.ADMIN || currentUser.role === UserRole.MANAGER) && (
                 <div className="space-y-2">
                   <span className="text-[10px] font-bold text-slate-400 font-mono uppercase block mb-1">Interactive User Profiles:</span>
                   <div className="grid grid-cols-2 gap-2">
@@ -2397,8 +2398,8 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
                       <button
                         key={u.id}
                         onClick={() => {
-                          if (currentUser && currentUser.role !== UserRole.ADMIN) {
-                            alert('Permission Denied: Only administrators are authorized to switch user sessions.');
+                          if (currentUser && currentUser.role !== UserRole.ADMIN && currentUser.role !== UserRole.MANAGER) {
+                            alert('Permission Denied: Only administrators or managers are authorized to switch user sessions.');
                             return;
                           }
                           setLoginEmail(u.email);
@@ -2415,7 +2416,7 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
                 </div>
               )}
 
-              <div className={`border-t border-slate-100 ${(!currentUser || currentUser.role === UserRole.ADMIN) ? 'pt-4' : ''}`}>
+              <div className={`border-t border-slate-100 ${(!currentUser || currentUser.role === UserRole.ADMIN || currentUser.role === UserRole.MANAGER) ? 'pt-4' : ''}`}>
                 <form onSubmit={handleLogin} className="space-y-4">
                   {loginErr && (
                     <div className="p-2.5 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-lg flex items-center gap-1.5">
