@@ -161,6 +161,7 @@ export enum ProposalStatus {
   FOLLOW_UP_REQUIRED = 'Follow-Up Required',
   WON = 'Won',
   LOST = 'Lost',
+  CLOSED = 'Closed',
 }
 
 export interface User {

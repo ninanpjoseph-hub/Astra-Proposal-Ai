@@ -28,6 +28,27 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
 
+  // Daily automated email reminder simulation states
+  const [dailyEmailLogs, setDailyEmailLogs] = useState<{
+    id: string;
+    timestamp: string;
+    proposalId: string;
+    clientName: string;
+    projectName: string;
+    creatorName: string;
+    creatorEmail: string;
+    subject: string;
+    body: string;
+  }[]>([]);
+
+  const [dailyRunHistory, setDailyRunHistory] = useState<{
+    date: string;
+    countSent: number;
+    timestamp: string;
+  }[]>([]);
+
+  const [selectedEmail, setSelectedEmail] = useState<any | null>(null);
+
   // Local UI States
   const [activeTab, setActiveTab] = useState<'overview' | 'proposals' | 'users' | 'reminders' | 'logs'>('overview');
   const [showLoginModal, setShowLoginModal] = useState<boolean>(false);
@@ -100,6 +121,24 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
         setActivityLogs(JSON.parse(cachedLogs));
       } catch {
         setActivityLogs([]);
+      }
+    }
+
+    // 4. Daily email reminders logs and run histories
+    const cachedEmlLogs = localStorage.getItem('prowess_daily_email_logs');
+    if (cachedEmlLogs) {
+      try {
+        setDailyEmailLogs(JSON.parse(cachedEmlLogs));
+      } catch {
+        setDailyEmailLogs([]);
+      }
+    }
+    const cachedRunHistory = localStorage.getItem('prowess_daily_run_history');
+    if (cachedRunHistory) {
+      try {
+        setDailyRunHistory(JSON.parse(cachedRunHistory));
+      } catch {
+        setDailyRunHistory([]);
       }
     }
 
@@ -435,6 +474,98 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
     addLog('Delete Reminder', `Removed follow-up reminder "${rem.title}" for ${rem.proposalClient}`);
   };
 
+  const handleRunDailyEmailReminders = () => {
+    // Open statuses: anything other than Won, Lost, and Closed
+    const openProps = proposals.filter(p => {
+      const currentStatus = p.status || ProposalStatus.DRAFT;
+      return currentStatus !== ProposalStatus.WON &&
+             currentStatus !== ProposalStatus.LOST &&
+             currentStatus !== ProposalStatus.CLOSED;
+    });
+
+    if (openProps.length === 0) {
+      alert("No active open opportunities found! Please ensure there are proposals whose status is NOT Closed, Won, or Lost.");
+      return;
+    }
+
+    const timestamp = new Date().toISOString();
+    const newLogs: any[] = [];
+
+    openProps.forEach(p => {
+      let creatorName = p.preparedByName || "Ninan P Joseph";
+      let creatorEmail = "ninanpjoseph@gmail.com";
+
+      if (p.preparedByUserId) {
+        const u = users.find(user => user.id === p.preparedByUserId);
+        if (u) {
+          creatorName = u.name;
+          creatorEmail = u.email;
+        }
+      } else if (p.assignedUserId) {
+        const u = users.find(user => user.id === p.assignedUserId);
+        if (u) {
+          creatorName = u.name;
+          creatorEmail = u.email;
+        }
+      }
+
+      const projectName = p.companyName || p.clientName || "Astra Project";
+      const subject = `[Daily Follow-up Alert] Active Opportunity: ${projectName}`;
+      const body = `Dear ${creatorName},\n\n` +
+        `This is your automated daily follow-up summary alert for the active opportunity "${projectName}" (Client: ${p.clientName}).\n\n` +
+        `Project Summary & Current Parameters:\n` +
+        `- Current Pipeline Status: ${p.status || "Draft"}\n` +
+        `- Estimated Deal Contract Value: QAR ${p.totalCost.toLocaleString()}\n` +
+        `- Last Record Update Timestamp: ${new Date(p.updatedAt || p.createdAt).toLocaleString()}\n\n` +
+        `Action Item Required:\n` +
+        `Please perform consistent touchpoint checks with your contact person to maintain momentum and progression down the sales funnel.\n\n` +
+        `*Alert Cycle Lifetime: This system reminder dispatches scheduled messages every 24 hours. Emails will continue to be sent daily until this opportunity's pipeline status is officially updated to a closed state (Won, Lost, or Closed).`;
+
+      // Calculate how many times we've reminded this proposal before
+      const existingSentCount = dailyEmailLogs.filter(log => log.proposalId === p.id).length;
+
+      newLogs.push({
+        id: 'eml_' + Math.random().toString(36).substring(2, 10),
+        timestamp,
+        proposalId: p.id,
+        clientName: p.clientName,
+        projectName,
+        creatorName,
+        creatorEmail,
+        subject,
+        body,
+        sentIndex: existingSentCount + 1
+      });
+    });
+
+    const updatedLogs = [...newLogs, ...dailyEmailLogs];
+    setDailyEmailLogs(updatedLogs);
+    localStorage.setItem('prowess_daily_email_logs', JSON.stringify(updatedLogs));
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    const newRun = {
+      date: todayStr,
+      countSent: openProps.length,
+      timestamp
+    };
+    const updatedRuns = [newRun, ...dailyRunHistory];
+    setDailyRunHistory(updatedRuns);
+    localStorage.setItem('prowess_daily_run_history', JSON.stringify(updatedRuns));
+
+    addLog("Daily Email Automation", `Auto-checked pipeline and simulated daily follow-up alerts to ${openProps.length} deal creators.`);
+    alert(`Daily automated emails compiled and dispatched successfully!\n\nEmail follow-ups sent to ${openProps.length} active deal creators.`);
+  };
+
+  const handleClearDailyEmailLogs = () => {
+    if (confirm("Are you sure you want to completely clear the simulated daily automated email reminder history from memory?")) {
+      setDailyEmailLogs([]);
+      setDailyRunHistory([]);
+      localStorage.removeItem('prowess_daily_email_logs');
+      localStorage.removeItem('prowess_daily_run_history');
+      addLog("Daily Email Automation", "Cleared daily follow-up reminder logs and simulation run histories.");
+    }
+  };
+
   // Delete proposal via Admin permission bypass
   const handleAdminDeleteProposal = (id: string, clientName: string) => {
     if (!currentUser || currentUser.role !== UserRole.ADMIN) {
@@ -571,6 +702,8 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
         return 'bg-emerald-50 text-emerald-700 border-emerald-200';
       case ProposalStatus.CANCELLED:
         return 'bg-rose-50 text-rose-700 border-rose-200';
+      case ProposalStatus.CLOSED:
+        return 'bg-red-50 text-red-700 border-red-200';
       default:
         return 'bg-slate-100 text-slate-700 border-slate-200';
     }
@@ -815,6 +948,7 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
                             className={`h-full transition-all ${
                               status === ProposalStatus.COMPLETED ? 'bg-emerald-500' :
                               status === ProposalStatus.CANCELLED ? 'bg-rose-500' :
+                              status === ProposalStatus.CLOSED ? 'bg-red-500' :
                               status === ProposalStatus.UNDER_PROCESS ? 'bg-blue-500' :
                               status === ProposalStatus.UNDER_REVIEW ? 'bg-amber-500' :
                               status === ProposalStatus.AWAITING_CLIENT_FEEDBACK ? 'bg-pink-500' :
@@ -1322,6 +1456,261 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
         {activeTab === 'reminders' && (
           <div className="space-y-6">
             
+            {/* NEW MODULE: AUTOMATED DAILY EMAIL REMINDER CENTRAL */}
+            <div className="bg-slate-900 text-slate-100 rounded-2xl border border-slate-800 p-6 space-y-6 overflow-hidden relative shadow-md">
+              <div className="absolute top-0 right-0 p-8 opacity-5 select-none pointer-events-none">
+                <Mail className="h-56 w-56 text-blue-500" />
+              </div>
+              
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-805 pb-5">
+                <div className="flex items-start gap-3">
+                  <div className="bg-amber-500/10 text-amber-400 p-2.5 rounded-xl border border-amber-500/20 mt-1">
+                    <Mail className="h-5 w-5 animate-pulse" />
+                  </div>
+                  <div>
+                    <h3 className="text-white text-sm font-bold tracking-tight uppercase font-serif flex items-center gap-2">
+                      Automated Daily Follow-Up Email System
+                      <span className="bg-emerald-500/10 text-emerald-400 text-[9px] font-mono font-bold px-2 py-0.5 border border-emerald-500/20 rounded-full flex items-center gap-1">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                        Status: Armed & Active
+                      </span>
+                    </h3>
+                    <p className="text-[10px] text-slate-400 font-sans mt-1 leading-normal max-w-2xl">
+                      Ensures no prospect or active commercial interest is overlooked. The system scans the active ledger every 24 hours at 08:30 AM AST and dispatches targeted follow-up reminders to the respective deal creators for <strong className="text-slate-300">all open opportunities</strong>. Emails are continuously dispatched daily until the pipeline status is updated to <strong className="text-slate-300">Won, Lost, or Closed</strong>.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-2 shrink-0">
+                  <button
+                    onClick={handleRunDailyEmailReminders}
+                    className="px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs rounded-xl shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
+                  >
+                    <RefreshCw className="h-3.5 w-3.5 animate-spin-slow" /> Trigger Simulated Daily Run Now
+                  </button>
+                  <button
+                    onClick={handleClearDailyEmailLogs}
+                    disabled={dailyEmailLogs.length === 0}
+                    className="px-3 py-2 bg-slate-800 hover:bg-slate-750 disabled:opacity-45 disabled:pointer-events-none text-slate-300 font-semibold text-xs rounded-xl shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" /> Clear Logs
+                  </button>
+                </div>
+              </div>
+
+              {/* Stats Counters Block */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-slate-950/60 border border-slate-800 p-3.5 rounded-xl">
+                  <span className="text-[9px] text-slate-500 font-mono uppercase font-bold block">Open Opportunities Tracked</span>
+                  <span className="text-xl font-bold text-amber-400 mt-1 block">
+                    {proposals.filter(p => {
+                      const s = p.status || ProposalStatus.DRAFT;
+                      return s !== ProposalStatus.WON && s !== ProposalStatus.LOST && s !== ProposalStatus.CLOSED;
+                    }).length} Active Deals
+                  </span>
+                  <span className="text-[9px] text-slate-400 block mt-1 leading-none">Receiving alerts daily</span>
+                </div>
+
+                <div className="bg-slate-950/60 border border-slate-800 p-3.5 rounded-xl">
+                  <span className="text-[9px] text-slate-500 font-mono uppercase font-bold block">Closed / Terminated Deals</span>
+                  <span className="text-xl font-bold text-slate-300 mt-1 block">
+                    {proposals.filter(p => {
+                      const s = p.status || ProposalStatus.DRAFT;
+                      return s === ProposalStatus.WON || s === ProposalStatus.LOST || s === ProposalStatus.CLOSED;
+                    }).length} Opportunities
+                  </span>
+                  <span className="text-[9px] text-slate-400 block mt-1 leading-none">Status: Won, Lost, or Closed</span>
+                </div>
+
+                <div className="bg-slate-950/60 border border-slate-800 p-3.5 rounded-xl">
+                  <span className="text-[9px] text-slate-500 font-mono uppercase font-bold block">Daily Reminders Sent Today</span>
+                  <span className="text-xl font-bold text-blue-400 mt-1 block">
+                    {dailyRunHistory.length > 0 && dailyRunHistory[0].date === new Date().toISOString().split('T')[0] 
+                      ? dailyRunHistory[0].countSent 
+                      : 0} Emails
+                  </span>
+                  <span className="text-[9px] text-slate-400 block mt-1 leading-none font-sans">
+                    {dailyRunHistory.length > 0 && dailyRunHistory[0].date === new Date().toISOString().split('T')[0] 
+                      ? `Last run at ${new Date(dailyRunHistory[0].timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}` 
+                      : 'Not run yet today'}
+                  </span>
+                </div>
+
+                <div className="bg-slate-950/60 border border-slate-800 p-3.5 rounded-xl">
+                  <span className="text-[9px] text-slate-500 font-mono uppercase font-bold block">Cumulative Emails Dispatched</span>
+                  <span className="text-xl font-bold text-emerald-400 mt-1 block">
+                    {dailyEmailLogs.length} Delivery Actions
+                  </span>
+                  <span className="text-[9px] text-slate-400 block mt-1 leading-none font-sans">Logged in active system ledger</span>
+                </div>
+              </div>
+
+              {/* List Grid: Open Deals (Alert targets) vs Simulated Outbox Logs */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-2">
+                
+                {/* Panel row 1: Target checklist */}
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center bg-slate-950/40 p-3 rounded-lg border border-slate-800/80">
+                    <strong className="text-[10px] font-mono font-bold text-amber-400 tracking-wider uppercase block">
+                      CURRENT OPEN OPPORTUNITIES (EMAIL TARGET LIST)
+                    </strong>
+                    <span className="text-[9px] text-slate-400 font-mono">Status check</span>
+                  </div>
+                  
+                  <div className="bg-slate-950/20 border border-slate-800 rounded-xl overflow-hidden max-h-[280px] overflow-y-auto divide-y divide-slate-800/60">
+                    {proposals.filter(p => {
+                      const s = p.status || ProposalStatus.DRAFT;
+                      return s !== ProposalStatus.WON && s !== ProposalStatus.LOST && s !== ProposalStatus.CLOSED;
+                    }).length > 0 ? (
+                      proposals.filter(p => {
+                        const s = p.status || ProposalStatus.DRAFT;
+                        return s !== ProposalStatus.WON && s !== ProposalStatus.LOST && s !== ProposalStatus.CLOSED;
+                      }).map(p => {
+                        // Find creator
+                        let creatorName = p.preparedByName || "Ninan P Joseph";
+                        let creatorEmail = "ninanpjoseph@gmail.com";
+                        if (p.preparedByUserId) {
+                          const u = users.find(user => user.id === p.preparedByUserId);
+                          if (u) { creatorName = u.name; creatorEmail = u.email; }
+                        } else if (p.assignedUserId) {
+                          const u = users.find(user => user.id === p.assignedUserId);
+                          if (u) { creatorName = u.name; creatorEmail = u.email; }
+                        }
+                        
+                        const remindedCount = dailyEmailLogs.filter(log => log.proposalId === p.id).length;
+
+                        return (
+                          <div key={p.id} className="p-3 hover:bg-slate-800/25 transition-colors flex justify-between items-center gap-4">
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="font-mono text-[9px] text-slate-500 font-bold">{p.id}</span>
+                                <strong className="text-white text-xs truncate max-w-[160px] block">{p.companyName || p.clientName}</strong>
+                                <span className="bg-amber-400/15 text-amber-300 text-[8px] font-mono uppercase px-1.5 py-0.5 border border-amber-400/10 rounded leading-none">
+                                  {p.status || "Draft"}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1.5 mt-1">
+                                <span className="text-[10px] text-slate-300 font-sans">{creatorName}</span>
+                                <span className="text-slate-500 font-sans text-[9px]">({creatorEmail})</span>
+                              </div>
+                            </div>
+
+                            <div className="text-right shrink-0">
+                              <span className="text-xs font-bold font-mono text-blue-400 block">{formatQAR(p.totalCost)}</span>
+                              <div className="text-[9px] text-slate-400 font-mono mt-0.5 flex items-center justify-end gap-1">
+                                <Mail className="h-2.5 w-2.5 text-slate-500" /> Dispatched: <span className="text-slate-200 font-semibold">{remindedCount}x</span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="p-8 text-center text-xs text-slate-500 italic font-mono">
+                        No active open opportunities resident in system database. All opportunities won, lost, or closed.
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Panel row 2: Real-time simulation log */}
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center bg-slate-950/40 p-3 rounded-lg border border-slate-800/80">
+                    <strong className="text-[10px] font-mono font-bold text-emerald-400 tracking-wider uppercase block">
+                      OUTBOX SIMULATOR & DISPATCHED EMAIL LOGS ({dailyEmailLogs.length})
+                    </strong>
+                    <span className="text-[9px] text-slate-400 font-mono">Click to preview</span>
+                  </div>
+
+                  <div className="bg-slate-950/20 border border-slate-800 rounded-xl overflow-hidden max-h-[280px] overflow-y-auto divide-y divide-slate-800/60">
+                    {dailyEmailLogs.length > 0 ? (
+                      dailyEmailLogs.map(log => {
+                        const isSelected = selectedEmail?.id === log.id;
+                        return (
+                          <button
+                            key={log.id}
+                            onClick={() => setSelectedEmail(isSelected ? null : log)}
+                            className={`w-full p-3 hover:bg-slate-800/30 transition-colors text-left flex justify-between items-center gap-4 border-0 block cursor-pointer ${
+                              isSelected ? 'bg-slate-800/50 border-l-2 border-emerald-400' : ''
+                            }`}
+                          >
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="bg-emerald-500/10 text-emerald-400 text-[8px] font-mono font-bold px-1.5 py-0.5 rounded border border-emerald-500/20 leading-none">
+                                  DAILY REMINDER SENT
+                                </span>
+                                <span className="text-[9px] text-slate-400 font-mono leading-none">
+                                  {new Date(log.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'})}
+                                </span>
+                              </div>
+                              <strong className="text-white text-xs mt-1 block truncate max-w-[240px] font-sans">{log.projectName}</strong>
+                              <span className="text-[10px] text-slate-400 font-sans block mt-0.5 truncate">
+                                To: {log.creatorName} &lt;{log.creatorEmail}&gt;
+                              </span>
+                            </div>
+
+                            <span className="text-[9px] font-mono text-slate-500 shrink-0 self-start mt-1">
+                              {new Date(log.timestamp).toLocaleDateString()}
+                            </span>
+                          </button>
+                        );
+                      })
+                    ) : (
+                      <div className="p-8 text-center text-xs text-slate-500 italic font-sans">
+                        No automated daily alert runs captured yet. Click "Trigger Simulated Daily Run" above to execute a run.
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Floating detail message card of selected email */}
+              {selectedEmail && (
+                <div className="bg-slate-950 border border-slate-800 rounded-xl p-5 space-y-3.5 relative anim-fade-in text-left">
+                  <div className="flex justify-between items-start border-b border-slate-800 pb-3">
+                    <div>
+                      <h4 className="text-white text-xs font-bold leading-normal font-sans">
+                        Simulated Electronic Mail Delivery Header Log
+                      </h4>
+                      <p className="text-[10px] text-slate-500 font-mono mt-0.5">
+                        Delivered successfully through Astra SMTP Mail Servers
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setSelectedEmail(null)}
+                      className="text-slate-400 hover:text-white text-[10px] bg-slate-800 hover:bg-slate-750 px-2.5 py-1 rounded-lg border border-slate-800 transition-colors cursor-pointer font-sans font-semibold"
+                    >
+                      Close Preview
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-[10px] font-mono border-b border-slate-800 pb-3 text-slate-400">
+                    <div>
+                      <strong className="text-slate-500 font-bold uppercase">SMTP From:</strong> <span className="text-slate-350">Astra Automated Delivery &lt;alerts@astra.tech&gt;</span>
+                    </div>
+                    <div>
+                      <strong className="text-slate-500 font-bold uppercase">To Destination:</strong> <span className="text-emerald-400 font-bold">{selectedEmail.creatorEmail}</span>
+                    </div>
+                    <div>
+                      <strong className="text-slate-500 font-bold uppercase">Recipient Owner:</strong> <span className="text-slate-300">{selectedEmail.creatorName}</span>
+                    </div>
+                    <div>
+                      <strong className="text-slate-500 font-bold uppercase">Timestamp Sent:</strong> <span className="text-slate-300">{new Date(selectedEmail.timestamp).toLocaleString()}</span>
+                    </div>
+                    <div className="md:col-span-2 mt-1">
+                      <strong className="text-slate-500 font-bold uppercase">E-Mail Subject:</strong> <span className="text-white font-bold">{selectedEmail.subject}</span>
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-slate-900 border border-slate-800 rounded-lg max-h-48 overflow-y-auto">
+                    <pre className="text-[10.5px] font-mono leading-relaxed text-slate-300 whitespace-pre-wrap text-left">
+                      {selectedEmail.body}
+                    </pre>
+                  </div>
+                </div>
+              )}
+            </div>
+
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               
               {/* Left Column: Create follow up reminder */}

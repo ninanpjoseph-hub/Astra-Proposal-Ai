@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Proposal, ProposalType, Milestone, ResourceCost } from '../types';
+import { Proposal, ProposalType, Milestone, ResourceCost, ProposalStatus } from '../types';
 import { createDefaultProposal, generateId, formatQAR } from '../proposalUtils';
 import { DEFAULT_SCOPE_TEMPLATES } from '../staticTemplates';
 import SitemapGenerator from './SitemapGenerator';
@@ -1017,59 +1017,91 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
                         Quick Add Baseline Feature Modules
                       </span>
                       <div className="flex flex-wrap gap-2">
-                        {[
-                          { 
-                            name: "Blog system", 
-                            title: "Blog & CMS Article Publication Hub", 
-                            desc: "Fully built-in articles section with categorized archives, keyword semantic post-tagging, dynamic readers comment loops, and search engine friendliness." 
-                          },
-                          { 
-                            name: "Multi-language support", 
-                            title: "Multilingual Language Routing & Translation", 
-                            desc: "Comprehensive dual-language subfolder routing containing a clean visual menu language switcher to accommodate diverse consumer profiles." 
-                          },
-                          { 
-                            name: "Third-party integrations", 
-                            title: "HubSpot CRM Sync & WhatsApp Live Support", 
-                            desc: "Dynamic live chat popups linking direct with localized client WhatsApp triggers, paired with secure custom webhooks updating lead CRMs automatically." 
-                          },
-                          { 
-                            name: "Analytics & tracking setup", 
-                            title: "Google Analytics 4 & Conversion Event Mapping", 
-                            desc: "Technical deployment of unified Google Tag Manager scripts configuring custom telemetry events tracking click funnels or key goal checkouts." 
-                          },
-                          { 
-                            name: "Custom API development", 
-                            title: "Custom Secured Backend Webhook & Service APIs", 
-                            desc: "Architecting dedicated serverless microservice APIs to query structured database records, execute webhooks, or query business software." 
-                          }
-                        ].map((mod) => (
-                          <button
-                            type="button"
-                            key={mod.name}
-                            onClick={() => {
-                              const items = proposal.websiteScope.scopeItems || [];
-                              const newItem = {
-                                id: `scope_custom_${Date.now()}_${Math.random().toString(36).substring(2,5)}`,
-                                title: mod.title,
-                                description: mod.desc,
-                                isSelected: true,
-                                isCustom: true
-                              };
-                              setProposal(prev => ({
-                                ...prev,
-                                websiteScope: {
-                                  ...prev.websiteScope,
-                                  scopeItems: [...items, newItem]
-                                }
+                        {(() => {
+                          const currentScopeItems = (proposal.websiteScope.scopeItems && proposal.websiteScope.scopeItems.length > 0)
+                            ? proposal.websiteScope.scopeItems
+                            : DEFAULT_SCOPE_TEMPLATES[proposal.websiteScope.websiteType || 'static'].map((item, idx) => ({
+                                id: `scope_${proposal.websiteScope.websiteType || 'static'}_${idx}`,
+                                title: item.title,
+                                description: item.description,
+                                isSelected: item.isSelected,
+                                isCustom: false
                               }));
-                            }}
-                            className="bg-slate-50 border border-slate-200 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 text-slate-600 rounded-full px-3 py-1 font-sans font-semibold text-[10.5px] transition-all cursor-pointer inline-flex items-center gap-1 shrink-0"
-                          >
-                            <Plus className="h-2.5 w-2.5" />
-                            <span>{mod.name}</span>
-                          </button>
-                        ))}
+
+                          return [
+                            { 
+                              name: "Blog system", 
+                              title: "Blog & CMS Article Publication Hub", 
+                              desc: "Fully built-in articles section with categorized archives, keyword semantic post-tagging, dynamic readers comment loops, and search engine friendliness." 
+                            },
+                            { 
+                              name: "Multi-language support", 
+                              title: "Multilingual Language Routing & Translation", 
+                              desc: "Comprehensive dual-language subfolder routing containing a clean visual menu language switcher to accommodate diverse consumer profiles." 
+                            },
+                            { 
+                              name: "Third-party integrations", 
+                              title: "HubSpot CRM Sync & WhatsApp Live Support", 
+                              desc: "Dynamic live chat popups linking direct with localized client WhatsApp triggers, paired with secure custom webhooks updating lead CRMs automatically." 
+                            },
+                            { 
+                              name: "Analytics & tracking setup", 
+                              title: "Google Analytics 4 & Conversion Event Mapping", 
+                              desc: "Technical deployment of unified Google Tag Manager scripts configuring custom telemetry events tracking click funnels or key goal checkouts." 
+                            },
+                            { 
+                              name: "Custom API development", 
+                              title: "Custom Secured Backend Webhook & Service APIs", 
+                              desc: "Architecting dedicated serverless microservice APIs to query structured database records, execute webhooks, or query business software." 
+                            }
+                          ].map((mod) => {
+                            // Find if this module is already active in currentScopeItems
+                            const existingItem = currentScopeItems.find(i => i.title.toLowerCase() === mod.title.toLowerCase());
+                            const isActive = !!(existingItem && existingItem.isSelected);
+
+                            return (
+                              <button
+                                type="button"
+                                key={mod.name}
+                                onClick={() => {
+                                  let updated;
+                                  if (existingItem) {
+                                    // Toggle isSelected
+                                    updated = currentScopeItems.map(i => 
+                                      i.id === existingItem.id ? { ...i, isSelected: !i.isSelected } : i
+                                    );
+                                  } else {
+                                    // Add as new item
+                                    const newItem = {
+                                      id: `scope_custom_${Date.now()}_${Math.random().toString(36).substring(2,5)}`,
+                                      title: mod.title,
+                                      description: mod.desc,
+                                      isSelected: true,
+                                      isCustom: true
+                                    };
+                                    updated = [...currentScopeItems, newItem];
+                                  }
+
+                                  setProposal(prev => ({
+                                    ...prev,
+                                    websiteScope: {
+                                      ...prev.websiteScope,
+                                      scopeItems: updated
+                                    }
+                                  }));
+                                }}
+                                className={`rounded-full px-3 py-1 font-sans font-semibold text-[10.5px] transition-all cursor-pointer inline-flex items-center gap-1 shrink-0 border ${
+                                  isActive 
+                                    ? 'bg-blue-600 border-blue-600 text-white shadow-xs' 
+                                    : 'bg-slate-50 border-slate-200 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 text-slate-600'
+                                }`}
+                              >
+                                {isActive ? <Check className="h-2.5 w-2.5 animate-pulse" /> : <Plus className="h-2.5 w-2.5" />}
+                                <span>{mod.name}</span>
+                              </button>
+                            );
+                          });
+                        })()}
                       </div>
                     </div>
 
@@ -1097,7 +1129,16 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
                           type="button"
                           onClick={() => {
                             if (!customItemTitle.trim()) return;
-                            const items = proposal.websiteScope.scopeItems || [];
+                            const currentScopeItems = (proposal.websiteScope.scopeItems && proposal.websiteScope.scopeItems.length > 0)
+                              ? proposal.websiteScope.scopeItems
+                              : DEFAULT_SCOPE_TEMPLATES[proposal.websiteScope.websiteType || 'static'].map((item, idx) => ({
+                                  id: `scope_${proposal.websiteScope.websiteType || 'static'}_${idx}`,
+                                  title: item.title,
+                                  description: item.description,
+                                  isSelected: item.isSelected,
+                                  isCustom: false
+                                }));
+
                             const newItem = {
                               id: `scope_custom_user_${Date.now()}`,
                               title: customItemTitle.trim(),
@@ -1105,11 +1146,12 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
                               isSelected: true,
                               isCustom: true
                             };
+                            
                             setProposal(prev => ({
                               ...prev,
                               websiteScope: {
                                 ...prev.websiteScope,
-                                scopeItems: [...items, newItem]
+                                scopeItems: [...currentScopeItems, newItem]
                               }
                             }));
                             setCustomItemTitle('');
@@ -1127,6 +1169,150 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
                         </button>
                       </div>
                     </div>
+
+                    {/* Live interactive Custom Scope Items Management Box */}
+                    {(() => {
+                      const currentScopeItems = (proposal.websiteScope.scopeItems && proposal.websiteScope.scopeItems.length > 0)
+                        ? proposal.websiteScope.scopeItems
+                        : DEFAULT_SCOPE_TEMPLATES[proposal.websiteScope.websiteType || 'static'].map((item, idx) => ({
+                            id: `scope_${proposal.websiteScope.websiteType || 'static'}_${idx}`,
+                            title: item.title,
+                            description: item.description,
+                            isSelected: item.isSelected,
+                            isCustom: false
+                          }));
+
+                      const customItems = currentScopeItems.filter(i => i.isCustom || getScopeCategory(i.title, i.isCustom) === 'custom');
+
+                      if (customItems.length === 0) return null;
+
+                      return (
+                        <div className="border border-slate-150 rounded-xl overflow-hidden mt-2 bg-slate-50/40">
+                          <div className="bg-slate-100 px-4 py-2 border-b border-slate-200 flex justify-between items-center">
+                            <span className="text-[10px] font-bold text-slate-600 uppercase font-mono tracking-wider flex items-center gap-1.5">
+                              <span className="h-2 w-2 rounded-full bg-blue-500"></span>
+                              Active Custom Deliverables ({customItems.length})
+                            </span>
+                            <span className="text-[9px] text-slate-400 font-mono">Changes sync instantly</span>
+                          </div>
+                          
+                          <div className="divide-y divide-slate-150 max-h-[250px] overflow-y-auto">
+                            {customItems.map((item) => {
+                              const isEditingThis = editingItemId === item.id;
+                              return (
+                                <div key={item.id} className="p-3 bg-white hover:bg-slate-50/50 transition-colors">
+                                  {isEditingThis ? (
+                                    <div className="space-y-2.5">
+                                      <div className="flex justify-between items-center">
+                                        <span className="text-[9px] font-bold text-blue-600 font-mono uppercase">Editing Custom Item</span>
+                                        <button 
+                                          type="button"
+                                          onClick={() => setEditingItemId(null)}
+                                          className="text-slate-400 hover:text-slate-650"
+                                        >
+                                          <X className="h-3.5 w-3.5" />
+                                        </button>
+                                      </div>
+                                      <input 
+                                        type="text"
+                                        value={editingItemTitle}
+                                        onChange={(e) => setEditingItemTitle(e.target.value)}
+                                        className="w-full px-3 py-1 border border-slate-300 rounded text-xs font-bold font-sans"
+                                      />
+                                      <textarea 
+                                        value={editingItemDesc}
+                                        onChange={(e) => setEditingItemDesc(e.target.value)}
+                                        className="w-full px-3 py-1 border border-slate-300 rounded text-xs font-sans resize-y min-h-[45px]"
+                                      ></textarea>
+                                      <div className="flex gap-2 justify-end">
+                                        <button
+                                          type="button"
+                                          onClick={() => setEditingItemId(null)}
+                                          className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10.5px] font-semibold rounded"
+                                        >
+                                          Cancel
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            if (!editingItemTitle.trim()) return;
+                                            const updated = currentScopeItems.map(i => 
+                                              i.id === item.id ? { ...i, title: editingItemTitle, description: editingItemDesc } : i
+                                            );
+                                            setProposal(prev => ({
+                                              ...prev,
+                                              websiteScope: { ...prev.websiteScope, scopeItems: updated }
+                                            }));
+                                            setEditingItemId(null);
+                                          }}
+                                          className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white text-[10.5px] font-semibold rounded"
+                                        >
+                                          Save
+                                        </button>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div className="flex items-start justify-between gap-3">
+                                      <div className="flex items-start gap-2.5 min-w-0">
+                                        <input 
+                                          type="checkbox"
+                                          checked={!!item.isSelected}
+                                          onChange={(e) => {
+                                            const updated = currentScopeItems.map(i => 
+                                              i.id === item.id ? { ...i, isSelected: e.target.checked } : i
+                                            );
+                                            setProposal(prev => ({
+                                              ...prev,
+                                              websiteScope: { ...prev.websiteScope, scopeItems: updated }
+                                            }));
+                                          }}
+                                          className="h-3.5 w-3.5 text-blue-600 border-slate-300 rounded focus:ring-blue-500 cursor-pointer mt-0.5 shrink-0"
+                                        />
+                                        <div className="min-w-0">
+                                          <span className={`text-[11.5px] font-bold block ${item.isSelected ? 'text-slate-800' : 'text-slate-400 line-through'}`}>
+                                            {item.title}
+                                          </span>
+                                          <p className={`text-[10.5px] font-sans mt-0.5 leading-normal ${item.isSelected ? 'text-slate-500' : 'text-slate-400'}`}>
+                                            {item.description}
+                                          </p>
+                                        </div>
+                                      </div>
+
+                                      <div className="flex items-center gap-1 shrink-0">
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setEditingItemId(item.id);
+                                            setEditingItemTitle(item.title);
+                                            setEditingItemDesc(item.description);
+                                          }}
+                                          className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-650"
+                                        >
+                                          <Edit3 className="h-3 w-3" />
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            const updated = currentScopeItems.filter(i => i.id !== item.id);
+                                            setProposal(prev => ({
+                                              ...prev,
+                                              websiteScope: { ...prev.websiteScope, scopeItems: updated }
+                                            }));
+                                          }}
+                                          className="p-1 hover:bg-red-50 hover:text-red-500 rounded text-slate-404"
+                                        >
+                                          <Trash2 className="h-3 w-3" />
+                                        </button>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   {/* Omnichannel E-Commerce System Settings (Only shown for ecommerce type) */}
@@ -1610,9 +1796,70 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
                   <span className="text-slate-400">Total Value:</span>
                   <strong className="text-blue-600 font-semibold">{formatQAR(proposal.totalCost)} QAR</strong>
                 </div>
-                <div className="flex justify-between text-xs">
+                <div className="flex justify-between border-b border-slate-150 pb-2 text-xs">
                   <span className="text-slate-400">Timeline Length:</span>
                   <strong className="text-slate-800 font-bold">{proposal.weeks} Weeks</strong>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-slate-400">Current Status:</span>
+                  <span className={`font-mono text-[10px] uppercase font-bold px-2 py-0.5 rounded-md border ${
+                    proposal.status === ProposalStatus.WON
+                      ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                      : proposal.status === ProposalStatus.LOST
+                      ? 'bg-rose-500/10 text-rose-500 border-rose-500/20'
+                      : 'bg-amber-500/10 text-amber-500 border-amber-500/20'
+                  }`}>
+                    {proposal.status || ProposalStatus.DRAFT}
+                  </span>
+                </div>
+              </div>
+
+              {/* Status Update Interactive Controls */}
+              <div className="bg-slate-50 border border-slate-200 p-5 rounded-2xl max-w-sm mx-auto text-left space-y-3 font-sans">
+                <div className="flex items-center gap-2">
+                  <Settings className="h-4 w-4 text-slate-500 animate-spin-slow" />
+                  <span className="text-[10px] font-bold text-slate-700 uppercase tracking-wider font-mono">
+                    Opportunity Status
+                  </span>
+                </div>
+                <p className="text-[10.5px] text-slate-500 leading-normal">
+                  Toggle this commercial interest pipeline state to either active or won/lost. The system refreshes timestamps and stops email alerts immediately if won or lost.
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setProposal(prev => ({
+                        ...prev,
+                        status: ProposalStatus.WON,
+                        updatedAt: new Date().toISOString()
+                      }));
+                    }}
+                    className={`flex-1 py-2 px-3 border rounded-xl flex items-center justify-center gap-1.5 font-bold text-xs transition-all cursor-pointer ${
+                      proposal.status === ProposalStatus.WON
+                        ? 'bg-emerald-600 border-emerald-600 text-white shadow-xs'
+                        : 'bg-white border-slate-200 hover:border-emerald-200 hover:bg-emerald-50/40 text-slate-600 hover:text-emerald-700'
+                    }`}
+                  >
+                    🏆 Mark as Won
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setProposal(prev => ({
+                        ...prev,
+                        status: ProposalStatus.LOST,
+                        updatedAt: new Date().toISOString()
+                      }));
+                    }}
+                    className={`flex-1 py-2 px-3 border rounded-xl flex items-center justify-center gap-1.5 font-bold text-xs transition-all cursor-pointer ${
+                      proposal.status === ProposalStatus.LOST
+                        ? 'bg-rose-600 border-rose-600 text-white shadow-xs'
+                        : 'bg-white border-slate-200 hover:border-rose-200 hover:bg-rose-50/40 text-slate-600 hover:text-rose-700'
+                    }`}
+                  >
+                    ❌ Mark as Lost
+                  </button>
                 </div>
               </div>
 
