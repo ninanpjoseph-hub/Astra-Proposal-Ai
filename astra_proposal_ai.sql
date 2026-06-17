@@ -172,7 +172,8 @@ CREATE TABLE IF NOT EXISTS `notifications` (
 -- A. Users Seeds
 INSERT INTO `users` (`id`, `name`, `email`, `role`, `is_active`, `password`) VALUES
 ('user_ninan', 'Ninan P Joseph', 'ninanpjoseph@gmail.com', 'Admin', 1, 'astra2026'),
-('user_sarah', 'Sarah Ahmed', 'sarah@astra.tech', 'Manager', 1, 'manager2026');
+('user_shamlan', 'Shamlan CT', 'shamlan@technoastra.com', 'Manager', 1, 'shamlan123'),
+('user_shareef', 'Shareef', 'shareef@technoastra.com', 'Designer', 1, 'shareef123');
 
 -- B. Clients Seeds (Qatar-based companies)
 INSERT INTO `clients` (`id`, `name`, `company_name`, `email`, `phone`) VALUES
@@ -234,7 +235,7 @@ INSERT INTO `proposals` (
   ]',
   '[]',
   12000.00, 1200.00, 1500.00, 1500.00, 16200.00, '50% Advanced, 25% upon Client Design approval, 25% upon Deployment.',
-  'Ninan P Joseph', 'Astra Technologies', 'Astra Technologies', 'user_ninan', 'user_sarah', 'Sarah Ahmed',
+  'Ninan P Joseph', 'Astra Technologies', 'Astra Technologies', 'user_ninan', 'user_shamlan', 'Shamlan CT',
   '2026-02-08T10:00:00.000Z', '2026-02-08T10:30:00.000Z'
 );
 
@@ -245,7 +246,7 @@ INSERT INTO `crm_pipeline` (`id`, `proposal_id`, `client_id`, `stage`, `deal_val
 -- F. Activity Log Seed
 INSERT INTO `activity_log` (`id`, `timestamp`, `user_id`, `user_name`, `user_role`, `action`, `details`) VALUES
 ('act_seed_1', '2026-02-08T10:00:00.000Z', 'user_ninan', 'Ninan P Joseph', 'Admin', 'Create Proposal', 'Initialized Mannai TechHub Web proposal successfully.'),
-('act_seed_2', '2026-02-08T10:30:00.000Z', 'user_ninan', 'Ninan P Joseph', 'Admin', 'Assign Proposal', 'Assigned Mannai TechHub Web proposal to Sarah Ahmed.');
+('act_seed_2', '2026-02-08T10:30:00.000Z', 'user_ninan', 'Ninan P Joseph', 'Admin', 'Assign Proposal', 'Assigned Mannai TechHub Web proposal to Shamlan CT.');
 
 -- 7. PROPOSAL PAYMENTS Table
 CREATE TABLE IF NOT EXISTS `proposal_payments` (

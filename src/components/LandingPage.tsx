@@ -12,9 +12,8 @@ interface LandingPageProps {
 
 const DEFAULT_USERS: User[] = [
   { id: 'user_ninan', name: 'Ninan P Joseph', email: 'ninanpjoseph@gmail.com', role: UserRole.ADMIN, isActive: true },
-  { id: 'user_sarah', name: 'Sarah Ahmed', email: 'sarah@astra.tech', role: UserRole.MANAGER, isActive: true },
-  { id: 'user_carlos', name: 'Carlos Ruiz', email: 'carlos@astra.tech', role: UserRole.SALES, isActive: true },
-  { id: 'user_lina', name: 'Lina Vance', email: 'lina@astra.tech', role: UserRole.DESIGNER, isActive: true },
+  { id: 'user_shamlan', name: 'Shamlan CT', email: 'shamlan@technoastra.com', role: UserRole.MANAGER, isActive: true },
+  { id: 'user_shareef', name: 'Shareef', email: 'shareef@technoastra.com', role: UserRole.DESIGNER, isActive: true },
 ];
 
 export default function LandingPage({ onLogin }: LandingPageProps) {
@@ -41,9 +40,8 @@ export default function LandingPage({ onLogin }: LandingPageProps) {
 
     // Return specific prefilled passwords for pre-registered users, or intuitive passwords for custom users
     if (user.id === 'user_ninan') return 'admin';
-    if (user.id === 'user_sarah') return 'manager';
-    if (user.id === 'user_carlos') return 'sales';
-    if (user.id === 'user_lina') return 'designer';
+    if (user.id === 'user_shamlan') return 'shamlan123';
+    if (user.id === 'user_shareef') return 'shareef123';
     
     // Custom user defaults
     switch (user.role) {
