@@ -52,6 +52,11 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
     newDefault.preparedByName = proposal.preparedByName;
     newDefault.preparedByCompany = proposal.preparedByCompany;
     newDefault.preparedByTitle = proposal.preparedByTitle;
+    newDefault.preparedByUserId = proposal.preparedByUserId;
+    newDefault.assignedUserId = proposal.assignedUserId;
+    newDefault.assignedUserName = proposal.assignedUserName;
+    newDefault.sharedUserIds = proposal.sharedUserIds;
+    newDefault.status = proposal.status;
     setProposal(newDefault);
   };
 

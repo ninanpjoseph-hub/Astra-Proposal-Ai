@@ -191,6 +191,20 @@ export default function App() {
 
   // Save proposals helper
   const handleSaveProposal = async (savedProp: Proposal) => {
+    // Ensure proposal is bound to the logged-in user if it does not have a creator set
+    if (currentUser && !savedProp.preparedByUserId) {
+      savedProp.preparedByUserId = currentUser.id;
+      if (!savedProp.preparedByName) {
+        savedProp.preparedByName = currentUser.name;
+      }
+      if (!savedProp.preparedByCompany) {
+        savedProp.preparedByCompany = "Astra Technologies";
+      }
+      if (!savedProp.preparedByTitle) {
+        savedProp.preparedByTitle = currentUser.role === UserRole.SALES ? "Sales Executive" : currentUser.role;
+      }
+    }
+
     // A. Update local React state instantly for high responsiveness
     setProposals(prev => {
       const idx = prev.findIndex(p => p.id === savedProp.id);
@@ -259,7 +273,9 @@ export default function App() {
   };
 
   // Revert proposal helper
-  const handleRevertProposal = (targetHistory: ProposalHistoryEntry) => {
+  const handleRevertProposal = async (targetHistory: ProposalHistoryEntry) => {
+    let revertedState: Proposal | null = null;
+    
     setProposals(prev => {
       const idx = prev.findIndex(p => p.id === targetHistory.proposalState.id);
       if (idx === -1) return prev;
@@ -274,17 +290,33 @@ export default function App() {
         proposalState: JSON.parse(JSON.stringify(currentActive)),
       };
       
-      const revertedState: Proposal = JSON.parse(JSON.stringify(targetHistory.proposalState));
-      revertedState.updatedAt = new Date().toISOString();
-      revertedState.history = [historyEntry, ...(currentActive.history || [])];
+      const reverted: Proposal = JSON.parse(JSON.stringify(targetHistory.proposalState));
+      reverted.updatedAt = new Date().toISOString();
+      reverted.history = [historyEntry, ...(currentActive.history || [])];
+      
+      revertedState = reverted;
       
       const updated = [...prev];
-      updated[idx] = revertedState;
+      updated[idx] = reverted;
       localStorage.setItem('prowess_proposals_v1', JSON.stringify(updated));
       
-      setViewingProposal(revertedState);
+      setViewingProposal(reverted);
       return updated;
     });
+
+    if (revertedState) {
+      try {
+        await fetch('/api/proposals', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(revertedState)
+        });
+      } catch (err: any) {
+        console.warn("Could not save reverted state to database server:", err.message);
+      }
+    }
   };
 
   const handleDeleteProposal = async (id: string, e: React.MouseEvent) => {
@@ -330,6 +362,12 @@ export default function App() {
   // Launch fresh builder
   const startNewProposal = (type: ProposalType) => {
     const blank = createDefaultProposal(type);
+    if (currentUser) {
+      blank.preparedByUserId = currentUser.id;
+      blank.preparedByName = currentUser.name;
+      blank.preparedByCompany = "Astra Technologies";
+      blank.preparedByTitle = currentUser.role === UserRole.SALES ? "Sales Executive" : currentUser.role;
+    }
     setEditingProposal(blank);
     setIsCreating(true);
   };
@@ -655,6 +693,27 @@ export default function App() {
                 onUpdateProposals={(updated) => {
                   setProposals(updated);
                   localStorage.setItem('prowess_proposals_v1', JSON.stringify(updated));
+
+                  // Asynchronously push any modified proposals to the backend MySQL database
+                  updated.forEach(async (updatedProp) => {
+                    const originalProp = proposals.find(p => p.id === updatedProp.id);
+                    if (!originalProp || 
+                        originalProp.status !== updatedProp.status || 
+                        originalProp.assignedUserId !== updatedProp.assignedUserId || 
+                        JSON.stringify(originalProp.sharedUserIds || []) !== JSON.stringify(updatedProp.sharedUserIds || []) ||
+                        originalProp.updatedAt !== updatedProp.updatedAt) {
+                      
+                      try {
+                        await fetch('/api/proposals', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify(updatedProp)
+                        });
+                      } catch (err: any) {
+                        console.warn("Could not save updated proposal to database:", err.message);
+                      }
+                    }
+                  });
                 }}
                 currentUser={currentUser}
                 onLoginUser={setCurrentUser}
