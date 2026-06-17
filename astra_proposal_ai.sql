@@ -246,3 +246,20 @@ INSERT INTO `crm_pipeline` (`id`, `proposal_id`, `client_id`, `stage`, `deal_val
 INSERT INTO `activity_log` (`id`, `timestamp`, `user_id`, `user_name`, `user_role`, `action`, `details`) VALUES
 ('act_seed_1', '2026-02-08T10:00:00.000Z', 'user_ninan', 'Ninan P Joseph', 'Admin', 'Create Proposal', 'Initialized Mannai TechHub Web proposal successfully.'),
 ('act_seed_2', '2026-02-08T10:30:00.000Z', 'user_ninan', 'Ninan P Joseph', 'Admin', 'Assign Proposal', 'Assigned Mannai TechHub Web proposal to Sarah Ahmed.');
+
+-- 7. PROPOSAL PAYMENTS Table
+CREATE TABLE IF NOT EXISTS `proposal_payments` (
+  `id` VARCHAR(50) NOT NULL,
+  `proposal_id` VARCHAR(50) NOT NULL,
+  `amount` DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+  `payment_date` DATE NOT NULL,
+  `reference` VARCHAR(255) NULL,
+  `method` VARCHAR(100) NOT NULL DEFAULT 'Bank Transfer',
+  `type` VARCHAR(50) NOT NULL DEFAULT 'Advance',
+  `notes` TEXT NULL,
+  `recorded_by` VARCHAR(100) NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  FOREIGN KEY (`proposal_id`) REFERENCES `proposals`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+

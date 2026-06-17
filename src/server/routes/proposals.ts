@@ -4,13 +4,34 @@ import { query, testConnection } from '../../lib/db';
 
 const router = express.Router();
 
-// Auto run check to add payment_entries column on startup
+// Auto run check to add payment_entries column on startup and create proposal_payments table
 (async () => {
   try {
     await query("ALTER TABLE proposals ADD COLUMN payment_entries JSON NULL");
     console.log("✔️ [Migration] Managed successfully: payment_entries JSON added to proposals.");
   } catch (err: any) {
     // If it already exists, this is standard and we ignore safely
+  }
+
+  try {
+    await query(`
+      CREATE TABLE IF NOT EXISTS \`proposal_payments\` (
+        \`id\` VARCHAR(50) NOT NULL,
+        \`proposal_id\` VARCHAR(50) NOT NULL,
+        \`amount\` DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+        \`payment_date\` DATE NOT NULL,
+        \`reference\` VARCHAR(255) NULL,
+        \`method\` VARCHAR(100) NOT NULL DEFAULT 'Bank Transfer',
+        \`type\` VARCHAR(50) NOT NULL DEFAULT 'Advance',
+        \`notes\` TEXT NULL,
+        \`recorded_by\` VARCHAR(100) NULL,
+        \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (\`id\`)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+    console.log("✔️ [Migration] Managed successfully: proposal_payments table checked/created.");
+  } catch (err: any) {
+    console.error("Migration error creating proposal_payments table:", err);
   }
 })();
 
@@ -343,6 +364,53 @@ router.post('/:id/pdf', async (req, res) => {
     res.json({ success: true, message: 'PDF download analytics registered.' });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/proposals/:proposalId/payments
+ */
+router.get('/:proposalId/payments', async (req, res) => {
+  const { proposalId } = req.params;
+  try {
+    const rows = await query(
+      'SELECT id, amount, payment_date AS paymentDate, reference, method, type, notes, recorded_by AS recordedBy, created_at AS createdAt FROM proposal_payments WHERE proposal_id = ? ORDER BY payment_date ASC, created_at ASC',
+      [proposalId]
+    );
+    res.json(rows);
+  } catch (error: any) {
+    res.status(500).json({ error: 'Failed to fetch payments: ' + error.message });
+  }
+});
+
+/**
+ * POST /api/proposals/:proposalId/payments
+ */
+router.post('/:proposalId/payments', async (req, res) => {
+  const { proposalId } = req.params;
+  const { id, amount, paymentDate, reference, method, type, notes, recordedBy } = req.body;
+  try {
+    await query(
+      `INSERT INTO proposal_payments (id, proposal_id, amount, payment_date, reference, method, type, notes, recorded_by)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [id, proposalId, amount, paymentDate, reference, method, type, notes, recordedBy]
+    );
+    res.json({ success: true, message: 'Payment recorded successfully.' });
+  } catch (error: any) {
+    res.status(500).json({ error: 'Failed to record payment: ' + error.message });
+  }
+});
+
+/**
+ * DELETE /api/proposals/:proposalId/payments/:paymentId
+ */
+router.delete('/:proposalId/payments/:paymentId', async (req, res) => {
+  const { proposalId, paymentId } = req.params;
+  try {
+    await query('DELETE FROM proposal_payments WHERE id = ? AND proposal_id = ?', [paymentId, proposalId]);
+    res.json({ success: true, message: 'Payment voided successfully.' });
+  } catch (error: any) {
+    res.status(500).json({ error: 'Failed to void payment: ' + error.message });
   }
 });
 

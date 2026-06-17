@@ -91,6 +91,7 @@ export interface PaymentEntry {
   timestamp: string;
   amount: number;
   type: 'Advance' | 'Second' | 'Final' | 'Custom';
+  method?: string;
   reference?: string;
   notes?: string;
   recordedBy?: string;

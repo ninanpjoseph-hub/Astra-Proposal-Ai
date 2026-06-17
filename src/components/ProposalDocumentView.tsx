@@ -2601,7 +2601,51 @@ function PaymentTracker({
   const [method, setMethod] = React.useState('Bank Transfer');
   const [recordedBy, setRecordedBy] = React.useState(() => currentUser?.name || 'Astra Operations');
 
-  const payments = proposal.paymentEntries || [];
+  const [payments, setPayments] = React.useState<PaymentEntry[]>([]);
+  const [loading, setLoading] = React.useState(true);
+
+  // Load payment entries from database table on startup
+  React.useEffect(() => {
+    let active = true;
+    async function fetchPayments() {
+      try {
+        setLoading(true);
+        const res = await fetch(`/api/proposals/${proposal.id}/payments`);
+        if (res.ok) {
+          const list = await res.json();
+          if (active) {
+            const formatted = list.map((item: any) => ({
+              id: item.id,
+              timestamp: item.paymentDate || item.createdAt || new Date().toISOString(),
+              amount: Number(item.amount),
+              type: item.type,
+              method: item.method,
+              reference: item.reference,
+              notes: item.notes,
+              recordedBy: item.recordedBy
+            }));
+            setPayments(formatted);
+          }
+        } else {
+          if (active && proposal.paymentEntries) {
+            setPayments(proposal.paymentEntries);
+          }
+        }
+      } catch (err: any) {
+        console.warn("Could not fetch payments from database:", err.message);
+        if (active && proposal.paymentEntries) {
+          setPayments(proposal.paymentEntries);
+        }
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+    fetchPayments();
+    return () => {
+      active = false;
+    };
+  }, [proposal.id, proposal.paymentEntries]);
+
   const totalPaid = payments.reduce((sum, p) => sum + Number(p.amount), 0);
   const pendingBalance = Math.max(0, proposal.totalCost - totalPaid);
   const paidPercent = Math.min(100, Math.round((totalPaid / proposal.totalCost) * 100));
@@ -2611,7 +2655,7 @@ function PaymentTracker({
     setAmount(parseFloat(pendingBalance.toFixed(2)));
   }, [pendingBalance]);
 
-  const handleAddPayment = (e: React.FormEvent) => {
+  const handleAddPayment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (amount <= 0) {
       alert("Please specify a positive payment amount.");
@@ -2623,17 +2667,50 @@ function PaymentTracker({
       }
     }
 
+    const newPaymentId = 'pay_' + Math.random().toString(36).substring(2, 10);
+    const newPaymentTimestamp = new Date(payDate).toISOString();
+
     const newPayment: PaymentEntry = {
-      id: 'pay_' + Math.random().toString(36).substring(2, 10),
-      timestamp: new Date(payDate).toISOString(),
+      id: newPaymentId,
+      timestamp: newPaymentTimestamp,
       amount: Number(amount),
       type,
+      method,
       reference: reference.trim() || undefined,
-      notes: `${notes.trim()}${reference ? ' via ' + method : ''}`.trim() || undefined,
+      notes: notes.trim() || undefined,
       recordedBy: recordedBy.trim() || undefined
     };
 
+    // Update local reactive state
     const updatedPayments = [...payments, newPayment];
+    setPayments(updatedPayments);
+
+    // Save to server-side SQL table
+    try {
+      const res = await fetch(`/api/proposals/${proposal.id}/payments`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          id: newPaymentId,
+          amount: Number(amount),
+          paymentDate: payDate,
+          reference: reference.trim() || null,
+          method,
+          type,
+          notes: notes.trim() || null,
+          recordedBy: recordedBy.trim() || null
+        })
+      });
+      if (!res.ok) {
+        console.warn("Server failed to persist transaction entry to proposal_payments table.");
+      }
+    } catch (err: any) {
+      console.warn("Failed to save payment to database:", err.message);
+    }
+
+    // Sync backup JSON column
     if (onUpdateProposal) {
       onUpdateProposal({
         ...proposal,
@@ -2647,9 +2724,24 @@ function PaymentTracker({
     setPayDate(new Date().toISOString().split('T')[0]);
   };
 
-  const handleDeletePayment = (paymentId: string) => {
+  const handleDeletePayment = async (paymentId: string) => {
     if (confirm("Are you sure you want to void this payment entry? This will re-extend the pending customer balance.")) {
       const updatedPayments = payments.filter(p => p.id !== paymentId);
+      setPayments(updatedPayments);
+
+      // Delete from database
+      try {
+        const res = await fetch(`/api/proposals/${proposal.id}/payments/${paymentId}`, {
+          method: 'DELETE'
+        });
+        if (!res.ok) {
+          console.warn("Server failed to delete payment entry from proposal_payments table.");
+        }
+      } catch (err: any) {
+        console.warn("Failed to delete payment from DB server:", err.message);
+      }
+
+      // Sync backup JSON column
       if (onUpdateProposal) {
         onUpdateProposal({
           ...proposal,
