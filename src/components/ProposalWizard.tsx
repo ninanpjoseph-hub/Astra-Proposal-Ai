@@ -102,20 +102,17 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
         [key]: value
       };
       
-      // Auto estimate total pages if elements were added/removed
-      let computedPages = prev.websiteScope.totalPages;
-      if (key !== 'totalPages') {
-        let basePages = 2; // Home + About/Services
-        if (updatedScope.contactForms) basePages += 1;
-        if (updatedScope.blogModule) basePages += 2; // Index + Single
-        if (updatedScope.gallery) basePages += 1;
-        if (updatedScope.careersSection) basePages += 2; // Board + Apply Form
-        if (updatedScope.downloadsSection) basePages += 1;
-        
-        // Ensure total pages is at least the logical checked base pages
-        if (computedPages < basePages) {
-          computedPages = basePages;
-        }
+      let basePages = 2; // Home + About/Services
+      if (updatedScope.contactForms) basePages += 1;
+      if (updatedScope.blogModule) basePages += 2; // Index + Single
+      if (updatedScope.gallery) basePages += 1;
+      if (updatedScope.careersSection) basePages += 2; // Board + Apply Form
+      if (updatedScope.downloadsSection) basePages += 1;
+
+      // Ensure total pages is updated correctly or computed based on elements selection
+      let computedPages = key === 'totalPages' ? value : prev.websiteScope.totalPages;
+      if (computedPages < basePages) {
+        computedPages = basePages;
       }
 
       return {
