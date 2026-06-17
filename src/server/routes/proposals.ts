@@ -4,6 +4,16 @@ import { query, testConnection } from '../../lib/db';
 
 const router = express.Router();
 
+// Auto run check to add payment_entries column on startup
+(async () => {
+  try {
+    await query("ALTER TABLE proposals ADD COLUMN payment_entries JSON NULL");
+    console.log("✔️ [Migration] Managed successfully: payment_entries JSON added to proposals.");
+  } catch (err: any) {
+    // If it already exists, this is standard and we ignore safely
+  }
+})();
+
 // Lazy initialize Gemini client if key is present
 const getGeminiClient = () => {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -188,8 +198,8 @@ router.post('/', async (req, res) => {
         weeks, development_cost, plugin_cost, maintenance_cost, additional_cost, total_cost, payment_terms,
         prepared_by_name, prepared_by_company, prepared_by_title, prepared_by_user_id, assigned_user_id, assigned_user_name,
         shared_user_ids, custom_letterhead, letterhead_height, letterhead_mode, letterhead_full_page, show_watermark, custom_watermark_text,
-        created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        created_at, updated_at, payment_entries
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const sharedUsersJson = JSON.stringify(p.sharedUserIds || []);
@@ -197,6 +207,7 @@ router.post('/', async (req, res) => {
     const websiteScopeJson = JSON.stringify(p.websiteScope || {});
     const milestonesJson = JSON.stringify(p.milestones || []);
     const resourceCostsJson = JSON.stringify(p.resourceCosts || []);
+    const paymentEntriesJson = JSON.stringify(p.paymentEntries || []);
 
     const params = [
       p.id, p.type, p.status || 'Draft', clientId, p.clientName, p.companyName, p.proposalDate, p.briefDescription || '',
@@ -204,7 +215,8 @@ router.post('/', async (req, res) => {
       p.weeks || 5, p.developmentCost || 0, p.pluginCost || 0, p.maintenanceCost || 0, p.additionalCost || 0, p.totalCost || 0, p.paymentTerms || '',
       p.preparedByName || '', p.preparedByCompany || '', p.preparedByTitle || '', p.preparedByUserId || null, p.assignedUserId || null, p.assignedUserName || '',
       sharedUsersJson, p.customLetterhead || null, p.letterheadHeight || 100, p.letterheadMode || 'minimal', p.letterheadFullPage ? 1 : 0, p.showWatermark ? 1 : 0, p.customWatermarkText || '',
-      p.createdAt || new Date().toISOString(), p.updatedAt || new Date().toISOString()
+      p.createdAt || new Date().toISOString(), p.updatedAt || new Date().toISOString(),
+      paymentEntriesJson
     ];
 
     await query(sql, params);

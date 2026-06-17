@@ -151,6 +151,7 @@ export default function App() {
               assignedUserId: item.assigned_user_id,
               assignedUserName: item.assigned_user_name,
               sharedUserIds: typeof item.shared_user_ids === 'string' ? JSON.parse(item.shared_user_ids) : (item.shared_user_ids || []),
+              paymentEntries: typeof item.payment_entries === 'string' ? JSON.parse(item.payment_entries) : (item.payment_entries || []),
               customLetterhead: item.custom_letterhead,
               letterheadHeight: item.letterhead_height,
               letterheadMode: item.letterhead_mode,
@@ -524,6 +525,7 @@ export default function App() {
               proposal={viewingProposal} 
               onBack={() => setViewingProposal(null)} 
               onRevert={handleRevertProposal}
+              currentUser={currentUser}
               onUpdateProposal={(updated) => {
                 setProposals(prev => {
                   const updatedList = prev.map(p => p.id === updated.id ? updated : p);
@@ -531,6 +533,13 @@ export default function App() {
                   return updatedList;
                 });
                 setViewingProposal(updated);
+                
+                // Synchronize proposal state in host database dynamically
+                fetch('/api/proposals', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(updated)
+                }).catch(err => console.warn("Failed to update proposal state in database:", err.message));
               }}
             />
           </div>

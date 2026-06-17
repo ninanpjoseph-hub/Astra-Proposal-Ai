@@ -8,8 +8,8 @@ import { BRANDING_TEMPLATES, WEBSITE_TEMPLATES, DEFAULT_SCOPE_TEMPLATES } from '
 import { formatQAR, DEFAULT_BRANDING_MILESTONES, DEFAULT_WEBSITE_MILESTONES, triggerAutomatedFollowUp } from '../proposalUtils';
 import SitemapGenerator from './SitemapGenerator';
 import { groupScopeIntoPages } from '../utils/scopeClassifier';
-import { Check, Bookmark, DollarSign, Calendar, Landmark, BookOpen, Signature, Award, ChevronRight, FileText, Printer, Download, History, RotateCcw, Clock, Sliders, Upload } from 'lucide-react';
-import { Proposal, ProposalHistoryEntry, ProposalStatus } from '../types';
+import { Check, Bookmark, DollarSign, Calendar, Landmark, BookOpen, Signature, Award, ChevronRight, FileText, Printer, Download, History, RotateCcw, Clock, Sliders, Upload, Trash2, Plus, AlertCircle, Coins, CreditCard } from 'lucide-react';
+import { Proposal, ProposalHistoryEntry, ProposalStatus, PaymentEntry } from '../types';
 
 interface ProposalDocumentViewProps {
   proposal: Proposal;
@@ -17,6 +17,7 @@ interface ProposalDocumentViewProps {
   showBackBtn?: boolean;
   onRevert?: (targetHistory: ProposalHistoryEntry) => void;
   onUpdateProposal?: (updated: Proposal) => void;
+  currentUser?: any;
 }
 
 // Helper functions to convert oklch to rgb to prevent html2canvas color parsing crashes
@@ -273,7 +274,7 @@ export function AstraFooter({ pageNumber }: { pageNumber: string }) {
   return null;
 }
 
-export default function ProposalDocumentView({ proposal, onBack, showBackBtn = true, onRevert, onUpdateProposal }: ProposalDocumentViewProps) {
+export default function ProposalDocumentView({ proposal, onBack, showBackBtn = true, onRevert, onUpdateProposal, currentUser }: ProposalDocumentViewProps) {
   const isBranding = proposal.type === 'branding';
   const templates = isBranding ? BRANDING_TEMPLATES : WEBSITE_TEMPLATES;
   
@@ -315,7 +316,7 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
 
   const [isGenerating, setIsGenerating] = React.useState(false);
   const [progressText, setProgressText] = React.useState('');
-  const [activeTab, setActiveTab] = React.useState<'document' | 'history'>('document');
+  const [activeTab, setActiveTab] = React.useState<'document' | 'history' | 'payment'>('document');
 
   const handleDownloadPDF = async () => {
     const originalTab = activeTab;
@@ -770,6 +771,22 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
           {proposal.history && proposal.history.length > 0 && (
             <span className="bg-blue-100 text-blue-700 font-extrabold px-2 py-0.5 rounded-full text-[10px] shrink-0">
               {proposal.history.length}
+            </span>
+          )}
+        </button>
+        <button
+          onClick={() => setActiveTab('payment')}
+          className={`px-5 py-2.5 text-xs font-bold tracking-wide uppercase border-b-2 transition-all cursor-pointer flex items-center gap-2 ${
+            activeTab === 'payment'
+              ? 'border-blue-600 text-blue-600 font-extrabold'
+              : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-200'
+          }`}
+        >
+          <Landmark className="h-4 w-4" />
+          Payment Tracker
+          {proposal.paymentEntries && proposal.paymentEntries.length > 0 && (
+            <span className="bg-emerald-100 text-emerald-800 font-extrabold px-2 py-0.5 rounded-full text-[10px] shrink-0">
+              {proposal.paymentEntries.length}
             </span>
           )}
         </button>
@@ -2555,6 +2572,351 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
           )}
         </div>
       )}
+
+      {activeTab === 'payment' && (
+        <PaymentTracker 
+          proposal={proposal} 
+          onUpdateProposal={onUpdateProposal} 
+          currentUser={currentUser} 
+        />
+      )}
+    </div>
+  );
+}
+
+function PaymentTracker({ 
+  proposal, 
+  onUpdateProposal, 
+  currentUser 
+}: { 
+  proposal: Proposal; 
+  onUpdateProposal?: (updated: Proposal) => void;
+  currentUser?: any;
+}) {
+  const [amount, setAmount] = React.useState<number>(0);
+  const [type, setType] = React.useState<PaymentEntry['type']>('Advance');
+  const [reference, setReference] = React.useState('');
+  const [notes, setNotes] = React.useState('');
+  const [payDate, setPayDate] = React.useState(() => new Date().toISOString().split('T')[0]);
+  const [method, setMethod] = React.useState('Bank Transfer');
+  const [recordedBy, setRecordedBy] = React.useState(() => currentUser?.name || 'Astra Operations');
+
+  const payments = proposal.paymentEntries || [];
+  const totalPaid = payments.reduce((sum, p) => sum + Number(p.amount), 0);
+  const pendingBalance = Math.max(0, proposal.totalCost - totalPaid);
+  const paidPercent = Math.min(100, Math.round((totalPaid / proposal.totalCost) * 100));
+
+  // Auto set to remaining balance when mounting or when pendingBalance changes
+  React.useEffect(() => {
+    setAmount(parseFloat(pendingBalance.toFixed(2)));
+  }, [pendingBalance]);
+
+  const handleAddPayment = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (amount <= 0) {
+      alert("Please specify a positive payment amount.");
+      return;
+    }
+    if (amount > pendingBalance + 0.01) {
+      if (!confirm(`Warning: The payment amount of ${formatQAR(amount)} exceeds the remaining pending balance of ${formatQAR(pendingBalance)}. Are you sure you want to log an overpayment?`)) {
+        return;
+      }
+    }
+
+    const newPayment: PaymentEntry = {
+      id: 'pay_' + Math.random().toString(36).substring(2, 10),
+      timestamp: new Date(payDate).toISOString(),
+      amount: Number(amount),
+      type,
+      reference: reference.trim() || undefined,
+      notes: `${notes.trim()}${reference ? ' via ' + method : ''}`.trim() || undefined,
+      recordedBy: recordedBy.trim() || undefined
+    };
+
+    const updatedPayments = [...payments, newPayment];
+    if (onUpdateProposal) {
+      onUpdateProposal({
+        ...proposal,
+        paymentEntries: updatedPayments
+      });
+    }
+
+    // Reset inputs
+    setReference('');
+    setNotes('');
+    setPayDate(new Date().toISOString().split('T')[0]);
+  };
+
+  const handleDeletePayment = (paymentId: string) => {
+    if (confirm("Are you sure you want to void this payment entry? This will re-extend the pending customer balance.")) {
+      const updatedPayments = payments.filter(p => p.id !== paymentId);
+      if (onUpdateProposal) {
+        onUpdateProposal({
+          ...proposal,
+          paymentEntries: updatedPayments
+        });
+      }
+    }
+  };
+
+  // Helper selectors
+  const applyPresetPercentage = (percent: number) => {
+    const val = parseFloat(((proposal.totalCost * percent) / 100).toFixed(2));
+    setAmount(val);
+  };
+
+  return (
+    <div id="payment-tracker-tab" className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-8 font-sans">
+      {/* Header section with Balance Indicator */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-5 animate-none">
+        <div>
+          <h2 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+            <Coins className="h-5 w-5 text-indigo-600" />
+            Financial Payment Ledger
+          </h2>
+          <p className="text-xs text-slate-500">Track milestones, initial down payments, second installments, and launch sign-offs</p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          {pendingBalance === 0 ? (
+            <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-2.5 rounded-xl flex items-center gap-2 shadow-3xs">
+              <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse shrink-0"></span>
+              <span className="text-xs font-black tracking-wider uppercase font-sans text-emerald-800">FULLY PAID & SETTLED</span>
+            </div>
+          ) : (
+            <div className="bg-rose-50 border border-rose-200 text-rose-800 px-4 py-2 text-rose-850 rounded-xl flex flex-col items-end">
+              <span className="text-[9px] font-bold text-rose-500 uppercase font-mono tracking-widest leading-none mb-1">Pending Balance</span>
+              <span className="text-base font-extrabold text-rose-600 leading-none">{formatQAR(pendingBalance)} QAR</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Progress section */}
+      <div className="bg-slate-50 rounded-2xl p-5 border border-slate-150 space-y-3">
+        <div className="flex justify-between items-end text-xs">
+          <div>
+            <span className="text-slate-500 font-medium">Sinking Ledger Progress:</span>
+            <span className="ml-1.5 font-bold text-slate-800">{formatQAR(totalPaid)} QAR</span>
+            <span className="text-slate-400"> of {formatQAR(proposal.totalCost)} QAR</span>
+          </div>
+          <span className={`font-black text-sm ${pendingBalance === 0 ? 'text-emerald-600' : 'text-blue-600'}`}>{paidPercent}%</span>
+        </div>
+        <div className="w-full bg-slate-200 h-3.5 rounded-full overflow-hidden shadow-inner border border-slate-300">
+          <div 
+            className={`h-full transition-all duration-700 ease-out ${pendingBalance === 0 ? 'bg-gradient-to-r from-emerald-500 to-green-600' : 'bg-gradient-to-r from-blue-500 to-indigo-600'}`}
+            style={{ width: `${paidPercent}%` }}
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* Record payment form */}
+        <div className="lg:col-span-5 bg-white border border-slate-200 p-5 rounded-2xl shadow-xs space-y-4">
+          <h3 className="text-xs font-bold text-slate-850 uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-100 pb-2.5">
+            <CreditCard className="h-4 w-4 text-slate-400" />
+            Record Manual Receipt
+          </h3>
+
+          <form onSubmit={handleAddPayment} className="space-y-4 text-xs font-sans">
+            <div>
+              <label className="block text-slate-600 font-bold mb-1">Receipt Type</label>
+              <select 
+                value={type}
+                onChange={(e) => setType(e.target.value as any)}
+                className="w-full border border-slate-250 bg-slate-50 rounded-xl px-3 py-2 text-slate-850 outline-hidden focus:border-blue-500 focus:bg-white text-xs transition-colors"
+              >
+                <option value="Advance">Advance (Down Payment)</option>
+                <option value="Second">Second Installment</option>
+                <option value="Final">Final Payment (Launch)</option>
+                <option value="Custom">Custom Milestone / Installment</option>
+              </select>
+            </div>
+
+            <div>
+              <div className="flex justify-between items-center mb-1">
+                <label className="block text-slate-600 font-bold">Amount (QAR)</label>
+                <div className="flex gap-1.5">
+                  <button 
+                    type="button" 
+                    onClick={() => applyPresetPercentage(40)} 
+                    className="px-1.5 py-0.5 bg-slate-100 border border-slate-200 rounded text-[9px] font-bold text-slate-600 hover:bg-slate-200 cursor-pointer"
+                  >
+                    40%
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={() => applyPresetPercentage(50)} 
+                    className="px-1.5 py-0.5 bg-slate-100 border border-slate-200 rounded text-[9px] font-bold text-slate-600 hover:bg-slate-200 cursor-pointer"
+                  >
+                    50%
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={() => applyPresetPercentage(100)} 
+                    className="px-1.5 py-0.5 bg-slate-100 border border-slate-200 rounded text-[9px] font-bold text-slate-600 hover:bg-slate-200 cursor-pointer"
+                  >
+                    Full
+                  </button>
+                </div>
+              </div>
+              <input 
+                type="number"
+                step="any"
+                min="0"
+                value={amount || ''}
+                onChange={(e) => setAmount(Number(e.target.value))}
+                placeholder="Amount in QAR"
+                className="w-full border border-slate-250 bg-slate-50 rounded-xl px-3 py-2 text-slate-850 font-bold focus:border-blue-500 focus:bg-white text-sm transition-colors"
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-slate-600 font-bold mb-1">Payment Method</label>
+                <select 
+                  value={method}
+                  onChange={(e) => setMethod(e.target.value)}
+                  className="w-full border border-slate-250 bg-slate-50 rounded-xl px-3 py-2 text-slate-850 outline-hidden focus:border-blue-500 focus:bg-white text-xs transition-colors"
+                >
+                  <option value="Bank Transfer">Bank Transfer</option>
+                  <option value="Cheque">Cheque</option>
+                  <option value="Cash">Cash Handover</option>
+                  <option value="Ooredoo Money">Ooredoo Money</option>
+                  <option value="Other">Other Method</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-slate-600 font-bold mb-1">Payment Date</label>
+                <input 
+                  type="date"
+                  value={payDate}
+                  onChange={(e) => setPayDate(e.target.value)}
+                  className="w-full border border-slate-250 bg-slate-50 rounded-xl px-3 py-2 text-slate-850 focus:border-blue-500 focus:bg-white text-xs transition-colors"
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-slate-600 font-bold mb-1">Ref / Receipt # / Wire Reference (Optional)</label>
+              <input 
+                type="text"
+                value={reference}
+                onChange={(e) => setReference(e.target.value)}
+                placeholder="e.g. TXN-108239A or QNB Chq #900"
+                className="w-full border border-slate-250 bg-slate-50 rounded-xl px-3 py-2 text-slate-850 focus:border-blue-500 focus:bg-white text-xs transition-colors"
+              />
+            </div>
+
+            <div>
+              <label className="block text-slate-600 font-bold mb-1">Recorded By</label>
+              <input 
+                type="text"
+                value={recordedBy}
+                onChange={(e) => setRecordedBy(e.target.value)}
+                placeholder="Staff handler identity"
+                className="w-full border border-slate-250 bg-slate-50 rounded-xl px-3 py-2 text-slate-850 focus:border-blue-500 focus:bg-white text-xs transition-colors"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-slate-600 font-bold mb-1">Internal Log Notes</label>
+              <textarea 
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="e.g. Received down-payment following board signoff..."
+                className="w-full border border-slate-250 bg-slate-50 rounded-xl px-3 py-2 text-slate-850 h-16 resize-none focus:border-blue-500 focus:bg-white text-xs transition-colors"
+              />
+            </div>
+
+            <button
+              type="submit"
+              className="w-full cursor-pointer py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5"
+            >
+              <Plus className="h-4 w-4" />
+              Register Payment Entry
+            </button>
+          </form>
+        </div>
+
+        {/* Payment history list */}
+        <div className="lg:col-span-7 space-y-4">
+          <h3 className="text-xs font-bold text-slate-850 uppercase tracking-widest flex items-center gap-1.5 pb-2 border-b border-slate-100">
+            <Landmark className="h-4 w-4 text-slate-400" />
+            Transaction Ledger Entries ({payments.length})
+          </h3>
+
+          {payments.length === 0 ? (
+            <div className="border border-dashed border-slate-250 rounded-2xl p-8 text-center bg-slate-50 flex flex-col items-center justify-center space-y-2">
+              <div className="p-3 bg-slate-100 text-slate-400 rounded-full">
+                <AlertCircle className="h-6 w-6" />
+              </div>
+              <p className="text-xs font-bold text-slate-700">No transactions recorded yet</p>
+              <p className="text-[10px] text-slate-500 max-w-xs leading-normal">Use the manual entry form to log the first down payment or advance received from the client.</p>
+            </div>
+          ) : (
+            <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
+              {[...payments].reverse().map((p, idx) => (
+                <div key={p.id || idx} className="border border-slate-200 rounded-xl p-4 bg-white hover:border-slate-350 transition-all shadow-3xs relative group select-none">
+                  <div className="flex justify-between items-start gap-4">
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-black tracking-wider uppercase ${
+                          p.type === 'Advance' ? 'bg-indigo-50 border border-indigo-200 text-indigo-700' :
+                          p.type === 'Second' ? 'bg-amber-50 border border-amber-200 text-amber-700' :
+                          p.type === 'Final' ? 'bg-emerald-55/40 border border-emerald-250 text-emerald-800' :
+                          'bg-slate-50 border border-slate-250 text-slate-705'
+                        }`}>
+                          {p.type} Receipt
+                        </span>
+                        
+                        <span className="text-[10px] text-slate-500 font-mono">
+                          {p.timestamp ? new Date(p.timestamp).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric'
+                          }) : ''}
+                        </span>
+                      </div>
+
+                      <div className="text-[11px] text-slate-700 font-sans tracking-tight leading-relaxed">
+                        {p.notes || "No additional remarks logged for this transaction."}
+                      </div>
+
+                      {p.reference && (
+                        <div className="text-[10px] text-slate-500 font-mono">
+                          <strong className="text-slate-400 font-bold uppercase">Ref Code:</strong> {p.reference}
+                        </div>
+                      )}
+
+                      <div className="text-[9px] text-slate-400 font-sans">
+                        Logged by <strong className="text-slate-500">{p.recordedBy || 'System Operator'}</strong>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col items-end shrink-0 gap-2">
+                      <span className="text-xs font-black text-slate-900">{formatQAR(p.amount)} QAR</span>
+                      
+                      <button 
+                        type="button" 
+                        onClick={() => handleDeletePayment(p.id)}
+                        className="p-1 px-2 border border-rose-100 hover:border-rose-300 text-rose-500 hover:text-rose-700 rounded-lg bg-rose-50 hover:bg-rose-100 text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer shadow-3xs"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                        Void
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

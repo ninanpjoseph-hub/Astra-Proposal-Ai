@@ -86,6 +86,16 @@ export interface ResourceCost {
   rate: number;
 }
 
+export interface PaymentEntry {
+  id: string;
+  timestamp: string;
+  amount: number;
+  type: 'Advance' | 'Second' | 'Final' | 'Custom';
+  reference?: string;
+  notes?: string;
+  recordedBy?: string;
+}
+
 export interface Proposal {
   id: string;
   type: ProposalType;
@@ -121,6 +131,7 @@ export interface Proposal {
   totalCost: number;
   paymentTerms: string;
   history?: ProposalHistoryEntry[];
+  paymentEntries?: PaymentEntry[];
 
   // Preparer Info
   preparedByName?: string;
