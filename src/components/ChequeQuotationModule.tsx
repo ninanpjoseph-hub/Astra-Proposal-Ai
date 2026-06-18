@@ -3,7 +3,7 @@ import {
   Plus, Trash2, Edit3, Eye, Calendar, Building, Landmark, 
   MapPin, User, FileText, ArrowUp, ArrowDown, Save, 
   RotateCcw, Download, Printer, Search, PlusCircle, Check, 
-  Copy, CheckCircle2, ChevronRight, HelpCircle
+  Copy, CheckCircle2, ChevronRight, HelpCircle, Receipt, Coins, Database, Sparkles
 } from 'lucide-react';
 
 export interface ChequeQuotationItem {
@@ -11,6 +11,14 @@ export interface ChequeQuotationItem {
   description: string;
   unitPrice: number;
   qty: number;
+}
+
+export interface ChequeQuotationReceipt {
+  id: string;
+  date: string;
+  amount: number;
+  reference: string; // e.g. "Cheque No. 200421", "QNB Transfer"
+  notes?: string;
 }
 
 export interface ChequeQuotation {
@@ -31,6 +39,12 @@ export interface ChequeQuotation {
   preparedByCompany: string;
   preparedByLocation: string;
   updatedAt: string;
+  payments?: ChequeQuotationReceipt[];
+  showLedgerOnPrint?: boolean;
+}
+
+export function getTotals(itemsList: ChequeQuotationItem[]): number {
+  return itemsList.reduce((acc, it) => acc + (it.unitPrice * it.qty), 0);
 }
 
 // Number to Words Converter
@@ -148,6 +162,108 @@ export default function ChequeQuotationModule() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeQuotation, setActiveQuotation] = useState<ChequeQuotation | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+
+  // Payment Logging panel states (for active adding)
+  const [logAmount, setLogAmount] = useState<string>('');
+  const [logDate, setLogDate] = useState<string>('');
+  const [logRef, setLogRef] = useState<string>('');
+  const [logNotes, setLogNotes] = useState<string>('');
+  const [showPayForm, setShowPayForm] = useState<boolean>(false);
+
+  useEffect(() => {
+    setLogDate(new Date().toISOString().substring(0, 10));
+  }, []);
+
+  // Master helper to update database records
+  const updateQuotationInStateAndStorage = (updatedQ: ChequeQuotation) => {
+    setQuotations(prev => {
+      const next = prev.map(q => q.id === updatedQ.id ? updatedQ : q);
+      localStorage.setItem('prowess_cheque_quotations_v1', JSON.stringify(next));
+      return next;
+    });
+    setActiveQuotation(updatedQ);
+  };
+
+  // Toggle printed ledger option
+  const handleTogglePrintLedger = () => {
+    if (!activeQuotation) return;
+    const updated = {
+      ...activeQuotation,
+      showLedgerOnPrint: !activeQuotation.showLedgerOnPrint,
+      updatedAt: new Date().toISOString()
+    };
+    updateQuotationInStateAndStorage(updated);
+  };
+
+  // Add payment receipt
+  const handleAddPaymentReceipt = (amount: number, date: string, ref: string, notes: string) => {
+    if (!activeQuotation) return;
+    const newReceipt: ChequeQuotationReceipt = {
+      id: 'rec_' + Math.random().toString(36).substring(2, 9),
+      date: date || new Date().toISOString().substring(0, 10),
+      amount: Number(amount) || 0,
+      reference: ref.trim() || 'Payment Receipt',
+      notes: notes.trim()
+    };
+
+    const currentPayments = activeQuotation.payments || [];
+    const updated = {
+      ...activeQuotation,
+      payments: [...currentPayments, newReceipt],
+      updatedAt: new Date().toISOString()
+    };
+    updateQuotationInStateAndStorage(updated);
+  };
+
+  // Delete payment receipt
+  const handleDeletePaymentReceipt = (receiptId: string) => {
+    if (!activeQuotation) return;
+    const currentPayments = activeQuotation.payments || [];
+    const updated = {
+      ...activeQuotation,
+      payments: currentPayments.filter(p => p.id !== receiptId),
+      updatedAt: new Date().toISOString()
+    };
+    updateQuotationInStateAndStorage(updated);
+  };
+
+  const handleAddNewReceiptSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const amt = parseFloat(logAmount);
+    if (!amt || amt <= 0) {
+      alert("Please enter a valid amount greater than zero.");
+      return;
+    }
+    handleAddPaymentReceipt(amt, logDate, logRef || "Standard Receipt", logNotes);
+    setLogAmount('');
+    setLogRef('');
+    setLogNotes('');
+    setLogDate(new Date().toISOString().substring(0, 10));
+    setShowPayForm(false);
+  };
+
+  // Helper calculations for active quote
+  const activeTotalContract = useMemo(() => {
+    if (!activeQuotation) return 0;
+    return getTotals(activeQuotation.items || []);
+  }, [activeQuotation]);
+
+  const activeTotalReceived = useMemo(() => {
+    if (!activeQuotation) return 0;
+    const payments = activeQuotation.payments || [];
+    return payments.reduce((sum, p) => sum + p.amount, 0);
+  }, [activeQuotation]);
+
+  const activePendingBalance = useMemo(() => {
+    return Math.max(0, activeTotalContract - activeTotalReceived);
+  }, [activeTotalContract, activeTotalReceived]);
+
+  const activeProjectStatus = useMemo(() => {
+    if (activeTotalContract === 0) return 'PENDING';
+    if (activeTotalReceived >= activeTotalContract) return 'FULLY PAID';
+    if (activeTotalReceived > 0) return 'PARTIALLY PAID';
+    return 'UNPAID / ACTIVE';
+  }, [activeTotalContract, activeTotalReceived]);
   
   // Terms templates in local storage
   const [customTemplates, setCustomTemplates] = useState<{name: string, terms: string[]}[]>([]);
@@ -196,6 +312,8 @@ export default function ChequeQuotationModule() {
         preparedByTitle: formPrepTitle,
         preparedByCompany: formPrepCompany,
         preparedByLocation: formPrepLocation,
+        payments: activeQuotation.payments || [],
+        showLedgerOnPrint: activeQuotation.showLedgerOnPrint ?? false,
       };
     }
     if (activeQuotation.id === 'new_temp') {
@@ -216,12 +334,16 @@ export default function ChequeQuotationModule() {
         preparedByTitle: formPrepTitle || 'PROJECT DIRECTOR',
         preparedByCompany: formPrepCompany || 'ASTRA TECH',
         preparedByLocation: formPrepLocation || 'DOHA – QATAR',
+        payments: [],
+        showLedgerOnPrint: false,
       };
     }
     return {
       ...activeQuotation,
       items: activeQuotation.items || [],
       terms: activeQuotation.terms || [],
+      payments: activeQuotation.payments || [],
+      showLedgerOnPrint: activeQuotation.showLedgerOnPrint ?? false,
     };
   }, [
     activeQuotation,
@@ -300,7 +422,24 @@ export default function ChequeQuotationModule() {
       preparedByTitle: "PROJECT DIRECTOR",
       preparedByCompany: "ASTRA TECH",
       preparedByLocation: "DOHA – QATAR",
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
+      payments: [
+        {
+          id: "rec_default_1",
+          date: "2026-06-05",
+          amount: 500,
+          reference: "Cash Payment",
+          notes: "Initial Token Advance"
+        },
+        {
+          id: "rec_default_2",
+          date: "2026-06-10",
+          amount: 1000,
+          reference: "QNB Cheque #304215",
+          notes: "Standard Delivery Milestone Payment"
+        }
+      ],
+      showLedgerOnPrint: true,
     };
 
     setQuotations([defaultQuotation]);
@@ -508,7 +647,9 @@ export default function ChequeQuotationModule() {
       preparedByTitle: formPrepTitle.toUpperCase().trim(),
       preparedByCompany: formPrepCompany.toUpperCase().trim(),
       preparedByLocation: formPrepLocation.toUpperCase().trim(),
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
+      payments: isNew ? [] : (activeQuotation?.payments || []),
+      showLedgerOnPrint: isNew ? false : (activeQuotation?.showLedgerOnPrint ?? false),
     };
 
     setQuotations(prev => {
@@ -546,11 +687,6 @@ export default function ChequeQuotationModule() {
   // Print command
   const handleTriggerPrint = () => {
     window.print();
-  };
-
-  // Helper calculating live sums
-  const getTotals = (itemsList: ChequeQuotationItem[]) => {
-    return itemsList.reduce((acc, it) => acc + (it.unitPrice * it.qty), 0);
   };
 
   const filteredQuotations = quotations.filter(q => 
@@ -1110,40 +1246,285 @@ export default function ChequeQuotationModule() {
 
           {/* Quick Guide card if not editing */}
           {!isEditing && activeQuotation && (
-            <div className="bg-white border border-slate-200 p-5 rounded-2xl shadow-xs space-y-3">
-              <h4 className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400">
-                Action Toolbench
-              </h4>
-              <p className="text-xs text-slate-500 leading-normal">
-                Select a quotation from the list above, click <strong>Modify Details</strong> to edit products, prices, terms, client information, and update dates. Use the printable layout sheet on the right to direct print or export to PDF.
-              </p>
+            <div className="space-y-6">
+              
+              {/* Action Toolbench Card */}
+              <div className="bg-white border border-slate-200 p-5 rounded-2xl shadow-xs space-y-3">
+                <h4 className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400">
+                  Action Toolbench
+                </h4>
+                <p className="text-xs text-slate-500 leading-normal">
+                  Select a quotation from the list above, click <strong>Modify Details</strong> to edit products, prices, terms, client information, and update dates. Use the printable layout sheet on the right to direct print or export to PDF.
+                </p>
 
-              <div className="flex flex-col gap-2 pt-2">
-                <button
-                  onClick={handleStartEdit}
-                  className="w-full px-4 py-2 border border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-2"
-                >
-                  <Edit3 className="h-4 w-4" />
-                  Modify Quotation details
-                </button>
+                <div className="flex flex-col gap-2 pt-2">
+                  <button
+                    onClick={handleStartEdit}
+                    className="w-full px-4 py-2 border border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    <Edit3 className="h-4 w-4" />
+                    Modify Quotation details
+                  </button>
 
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    onClick={handleTriggerPrint}
-                    className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-1.5"
-                  >
-                    <Printer className="h-4 w-4 text-blue-400" />
-                    Print Sheet
-                  </button>
-                  <button
-                    onClick={handleTriggerPrint}
-                    className="px-4 py-2 border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-xs rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-1.5"
-                  >
-                    <Download className="h-4 w-4 text-slate-500" />
-                    Export PDF
-                  </button>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={handleTriggerPrint}
+                      className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                    >
+                      <Printer className="h-4 w-4 text-blue-400" />
+                      Print Sheet
+                    </button>
+                    <button
+                      onClick={handleTriggerPrint}
+                      className="px-4 py-2 border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-xs rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                    >
+                      <Download className="h-4 w-4 text-slate-500" />
+                      Export PDF
+                    </button>
+                  </div>
                 </div>
               </div>
+
+              {/* Visual Payment Summary Cards (Commercial Financial Ledger) */}
+              <div className="bg-slate-900 border border-slate-800 text-white rounded-2xl p-5 space-y-4 shadow-md">
+                <div className="flex justify-between items-center border-b border-slate-800 pb-3">
+                  <div>
+                    <h3 className="text-xs font-mono font-bold text-slate-400 uppercase tracking-widest">
+                      Commercial Financial Ledger
+                    </h3>
+                    <p className="text-[10px] text-slate-500 mt-0.5">Track downpayments & outstanding balances</p>
+                  </div>
+                  
+                  {/* Status Badge */}
+                  <div className={`px-2 py-1 rounded-md text-[9px] font-extrabold tracking-wider border font-mono ${
+                    activeProjectStatus === 'FULLY PAID' 
+                      ? 'bg-emerald-950/85 text-emerald-400 border-emerald-800' 
+                      : activeProjectStatus === 'PARTIALLY PAID'
+                      ? 'bg-blue-950/85 text-blue-400 border-blue-805'
+                      : 'bg-amber-950/85 text-amber-500 border-amber-805'
+                  }`}>
+                    {activeProjectStatus}
+                  </div>
+                </div>
+
+                {/* Bento Grid Metrics */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="bg-slate-850 border border-slate-800 p-3 rounded-xl space-y-1">
+                    <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider block">Total Contract</span>
+                    <p className="text-xs font-mono font-black text-slate-100 truncate">
+                      {activeTotalContract.toLocaleString('en-US', { minimumFractionDigits: 2 })} <span className="text-[9.5px] font-sans font-bold text-slate-455">{activeQuotation.currency}</span>
+                    </p>
+                  </div>
+
+                  <div className="bg-slate-850 border border-slate-800 p-3 rounded-xl space-y-1">
+                    <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider block">Total Received</span>
+                    <p className="text-xs font-mono font-black text-emerald-400 truncate">
+                      {activeTotalReceived.toLocaleString('en-US', { minimumFractionDigits: 2 })} <span className="text-[9.5px] font-sans font-bold text-slate-455">{activeQuotation.currency}</span>
+                    </p>
+                  </div>
+
+                  <div className="bg-slate-850 border border-slate-800 p-3 rounded-xl space-y-1">
+                    <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider block">Balance Due</span>
+                    <p className={`text-xs font-mono font-black truncate ${activePendingBalance > 0 ? 'text-amber-400' : 'text-slate-400'}`}>
+                      {activePendingBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })} <span className="text-[9.5px] font-sans font-bold text-slate-455">{activeQuotation.currency}</span>
+                    </p>
+                  </div>
+                </div>
+                
+                {/* Checkbox for PDF ledger inclusion */}
+                <div className="flex items-center gap-2 bg-slate-950 p-2.5 rounded-xl border border-slate-800/80 text-[11px]">
+                  <input
+                    type="checkbox"
+                    id="toggle-pdf-ledger"
+                    checked={!!activeQuotation.showLedgerOnPrint}
+                    onChange={handleTogglePrintLedger}
+                    className="rounded border-slate-750 text-blue-500 focus:ring-blue-500/30 font-bold bg-slate-800 cursor-pointer h-4 w-4"
+                  />
+                  <label htmlFor="toggle-pdf-ledger" className="text-slate-350 font-bold text-[10.5px] cursor-pointer select-none">
+                    Enable Financial Statement on A4 Sheet Layout
+                  </label>
+                </div>
+              </div>
+
+              {/* Interactive Receipt Logger */}
+              <div className="bg-white border border-slate-200 p-5 rounded-2xl shadow-xs space-y-4">
+                <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+                  <div className="flex items-center gap-1.5">
+                    <Receipt className="h-4 w-4 text-blue-600" />
+                    <h4 className="text-xs font-bold uppercase text-slate-800 font-mono tracking-wider">
+                      Interactive Receipt Logger
+                    </h4>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowPayForm(!showPayForm)}
+                    className="px-2 py-0.5 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 font-bold text-[9px] rounded transition-all flex items-center gap-1 cursor-pointer"
+                  >
+                    {showPayForm ? 'Hide Form' : 'Log Payment'}
+                  </button>
+                </div>
+
+                {/* Collapsible New Payment Form */}
+                {showPayForm && (
+                  <form onSubmit={handleAddNewReceiptSubmit} className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-3 no-print">
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500 block">Record New Payment Entry</span>
+                    
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-slate-600 block">Amount ({activeQuotation.currency})</label>
+                        <input
+                          type="number"
+                          required
+                          value={logAmount}
+                          onChange={(e) => setLogAmount(e.target.value)}
+                          placeholder="e.g. 500"
+                          className="w-full px-2.5 py-1.5 border border-slate-300 rounded bg-white text-xs font-mono font-bold focus:ring-1 focus:ring-blue-500"
+                          max={activePendingBalance > 0 ? activePendingBalance : undefined}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-slate-600 block">Posting Date</label>
+                        <input
+                          type="date"
+                          required
+                          value={logDate}
+                          onChange={(e) => setLogDate(e.target.value)}
+                          className="w-full px-2 py-1 border border-slate-300 rounded bg-white text-xs"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-600 block">Reference / Method</label>
+                      <input
+                        type="text"
+                        required
+                        value={logRef}
+                        onChange={(e) => setLogRef(e.target.value)}
+                        placeholder="e.g. Cheque #402123 or Cash"
+                        className="w-full px-2.5 py-1.5 border border-slate-300 rounded bg-white text-xs"
+                        list="pm-suggestions"
+                      />
+                      <datalist id="pm-suggestions">
+                        <option value="Cash Payment" />
+                        <option value="Bank Wire Transfer" />
+                        <option value="QNB Cheque Entry" />
+                        <option value="CBQ Cheque No." />
+                        <option value="Doha Bank Cheque" />
+                      </datalist>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-600 block">Memo / Internal Notes (Optional)</label>
+                      <input
+                        type="text"
+                        value={logNotes}
+                        onChange={(e) => setLogNotes(e.target.value)}
+                        placeholder="e.g. 50% mobilization down payment"
+                        className="w-full px-2.5 py-1.5 border border-slate-300 bg-white rounded text-xs"
+                      />
+                    </div>
+
+                    <div className="pt-2 flex justify-end gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowPayForm(false);
+                          setLogAmount('');
+                          setLogRef('');
+                          setLogNotes('');
+                        }}
+                        className="px-2.5 py-1 border border-slate-205 rounded bg-white text-[10px] font-semibold text-slate-655 hover:bg-slate-100"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] rounded shadow-3xs flex items-center gap-1 cursor-pointer"
+                      >
+                        <Check className="h-3 w-3" />
+                        Post Receipt
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+                {/* Transactions Ledger Log */}
+                <div className="space-y-2">
+                  <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-slate-400 block">Posting History Ledger</span>
+                  
+                  {(activeQuotation.payments || []).length > 0 ? (
+                    <div className="divide-y divide-slate-100 border border-slate-150 rounded-xl overflow-hidden max-h-[160px] overflow-y-auto">
+                      {(activeQuotation.payments || []).map((pay) => (
+                        <div key={pay.id} className="p-3 bg-slate-50/40 hover:bg-slate-50 flex justify-between items-center gap-2 text-slate-800">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-mono text-[9px] text-slate-400 font-semibold">{pay.date}</span>
+                              <span className="text-[10px] font-bold text-slate-700 truncate">{pay.reference}</span>
+                            </div>
+                            {pay.notes && (
+                              <p className="text-[9px] text-slate-500 italic mt-0.5 truncate">{pay.notes}</p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 pr-1 select-none shrink-0">
+                            <strong className="font-mono text-xs font-black text-slate-900">
+                              +{pay.amount.toLocaleString()} <span className="text-[10px] font-sans font-medium text-slate-505">{activeQuotation.currency}</span>
+                            </strong>
+                            <button
+                              type="button"
+                              onClick={() => handleDeletePaymentReceipt(pay.id)}
+                              className="p-1 hover:bg-rose-50 rounded text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
+                              title="Remove receipt entry"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-6 text-center border border-dashed border-slate-205 rounded-xl bg-slate-50/50">
+                      <Database className="h-5 w-5 text-slate-350 mx-auto mb-1.5" />
+                      <p className="text-[10.5px] font-bold text-slate-705">No receipts logged yet</p>
+                      <p className="text-[9px] text-slate-455 mt-0.5 leading-relaxed max-w-xs mx-auto">
+                        This quotation does not have active transaction records. Toggle "Log Payment" above to post cheque or cash vouchers.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Professional Value Proposition / Client Pitch Card */}
+              <div className="bg-gradient-to-br from-indigo-50 to-blue-50 border border-blue-150 rounded-2xl p-4 space-y-3">
+                <div className="flex gap-2">
+                  <Sparkles className="h-4.5 w-4.5 text-indigo-600 mt-0.5 shrink-0" />
+                  <div>
+                    <h5 className="font-sans font-extrabold text-slate-800 text-[10.5px] text-indigo-950 uppercase tracking-wide">
+                      Client Value Statement
+                    </h5>
+                    <p className="text-[9.5px] text-slate-600 leading-normal mt-1">
+                      Share this direct copy block with your client to emphasize our built-in financial oversight system as a premium benefit:
+                    </p>
+                  </div>
+                </div>
+                
+                <div 
+                  onClick={() => {
+                    navigator.clipboard.writeText("At Astra Technologies, we include our smart Interactive Financial Oversight & Receipt Ledger directly with this quotation. This premium governance platform tracks your downpart payments, milestone deliveries, and outstanding balances in real-time, providing immediate transparency and offline cheque receipt audits to prevent account discrepancies.");
+                    alert("Copied to clipboard!");
+                  }}
+                  className="bg-white border border-blue-100 p-3 rounded-xl relative select-all cursor-pointer hover:border-indigo-300 transition-colors group"
+                  title="Click to copy copy text"
+                >
+                  <span className="absolute right-2 top-2 bg-indigo-50 text-[7.5px] text-indigo-700 font-bold px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                    Copy Text
+                  </span>
+                  <p className="text-[10px] text-slate-700 font-sans leading-relaxed italic pr-2">
+                    "At Astra Technologies, we include our smart **Interactive Financial Oversight & Receipt Ledger** directly with this quotation. This premium governance platform tracks your downpart payments, milestone deliveries, and outstanding balances in real-time, providing immediate transparency and offline cheque receipt audits to prevent account discrepancies."
+                  </p>
+                </div>
+              </div>
+
             </div>
           )}
           
@@ -1350,6 +1731,85 @@ export default function ChequeQuotationModule() {
                           </li>
                         ))}
                       </ol>
+                    </div>
+                  )}
+
+                  {/* Financial Statement & Payment Ledger Section (Visually embedded if showLedgerOnPrint is enabled) */}
+                  {displayedQuotation.showLedgerOnPrint && (
+                    <div className="pt-4 mt-2 font-sans space-y-2 border-t border-dashed border-slate-300">
+                      <div className="flex justify-between items-center">
+                        <h4 className="text-[10px] font-extrabold text-slate-800 uppercase tracking-widest flex items-center gap-1">
+                          🗃️ STATEMENT OF ACCOUNTS & PAYMENTS RECORD
+                        </h4>
+                        <span className="text-[9px] font-bold px-2 py-0.5 border border-slate-400 font-mono tracking-tight text-slate-700 bg-slate-50 uppercase rounded">
+                          STATUS: {activeProjectStatus}
+                        </span>
+                      </div>
+
+                      <div className="border border-slate-800 rounded-lg overflow-hidden bg-white">
+                        <table className="w-full text-left text-[11px]">
+                          <thead className="bg-slate-50 border-b border-slate-800 font-extrabold text-slate-900">
+                            <tr>
+                              <th className="py-1 px-3 border-r border-slate-800 text-center font-bold w-12 text-[10px]">#</th>
+                              <th className="py-1 px-3 border-r border-slate-800 text-[10px]">POSTING DATE</th>
+                              <th className="py-1 px-3 border-r border-slate-800 text-[10px]">TRANSACTION / PAYMENT REFERENCE</th>
+                              <th className="py-1 px-3 text-right text-[10px]">CREDIT AMOUNT</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-300 font-bold">
+                            {/* Contract Value Statement Base */}
+                            <tr className="bg-slate-50/10 text-slate-900 border-b border-slate-400">
+                              <td className="py-1 px-3 border-r border-slate-800 text-center font-mono font-semibold">0</td>
+                              <td className="py-1 px-3 border-r border-slate-800 font-mono text-slate-500">{displayedQuotation.date}</td>
+                              <td className="py-1 px-3 border-r border-slate-800 text-slate-600 font-semibold uppercase">Total Quotation Value Signed</td>
+                              <td className="py-1 px-3 text-right font-mono font-black text-slate-700">
+                                {activeTotalContract.toFixed(2)} {displayedQuotation.currency}
+                              </td>
+                            </tr>
+
+                            {/* List of payments */}
+                            {(displayedQuotation.payments || []).length > 0 ? (
+                              (displayedQuotation.payments || []).map((pay, pIdx) => (
+                                <tr key={pay.id} className="text-slate-800">
+                                  <td className="py-0.5 px-3 border-r border-slate-800 text-center font-mono text-slate-500">{pIdx + 1}</td>
+                                  <td className="py-0.5 px-3 border-r border-slate-800 font-mono">{pay.date}</td>
+                                  <td className="py-0.5 px-3 border-r border-slate-800 font-semibold uppercase">
+                                    {pay.reference} {pay.notes ? `(${pay.notes})` : ''}
+                                  </td>
+                                  <td className="py-0.5 px-3 text-right font-mono text-emerald-700">
+                                    - {pay.amount.toFixed(2)} {displayedQuotation.currency}
+                                  </td>
+                                </tr>
+                              ))
+                            ) : (
+                              <tr>
+                                <td colSpan={4} className="py-2 px-3 text-center text-slate-400 italic">
+                                  No receipts registered. Contract net balances remain outstanding.
+                                </td>
+                              </tr>
+                            )}
+
+                            {/* Calculation Ledgers */}
+                            <tr className="bg-slate-50/10 text-slate-900 font-extrabold border-t border-slate-800 text-[10px]">
+                              <td colSpan={3} className="py-1.5 px-3 border-r border-slate-800 text-right uppercase tracking-wider">
+                                Total Cash & Cheque Payments Deposited:
+                              </td>
+                              <td className="py-1.5 px-3 text-right font-mono font-black text-emerald-700">
+                                {activeTotalReceived.toFixed(2)} {displayedQuotation.currency}
+                              </td>
+                            </tr>
+                            
+                            <tr className="bg-[#f0f4f9] text-slate-900 font-bold border-t border-slate-800 text-[11px]">
+                              <td colSpan={3} className="py-2 px-3 border-r border-slate-800 text-right uppercase tracking-widest font-black text-[#0b57d0]">
+                                Outstanding Net Balance Payable:
+                              </td>
+                              <td className="py-2 px-3 text-right font-mono font-black text-[#0b57d0] text-xs">
+                                {activePendingBalance.toFixed(2)} {displayedQuotation.currency}
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
                   )}
 
