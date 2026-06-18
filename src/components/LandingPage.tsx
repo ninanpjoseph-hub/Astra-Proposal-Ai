@@ -8,6 +8,7 @@ import { User, UserRole } from '../types';
 
 interface LandingPageProps {
   onLogin: (user: User) => void;
+  theme?: 'luxury-dark' | 'classic';
 }
 
 const DEFAULT_USERS: User[] = [
@@ -16,7 +17,8 @@ const DEFAULT_USERS: User[] = [
   { id: 'user_shareef', name: 'Shareef', email: 'shareef@technoastra.com', role: UserRole.DESIGNER, isActive: true },
 ];
 
-export default function LandingPage({ onLogin }: LandingPageProps) {
+export default function LandingPage({ onLogin, theme = 'luxury-dark' }: LandingPageProps) {
+  const isLuxury = theme === 'luxury-dark';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -110,31 +112,31 @@ export default function LandingPage({ onLogin }: LandingPageProps) {
   };
 
   return (
-    <div id="landing-container" className="min-h-screen bg-slate-900 text-slate-100 flex flex-col justify-between overflow-x-hidden selection:bg-blue-600 selection:text-white">
+    <div id="landing-container" className={`min-h-screen ${isLuxury ? 'bg-[#070b19]' : 'bg-slate-900'} text-slate-100 flex flex-col justify-between overflow-x-hidden selection:bg-[#C5A059] selection:text-slate-950`}>
       
       {/* Decorative ambient blobs */}
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
+      <div className={`absolute top-0 left-1/4 w-96 h-96 ${isLuxury ? 'bg-[#C5A059]/5' : 'bg-blue-500/10'} rounded-full blur-3xl pointer-events-none`}></div>
       <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-emerald-500/5 rounded-full blur-3xl pointer-events-none"></div>
-
+ 
       {/* Top Brand Navbar */}
-      <header className="relative w-full border-b border-slate-800 bg-slate-950/40 backdrop-blur-md z-10 px-6 py-4">
+      <header className={`relative w-full border-b ${isLuxury ? 'border-[#C5A059]/15 bg-[#0B1120]/60' : 'border-slate-800 bg-slate-950/40'} backdrop-blur-md z-10 px-6 py-4`}>
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="bg-blue-600 h-9 w-9 rounded-lg flex items-center justify-center font-bold font-serif italic text-white text-lg shadow-lg">
+            <div className={`h-9 w-9 rounded-lg flex items-center justify-center font-bold font-serif italic text-lg shadow-lg ${isLuxury ? 'bg-gradient-to-r from-[#D4AF37] to-[#C5A059] text-slate-950 shadow-[#C5A059]/15' : 'bg-blue-600 text-white'}`}>
               As
             </div>
             <div>
               <h1 className="font-serif font-bold text-base md:text-lg tracking-tight leading-none text-slate-100">
                 Astra Tech
               </h1>
-              <p className="text-[9px] font-mono text-blue-400 mt-1 uppercase tracking-widest block font-bold">
+              <p className={`text-[9px] font-mono mt-1 uppercase tracking-widest block font-bold ${isLuxury ? 'text-[#C5A059]' : 'text-blue-400'}`}>
                 Automated Client Proposal Space
               </p>
             </div>
           </div>
           
           <div className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span className={`h-2 w-2 rounded-full ${isLuxury ? 'bg-[#C5A059]' : 'bg-emerald-500'} animate-pulse`}></span>
             <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider font-bold">
               Secure Cloud Server Online
             </span>
@@ -143,22 +145,22 @@ export default function LandingPage({ onLogin }: LandingPageProps) {
       </header>
 
       {/* Centered Secure Gate / Login Module */}
-      <main className="relative flex-grow flex items-center justify-center py-10 md:py-20 px-4 md:px-8 z-10">
-        <div className="w-full flex justify-center">
-          <div id="secure-login-form-card" className="w-full max-w-[440px] bg-slate-950 border border-slate-800 rounded-3xl p-6 shadow-2xl relative">
-              <div className="absolute top-0 right-10 -translate-y-1/2 bg-blue-600/20 text-blue-400 text-[10px] font-mono font-bold uppercase tracking-wider px-3 py-1 rounded-full border border-blue-500/20">
-                ★ SECURE SOCKET CONNECTED
+      <main className="relative flex-grow flex items-center justify-center py-10 md:py-20 px-4 md:px-8 z-10 font-sans">
+        <div className="w-full flex justify-center font-sans">
+          <div id="secure-login-form-card" className={`w-full max-w-[440px] border rounded-3xl p-6 shadow-2xl relative transition-all duration-500 ${isLuxury ? 'bg-[#111C35]/75 backdrop-blur-md border-[#C5A059]/25 shadow-black/60' : 'bg-slate-950 border-slate-800 shadow-2xl'}`}>
+              <div className={`absolute top-0 right-10 -translate-y-1/2 text-[10px] font-mono font-bold uppercase tracking-wider px-3 py-1 rounded-full border ${isLuxury ? 'bg-[#C5A059]/10 text-[#C5A059] border-[#C5A059]/20' : 'bg-blue-600/20 text-blue-400 border-blue-500/20'}`}>
+                ★ {isLuxury ? 'ELITE GATEWAY' : 'SECURE SOCKET CONNECTED'}
               </div>
 
               <div className="text-center mb-6">
-                <div className="bg-slate-900 h-11 w-11 rounded-2xl flex items-center justify-center text-blue-400 mx-auto border border-slate-800 mb-3">
+                <div className={`h-11 w-11 rounded-2xl flex items-center justify-center mx-auto mb-3 border ${isLuxury ? 'bg-[#0B1120] text-[#C5A059] border-[#C5A059]/25 shadow-inner' : 'bg-slate-900 text-blue-400 border-slate-800'}`}>
                   <Lock className="h-5 w-5" />
                 </div>
-                <h3 className="font-sans font-extrabold text-base text-white tracking-tight">
-                  Astra Staff Gate
+                <h3 className="font-serif font-bold text-lg text-white tracking-tight italic">
+                  Astra Elite Staff Gate
                 </h3>
-                <p className="text-[11px] text-slate-400 mt-1 font-sans">
-                  Authentication is required to enter the proposal pipeline workspace.
+                <p className="text-xs text-slate-400 mt-1.5 font-sans leading-relaxed">
+                  Authentication is required to enter the private wealth proposal workspace.
                 </p>
               </div>
 
@@ -176,7 +178,7 @@ export default function LandingPage({ onLogin }: LandingPageProps) {
                   <label className="block text-[10px] uppercase font-mono tracking-wider font-bold text-slate-400 mb-1.5">
                     Username / Email Address
                   </label>
-                  <div className="relative">
+                  <div className="relative font-sans">
                     <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-500" />
                     <input 
                       type="email"
@@ -184,7 +186,7 @@ export default function LandingPage({ onLogin }: LandingPageProps) {
                       placeholder="e.g. ninanpjoseph@gmail.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl font-sans text-xs text-white placeholder-slate-500 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-sha border-slate-750"
+                      className={`w-full pl-10 pr-4 py-2.5 rounded-xl font-sans text-xs text-white placeholder-slate-500 focus:outline-hidden focus:ring-2 transition-all ${isLuxury ? 'bg-[#1E293B]/60 border border-[#C5A059]/20 focus:ring-[#C5A059]/20 focus:border-[#C5A059]' : 'bg-slate-900 border border-slate-800 focus:ring-blue-500/20 focus:border-blue-500'}`}
                       id="login-email-input"
                     />
                   </div>
@@ -200,7 +202,7 @@ export default function LandingPage({ onLogin }: LandingPageProps) {
                     </span>
                   </div>
                   
-                  <div className="relative">
+                  <div className="relative font-sans">
                     <Key className="absolute left-3 top-3 h-4 w-4 text-slate-500" />
                     <input 
                       type={showPassword ? "text" : "password"}
@@ -208,7 +210,7 @@ export default function LandingPage({ onLogin }: LandingPageProps) {
                       placeholder="••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full pl-10 pr-10 py-2.5 bg-slate-900 border border-slate-800 rounded-xl font-sans text-xs text-white placeholder-slate-500 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-sha border-slate-750"
+                      className={`w-full pl-10 pr-10 py-2.5 rounded-xl font-sans text-xs text-white placeholder-slate-500 focus:outline-hidden focus:ring-2 transition-all ${isLuxury ? 'bg-[#1E293B]/60 border border-[#C5A059]/20 focus:ring-[#C5A059]/20 focus:border-[#C5A059]' : 'bg-slate-900 border border-slate-800 focus:ring-blue-500/20 focus:border-blue-500'}`}
                       id="login-password-input"
                     />
                     <button
@@ -223,9 +225,9 @@ export default function LandingPage({ onLogin }: LandingPageProps) {
 
                 <button
                   type="submit"
-                  className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs rounded-xl shadow-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer hover:shadow-blue-500/10"
+                  className={`w-full py-2.5 text-xs font-semibold rounded-xl shadow-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${isLuxury ? 'bg-gradient-to-r from-[#D4AF37] to-[#C5A059] text-slate-950 hover:from-[#E5BF47] hover:to-[#D4AF37] shadow-[#C5A059]/10 shadow-lg' : 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-500/10'}`}
                 >
-                  Authorize Connection
+                  Authorize Secure Socket Connection
                   <ChevronRight className="h-4 w-4" />
                 </button>
               </form>

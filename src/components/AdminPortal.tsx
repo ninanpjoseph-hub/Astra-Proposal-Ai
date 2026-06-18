@@ -14,6 +14,9 @@ interface AdminPortalProps {
   currentUser: User | null;
   onLoginUser: (user: User | null) => void;
   onViewProposalDetail?: (proposal: Proposal, tab?: 'document' | 'history' | 'payment') => void;
+  theme?: 'luxury-dark' | 'classic';
+  activeTabControl?: 'overview' | 'proposals' | 'users' | 'reminders' | 'logs' | 'payments';
+  onChangeTabControl?: (tab: 'overview' | 'proposals' | 'users' | 'reminders' | 'logs' | 'payments') => void;
 }
 
 const DEFAULT_USERS: User[] = [
@@ -22,7 +25,18 @@ const DEFAULT_USERS: User[] = [
   { id: 'user_shareef', name: 'Shareef', email: 'shareef@technoastra.com', role: UserRole.DESIGNER, isActive: true },
 ];
 
-export default function AdminPortal({ proposals, onUpdateProposals, currentUser, onLoginUser, onViewProposalDetail }: AdminPortalProps) {
+export default function AdminPortal({ 
+  proposals, 
+  onUpdateProposals, 
+  currentUser, 
+  onLoginUser, 
+  onViewProposalDetail,
+  theme = 'classic',
+  activeTabControl,
+  onChangeTabControl
+}: AdminPortalProps) {
+  const isLuxury = theme === 'luxury-dark';
+
   // Systems States
   const [users, setUsers] = useState<User[]>([]);
   const [reminders, setReminders] = useState<Reminder[]>([]);
@@ -54,7 +68,17 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
   const [smtpFromName, setSmtpFromName] = useState<string>('Astra Automated Delivery');
 
   // Local UI States
-  const [activeTab, setActiveTab] = useState<'overview' | 'proposals' | 'users' | 'reminders' | 'logs' | 'payments'>('overview');
+  const [internalActiveTab, setInternalActiveTab] = useState<'overview' | 'proposals' | 'users' | 'reminders' | 'logs' | 'payments'>('overview');
+  const activeTab = activeTabControl || internalActiveTab;
+  
+  const setActiveTab = (tab: 'overview' | 'proposals' | 'users' | 'reminders' | 'logs' | 'payments') => {
+    if (onChangeTabControl) {
+      onChangeTabControl(tab);
+    } else {
+      setInternalActiveTab(tab);
+    }
+  };
+
   const [showLoginModal, setShowLoginModal] = useState<boolean>(false);
   
   // Login credentials mock state
@@ -896,16 +920,31 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
   };
 
   return (
-    <div id="admin-collaboration-space" className="bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden font-sans">
+    <div 
+      id="admin-collaboration-space" 
+      className={`rounded-2xl overflow-hidden font-sans transition-all duration-500 hover:shadow-xl ${
+        isLuxury 
+          ? 'bg-[#111C35]/65 backdrop-blur-md border border-[#C5A059]/25 shadow-[0_8px_30px_rgb(0,0,0,0.6)] text-slate-100' 
+          : 'bg-white border border-slate-200 shadow-xs text-slate-800'
+      }`}
+    >
       
       {/* Top Controller Ribbon */}
-      <div className="bg-slate-900 px-6 py-4 flex flex-col md:flex-row md:items-center md:justify-between border-b border-slate-800 gap-4">
+      <div className={`px-6 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b ${
+        isLuxury 
+          ? 'bg-[#0B1120] border-[#C5A059]/15' 
+          : 'bg-slate-900 border-slate-800'
+      }`}>
         <div className="flex items-center gap-3">
-          <div className="bg-blue-600/10 text-blue-400 p-2 rounded-xl border border-blue-500/20">
+          <div className={`p-2 rounded-xl border ${
+            isLuxury 
+              ? 'bg-[#C5A059]/10 text-[#C5A059] border-[#C5A059]/20 shadow-[0_0_15px_rgba(197,160,89,0.1)]' 
+              : 'bg-blue-600/10 text-blue-400 border-blue-500/20'
+          }`}>
             <Shield className="h-5 w-5" />
           </div>
           <div>
-            <h3 className="text-white text-sm font-semibold tracking-tight uppercase font-serif">
+            <h3 className={`text-white text-sm font-semibold tracking-tight uppercase ${isLuxury ? 'font-serif text-[#C5A059]' : 'font-serif'}`}>
               Astra Team Hub & Admin Portal
             </h3>
             <p className="text-[10px] text-slate-400 font-mono mt-0.5 uppercase tracking-wider">
@@ -919,7 +958,11 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
             <div className="flex items-center gap-3">
               <div className="flex flex-col items-end">
                 <span className="text-[11px] text-white font-semibold font-sans">{currentUser.name}</span>
-                <span className="text-[9px] font-mono font-bold tracking-wider text-blue-400 uppercase bg-blue-900/40 px-1.5 py-0.5 rounded border border-blue-800/30 mt-0.5">
+                <span className={`text-[9px] font-mono font-bold tracking-wider uppercase px-1.5 py-0.5 rounded border mt-0.5 ${
+                  isLuxury 
+                    ? 'text-[#C5A059] bg-[#C5A059]/10 border-[#C5A059]/20' 
+                    : 'text-blue-400 bg-blue-900/40 border-blue-800/30'
+                }`}>
                   {currentUser.role}
                 </span>
               </div>
@@ -949,13 +992,21 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
       </div>
 
       {/* Internal Tabs controller */}
-      <div className="bg-slate-50/80 border-b border-slate-200/80 px-6 py-2 flex flex-wrap gap-1.5">
+      <div className={`border-b px-6 py-2 flex flex-wrap gap-1.5 transition-all ${
+        isLuxury 
+          ? 'bg-[#0F172A] border-[#C5A059]/10' 
+          : 'bg-slate-50/80 border-b border-slate-200/80'
+      }`}>
         <button
           onClick={() => setActiveTab('overview')}
           className={`px-3 py-1.5 rounded-lg text-xs leading-none font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
             activeTab === 'overview' 
-              ? 'bg-white border border-slate-200 text-slate-900 shadow-xs' 
-              : 'text-slate-500 hover:text-slate-800'
+              ? isLuxury 
+                ? 'bg-[#C5A059]/15 border border-[#C5A059]/35 text-[#C5A059] shadow-inner' 
+                : 'bg-white border border-slate-200 text-slate-900 shadow-xs' 
+              : isLuxury 
+                ? 'text-slate-400 hover:text-white hover:bg-[#1E293B]/60' 
+                : 'text-slate-500 hover:text-slate-800'
           }`}
         >
           <BarChart3 className="h-3.5 w-3.5" /> Operational Overview
@@ -965,8 +1016,12 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
           onClick={() => setActiveTab('proposals')}
           className={`px-3 py-1.5 rounded-lg text-xs leading-none font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
             activeTab === 'proposals' 
-              ? 'bg-white border border-slate-200 text-slate-900 shadow-xs' 
-              : 'text-slate-500 hover:text-slate-800'
+              ? isLuxury 
+                ? 'bg-[#C5A059]/15 border border-[#C5A059]/35 text-[#C5A059] shadow-inner' 
+                : 'bg-white border border-slate-200 text-slate-900 shadow-xs' 
+              : isLuxury 
+                ? 'text-slate-400 hover:text-white hover:bg-[#1E293B]/60' 
+                : 'text-slate-500 hover:text-slate-800'
           }`}
         >
           <FileText className="h-3.5 w-3.5" /> Pipeline Controller
@@ -977,8 +1032,12 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
             onClick={() => setActiveTab('users')}
             className={`px-3 py-1.5 rounded-lg text-xs leading-none font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
               activeTab === 'users' 
-                ? 'bg-white border border-slate-200 text-slate-900 shadow-xs' 
-                : 'text-slate-500 hover:text-slate-800'
+                ? isLuxury 
+                  ? 'bg-[#C5A059]/15 border border-[#C5A059]/35 text-[#C5A059] shadow-inner' 
+                  : 'bg-white border border-slate-200 text-slate-900 shadow-xs' 
+                : isLuxury 
+                  ? 'text-slate-400 hover:text-white hover:bg-[#1E293B]/60' 
+                  : 'text-slate-500 hover:text-slate-800'
             }`}
           >
             <Users className="h-3.5 w-3.5" /> Identity & Users
@@ -989,8 +1048,12 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
           onClick={() => setActiveTab('reminders')}
           className={`px-3 py-1.5 rounded-lg text-xs leading-none font-semibold transition-all cursor-pointer flex items-center gap-1.5 relative ${
             activeTab === 'reminders' 
-              ? 'bg-white border border-slate-200 text-slate-900 shadow-xs' 
-              : 'text-slate-500 hover:text-slate-800'
+              ? isLuxury 
+                ? 'bg-[#C5A059]/15 border border-[#C5A059]/35 text-[#C5A059] shadow-inner' 
+                : 'bg-white border border-slate-200 text-slate-900 shadow-xs' 
+              : isLuxury 
+                ? 'text-slate-400 hover:text-white hover:bg-[#1E293B]/60' 
+                : 'text-slate-500 hover:text-slate-800'
           }`}
         >
           <Bell className="h-3.5 w-3.5" /> Follow-ups
@@ -1005,8 +1068,12 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
           onClick={() => setActiveTab('payments')}
           className={`px-3 py-1.5 rounded-lg text-xs leading-none font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
             activeTab === 'payments' 
-              ? 'bg-white border border-slate-200 text-slate-900 shadow-xs' 
-              : 'text-slate-500 hover:text-slate-800'
+              ? isLuxury 
+                ? 'bg-[#C5A059]/15 border border-[#C5A059]/35 text-[#C5A059] shadow-inner' 
+                : 'bg-white border border-slate-200 text-slate-900 shadow-xs' 
+              : isLuxury 
+                ? 'text-slate-400 hover:text-white hover:bg-[#1E293B]/60' 
+                : 'text-slate-500 hover:text-slate-800'
           }`}
         >
           <Coins className="h-3.5 w-3.5 font-bold" /> Payment Tracker
@@ -1068,44 +1135,60 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
             } gap-6`}>
               
               {/* Analytics report block */}
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 flex flex-col justify-between">
+              <div className={`rounded-xl p-5 flex flex-col justify-between border ${
+                isLuxury 
+                  ? 'bg-[#1E293B]/45 border-[#C5A059]/15' 
+                  : 'bg-slate-50 border border-slate-200'
+              }`}>
                 <div>
-                  <h4 className="text-xs font-bold tracking-tight text-slate-700 uppercase font-mono mb-2 flex items-center gap-1.5">
-                    <TrendingUp className="h-3.5 w-3.5 text-blue-600" /> Executive Analytics Summary
+                  <h4 className={`text-xs font-bold tracking-tight uppercase font-mono mb-2 flex items-center gap-1.5 ${
+                    isLuxury ? 'text-[#C5A059]' : 'text-slate-700'
+                  }`}>
+                    <TrendingUp className={`h-3.5 w-3.5 ${isLuxury ? 'text-[#C5A059]' : 'text-blue-600'}`} /> Executive Analytics Summary
                   </h4>
                   <div className="mt-4 space-y-3">
-                    <div className="flex justify-between items-center py-1.5 border-b border-slate-200">
-                      <span className="text-slate-500 text-xs font-sans">Corporate Conversion Rate</span>
-                      <strong className="text-sm font-bold text-slate-800">{metrics.conversionPercent}% Completed</strong>
+                    <div className={`flex justify-between items-center py-1.5 border-b ${isLuxury ? 'border-slate-800' : 'border-slate-200'}`}>
+                      <span className="text-slate-400 text-xs font-sans">Corporate Conversion Rate</span>
+                      <strong className={`text-sm font-bold ${isLuxury ? 'text-white' : 'text-slate-800'}`}>{metrics.conversionPercent}% Completed</strong>
                     </div>
-                    <div className="flex justify-between items-center py-1.5 border-b border-slate-200">
-                      <span className="text-slate-500 text-xs font-sans">Total Managed Pipeline</span>
-                      <strong className="text-sm font-bold text-slate-800">{formatQAR(metrics.pipelineSum)} QAR</strong>
+                    <div className={`flex justify-between items-center py-1.5 border-b ${isLuxury ? 'border-slate-800' : 'border-slate-200'}`}>
+                      <span className="text-slate-400 text-xs font-sans">Total Managed Pipeline</span>
+                      <strong className={`text-sm font-bold ${isLuxury ? 'text-[#C5A059]' : 'text-slate-800'}`}>{formatQAR(metrics.pipelineSum)} QAR</strong>
                     </div>
                     <div className="flex justify-between items-center py-1.5">
-                      <span className="text-slate-500 text-xs font-sans">Average Proposal Value</span>
-                      <strong className="text-sm font-bold text-slate-800">{formatQAR(metrics.avgVal)} QAR</strong>
+                      <span className="text-slate-400 text-xs font-sans">Average Proposal Value</span>
+                      <strong className={`text-sm font-bold ${isLuxury ? 'text-white' : 'text-slate-800'}`}>{formatQAR(metrics.avgVal)} QAR</strong>
                     </div>
                   </div>
                 </div>
 
-                <div className="mt-5 bg-white border border-slate-200 rounded-lg p-3">
+                <div className={`mt-5 rounded-lg p-3 border ${
+                  isLuxury 
+                    ? 'bg-[#0B1120] border-[#C5A059]/10' 
+                    : 'bg-white border border-slate-200'
+                }`}>
                   <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                    <div className="flex items-center gap-1.5 text-xs text-slate-400">
                       <Sparkles className="h-3.5 w-3.5 text-amber-500" />
                       <span>Conversion Milestone Goal</span>
                     </div>
-                    <span className="text-[10px] font-bold text-amber-700 uppercase font-mono">Status: 75% Target</span>
+                    <span className={`text-[10px] font-bold uppercase font-mono ${isLuxury ? 'text-[#C5A059]' : 'text-amber-700'}`}>Status: 75% Target</span>
                   </div>
-                  <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden mt-2">
-                    <div className="bg-amber-500 h-full transition-all" style={{ width: `${Math.min(100, metrics.conversionPercent)}%` }}></div>
+                  <div className={`w-full h-2 rounded-full overflow-hidden mt-2 ${isLuxury ? 'bg-slate-950' : 'bg-slate-100'}`}>
+                    <div className={`h-full transition-all ${isLuxury ? 'bg-[#C5A059]' : 'bg-amber-500'}`} style={{ width: `${Math.min(100, metrics.conversionPercent)}%` }}></div>
                   </div>
                 </div>
               </div>
 
               {/* Status Volume distributions - Custom Render Layout */}
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-5">
-                <h4 className="text-xs font-bold tracking-tight text-slate-700 uppercase font-mono mb-2">
+              <div className={`rounded-xl p-5 border ${
+                isLuxury 
+                  ? 'bg-[#1E293B]/45 border-[#C5A059]/15' 
+                  : 'bg-slate-50 border border-slate-200'
+              }`}>
+                <h4 className={`text-xs font-bold tracking-tight uppercase font-mono mb-2 ${
+                  isLuxury ? 'text-[#C5A059]' : 'text-slate-700'
+                }`}>
                   Proposal Distribution by Pipeline Status
                 </h4>
                 
@@ -1116,16 +1199,16 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
                     return (
                       <div key={status} className="space-y-1">
                         <div className="flex justify-between items-center text-[10px]">
-                          <span className="font-semibold text-slate-700">{status}</span>
+                          <span className={`font-semibold ${isLuxury ? 'text-slate-350' : 'text-slate-700'}`}>{status}</span>
                           <span className="text-slate-400 font-mono font-bold">{count} ({percent}%)</span>
                         </div>
-                        <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                        <div className={`w-full h-1.5 rounded-full overflow-hidden ${isLuxury ? 'bg-slate-950' : 'bg-slate-200'}`}>
                           <div 
                             className={`h-full transition-all ${
                               status === ProposalStatus.COMPLETED ? 'bg-emerald-500' :
                               status === ProposalStatus.CANCELLED ? 'bg-rose-500' :
                               status === ProposalStatus.CLOSED ? 'bg-red-500' :
-                              status === ProposalStatus.UNDER_PROCESS ? 'bg-blue-500' :
+                              status === ProposalStatus.UNDER_PROCESS ? (isLuxury ? 'bg-[#C5A059]' : 'bg-blue-500') :
                               status === ProposalStatus.UNDER_REVIEW ? 'bg-amber-500' :
                               status === ProposalStatus.AWAITING_CLIENT_FEEDBACK ? 'bg-pink-500' :
                               'bg-slate-400'
@@ -1141,26 +1224,38 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
 
               {/* Collaborative assignments report */}
               {(currentUser?.role === UserRole.ADMIN || currentUser?.role === UserRole.MANAGER) && (
-                <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 flex flex-col justify-between">
+                <div className={`rounded-xl p-5 flex flex-col justify-between border ${
+                  isLuxury 
+                    ? 'bg-[#1E293B]/45 border-[#C5A059]/15' 
+                    : 'bg-slate-50 border border-slate-200'
+                }`}>
                   <div>
-                    <h4 className="text-xs font-bold tracking-tight text-slate-700 uppercase font-mono mb-2">
+                    <h4 className={`text-xs font-bold tracking-tight uppercase font-mono mb-2 ${
+                      isLuxury ? 'text-[#C5A059]' : 'text-slate-700'
+                    }`}>
                       Operational Team Allocations
                     </h4>
-                    <div className="mt-3 divide-y divide-slate-200/80">
+                    <div className={`mt-3 divide-y ${isLuxury ? 'divide-slate-800' : 'divide-slate-200/80'}`}>
                       {users.map(u => {
                         const count = proposals.filter(p => p.assignedUserId === u.id || p.preparedByUserId === u.id).length;
                         return (
-                          <div key={u.id} className="flex justify-between items-center py-2">
+                          <div key={u.id} className="flex justify-between items-center py-2 animate-none">
                             <div className="flex items-center gap-2">
-                              <div className="h-6 w-6 rounded-full bg-slate-200 font-bold text-[9px] flex items-center justify-center text-slate-600">
+                              <div className={`h-6 w-6 rounded-full font-bold text-[9px] flex items-center justify-center ${
+                                isLuxury ? 'bg-[#0B1120] text-[#C5A059] border border-[#C5A059]/20' : 'bg-slate-200 text-slate-600'
+                              }`}>
                                 {u.name.split(' ').map(n=>n[0]).join('')}
                               </div>
                               <div>
-                                <p className="text-[10px] font-bold text-slate-800">{u.name}</p>
+                                <p className={`text-[10px] font-bold ${isLuxury ? 'text-slate-200' : 'text-slate-800'}`}>{u.name}</p>
                                 <p className="text-[8px] font-mono text-slate-400 leading-none">{u.role}</p>
                               </div>
                             </div>
-                            <span className="bg-white border border-slate-200 rounded px-2 py-0.5 font-mono text-[9px] text-slate-600 font-bold">
+                            <span className={`px-2 py-0.5 font-mono text-[9px] font-bold rounded border ${
+                              isLuxury 
+                                ? 'bg-[#0B1120] border-[#C5A059]/11 text-[#C5A059]' 
+                                : 'bg-white border border-slate-200 text-slate-600 font-bold'
+                            }`}>
                               {count} {count === 1 ? 'project' : 'projects'}
                             </span>
                           </div>
@@ -1169,7 +1264,7 @@ export default function AdminPortal({ proposals, onUpdateProposals, currentUser,
                     </div>
                   </div>
 
-                  <div className="mt-4 pt-3 border-t border-slate-200 text-center">
+                  <div className={`mt-4 pt-3 text-center border-t ${isLuxury ? 'border-slate-800' : 'border-slate-200'}`}>
                     <span className="text-[9px] font-mono text-slate-400 italic block">
                       All updates feed to our collaborative logging registry in real-time.
                     </span>

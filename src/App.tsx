@@ -46,6 +46,14 @@ export default function App() {
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [isDbConnected, setIsDbConnected] = useState<boolean>(false);
   const [dbStatusDetails, setDbStatusDetails] = useState<string>("Detecting connection...");
+  
+  // Theme state: defaulting to 'luxury-dark' representing Elite Wealth platform
+  const [dashboardTheme, setDashboardTheme] = useState<'luxury-dark' | 'classic'>(() => {
+    const cached = localStorage.getItem('prowess_dashboard_theme');
+    return cached === 'classic' ? 'classic' : 'luxury-dark';
+  });
+  
+  const isLuxury = dashboardTheme === 'luxury-dark';
 
   // Team active login session
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
@@ -468,6 +476,7 @@ export default function App() {
   if (!currentUser) {
     return (
       <LandingPage
+        theme={dashboardTheme}
         onLogin={(user) => {
           setCurrentUser(user);
           localStorage.setItem('prowess_session_user', JSON.stringify(user));
@@ -478,17 +487,25 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col justify-between">
+    <div className={`min-h-screen flex flex-col justify-between ${isLuxury ? 'bg-[#070b19] text-slate-100' : 'bg-slate-50 text-[#1e293b]'}`}>
       
       {/* GLOBAL BANNER HEADER - Hidden during printing */}
-      <header className="no-print bg-slate-900 text-white shadow-md border-b-4 border-blue-600">
+      <header className={`no-print text-white shadow-md border-b-4 transition-all ${
+        isLuxury 
+          ? 'bg-[#0B1120] border-[#C5A059] shadow-[0_4px_25px_rgba(0,0,0,0.4)]' 
+          : 'bg-slate-900 border-blue-600'
+      }`}>
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="bg-blue-600 h-9 w-9 rounded-lg flex items-center justify-center font-bold font-serif italic text-white text-lg animate-none">
+            <div className={`h-9 w-9 rounded-lg flex items-center justify-center font-bold font-serif italic text-white text-lg animate-none ${
+              isLuxury ? 'bg-[#C5A059]' : 'bg-blue-600'
+            }`}>
               As
             </div>
             <div>
-              <h1 className="font-serif font-bold text-base md:text-lg tracking-tight leading-none text-slate-100">
+              <h1 className={`font-serif font-bold text-base md:text-lg tracking-tight leading-none text-slate-100 ${
+                isLuxury ? 'text-[#C5A059]' : 'text-slate-100'
+              }`}>
                 Astra Tech
               </h1>
               <p className="text-[10px] font-mono text-slate-400 mt-1 uppercase tracking-widest">
@@ -501,7 +518,11 @@ export default function App() {
             <span className="text-slate-400 hidden sm:inline">
               {currentUser?.name} <span className="opacity-60">({currentUser?.role})</span>
             </span>
-            <span className="font-mono bg-slate-800 text-slate-200 px-2.5 py-1 rounded-md border border-slate-700">
+            <span className={`font-mono px-2.5 py-1 rounded-md border ${
+              isLuxury 
+                ? 'bg-[#111C35] text-[#C5A059] border-[#C5A059]/20' 
+                : 'bg-slate-800 text-slate-200 border-slate-700'
+            }`}>
               {currentUser?.email}
             </span>
             
@@ -549,7 +570,11 @@ export default function App() {
       </header>
 
       {/* MODULE TAB NAVIGATION BAR */}
-      <div className="no-print bg-white border-b border-slate-200 shadow-3xs">
+      <div className={`no-print border-b transition-all ${
+        isLuxury 
+          ? 'bg-[#0F172A] border-[#C5A059]/15' 
+          : 'bg-white border-slate-200 shadow-3xs'
+      }`}>
         <div className="max-w-7xl mx-auto px-4 md:px-6 flex gap-6">
           <button
             onClick={() => {
@@ -559,8 +584,12 @@ export default function App() {
             }}
             className={`py-3.5 text-xs font-serif font-extrabold uppercase tracking-wider border-b-2 transition-all cursor-pointer flex items-center gap-2 ${
               activeModule === 'proposals' 
-                ? 'border-blue-600 text-blue-700' 
-                : 'border-transparent text-slate-500 hover:text-slate-800'
+                ? isLuxury 
+                  ? 'border-[#C5A059] text-[#C5A059]' 
+                  : 'border-blue-600 text-blue-700' 
+                : isLuxury 
+                  ? 'border-transparent text-slate-400 hover:text-white' 
+                  : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
             <FileText className="h-4 w-4" />
@@ -572,8 +601,12 @@ export default function App() {
             }}
             className={`py-3.5 text-xs font-serif font-extrabold uppercase tracking-wider border-b-2 transition-all cursor-pointer flex items-center gap-2 ${
               activeModule === 'cheque-quotations' 
-                ? 'border-blue-600 text-blue-700' 
-                : 'border-transparent text-slate-500 hover:text-slate-800'
+                ? isLuxury 
+                  ? 'border-[#C5A059] text-[#C5A059]' 
+                  : 'border-blue-600 text-blue-700' 
+                : isLuxury 
+                  ? 'border-transparent text-slate-400 hover:text-white' 
+                  : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
             <Landmark className="h-4 w-4" />
@@ -689,55 +722,83 @@ export default function App() {
             {/* SaaS Metrics block */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               
-              <div className="bg-white border border-slate-200 p-5 rounded-2xl flex items-center gap-4 shadow-xs">
-                <div className="bg-blue-50 text-blue-600 h-10 w-10 rounded-xl flex items-center justify-center shrink-0">
+              <div className={`p-5 rounded-2xl flex items-center gap-4 border transition-all ${
+                isLuxury 
+                  ? 'bg-[#111C35]/65 border-[#C5A059]/20 shadow-[0_8px_30px_rgb(0,0,0,0.55)] text-white' 
+                  : 'bg-white border border-slate-200 shadow-xs'
+              }`}>
+                <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${
+                  isLuxury ? 'bg-[#C5A059]/10 text-[#C5A059] border border-[#C5A059]/20' : 'bg-blue-50 text-blue-600'
+                }`}>
                   <Database className="h-5 w-5" />
                 </div>
                 <div>
                   <span className="text-[10px] uppercase font-mono tracking-wider text-slate-400 block mb-0.5">Stored Proposals</span>
-                  <strong className="text-xl font-bold text-slate-800">{proposals.length} Saved</strong>
+                  <strong className={`text-xl font-bold ${isLuxury ? 'text-white' : 'text-slate-800'}`}>{proposals.length} Saved</strong>
                 </div>
               </div>
 
-              <div className="bg-white border border-slate-200 p-5 rounded-2xl flex items-center gap-4 shadow-xs">
-                <div className="bg-emerald-50 text-emerald-600 h-10 w-10 rounded-xl flex items-center justify-center shrink-0">
+              <div className={`p-5 rounded-2xl flex items-center gap-4 border transition-all ${
+                isLuxury 
+                  ? 'bg-[#111C35]/65 border-[#C5A059]/20 shadow-[0_8px_30px_rgb(0,0,0,0.55)] text-white' 
+                  : 'bg-white border border-slate-200 shadow-xs'
+              }`}>
+                <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${
+                  isLuxury ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-emerald-500/10 text-emerald-600'
+                }`}>
                   <TrendingUp className="h-5 w-5" />
                 </div>
                 <div>
                   <span className="text-[10px] uppercase font-mono tracking-wider text-slate-400 block mb-0.5">Total Pipeline Value</span>
-                  <strong className="text-xl font-bold text-slate-800">{formatQAR(totalValueSum)}</strong>
+                  <strong className={`text-xl font-bold ${isLuxury ? 'text-[#C5A059] font-serif' : 'text-slate-800'}`}>{formatQAR(totalValueSum)}</strong>
                 </div>
               </div>
 
-              <div className="bg-white border border-slate-200 p-5 rounded-2xl flex items-center gap-4 shadow-xs">
-                <div className="bg-amber-50 text-amber-600 h-10 w-10 rounded-xl flex items-center justify-center shrink-0">
+              <div className={`p-5 rounded-2xl flex items-center gap-4 border transition-all ${
+                isLuxury 
+                  ? 'bg-[#111C35]/65 border-[#C5A059]/20 shadow-[0_8px_30px_rgb(0,0,0,0.55)] text-white' 
+                  : 'bg-white border border-slate-200 shadow-xs'
+              }`}>
+                <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${
+                  isLuxury ? 'bg-[#C5A059]/10 text-[#C5A059] border border-[#C5A059]/20' : 'bg-amber-50 text-amber-600'
+                }`}>
                   <FileText className="h-5 w-5" />
                 </div>
                 <div>
                   <span className="text-[10px] uppercase font-mono tracking-wider text-slate-400 block mb-0.5">Web Platforms ratio</span>
-                  <strong className="text-xl font-bold text-slate-800">{webProposalsCount} Active</strong>
+                  <strong className={`text-xl font-bold ${isLuxury ? 'text-white' : 'text-slate-800'}`}>{webProposalsCount} Active</strong>
                 </div>
               </div>
 
-              <div className="bg-white border border-slate-200 p-5 rounded-2xl flex items-center gap-4 shadow-xs">
-                <div className="bg-sky-50 text-sky-600 h-10 w-10 rounded-xl flex items-center justify-center shrink-0">
+              <div className={`p-5 rounded-2xl flex items-center gap-4 border transition-all ${
+                isLuxury 
+                  ? 'bg-[#111C35]/65 border-[#C5A059]/20 shadow-[0_8px_30px_rgb(0,0,0,0.55)] text-white' 
+                  : 'bg-white border border-slate-200 shadow-xs'
+              }`}>
+                <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${
+                  isLuxury ? 'bg-sky-500/10 text-sky-400 border border-sky-500/20' : 'bg-sky-50 text-sky-600'
+                }`}>
                   <Sparkles className="h-5 w-5" />
                 </div>
                 <div>
                   <span className="text-[10px] uppercase font-mono tracking-wider text-slate-400 block mb-0.5">Branding Campaigns</span>
-                  <strong className="text-xl font-bold text-slate-800">{brandingProposalsCount} Issued</strong>
+                  <strong className={`text-xl font-bold ${isLuxury ? 'text-sky-350' : 'text-slate-800'}`}>{brandingProposalsCount} Issued</strong>
                 </div>
               </div>
 
             </div>
 
             {/* Create Proposal Selector Bar */}
-            <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-xs flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className={`p-6 rounded-2xl border transition-all flex flex-col md:flex-row items-center justify-between gap-4 ${
+              isLuxury 
+                ? 'bg-[#111C35]/65 border-[#C5A059]/20 shadow-xl text-white' 
+                : 'bg-white border border-slate-200 shadow-xs'
+            }`}>
               <div>
-                <h2 className="font-serif font-bold text-slate-900 text-lg tracking-tight">
+                <h2 className={`font-serif font-bold text-lg tracking-tight ${isLuxury ? 'text-[#C5A059]' : 'text-slate-900'}`}>
                   Design bespoke proposals instantly
                 </h2>
-                <p className="text-xs text-slate-500 leading-normal font-sans">
+                <p className={`text-xs leading-normal font-sans ${isLuxury ? 'text-slate-300' : 'text-slate-500'}`}>
                   Choose a blueprint target below. The wizard compiles locking master pages and asks only for clients specifics.
                 </p>
               </div>
@@ -746,15 +807,23 @@ export default function App() {
                 <button
                   onClick={() => startNewProposal('branding')}
                   id="create-branding-proposal-btn"
-                  className="px-4 py-2 bg-slate-900 hover:bg-slate-850 text-white font-semibold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+                  className={`px-4 py-2 font-semibold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer ${
+                    isLuxury 
+                      ? 'bg-gradient-to-r from-[#C5A059] to-[#D4AF37] text-[#070b19] hover:brightness-110 font-bold' 
+                      : 'bg-slate-900 hover:bg-slate-850 text-white'
+                  }`}
                 >
-                  <Plus className="h-4 w-4 text-blue-400" />
+                  <Plus className={`h-4 w-4 ${isLuxury ? 'text-[#070b19]' : 'text-blue-400'}`} />
                   + Branding & Identity Proposal
                 </button>
                 <button
                   onClick={() => startNewProposal('website')}
                   id="create-website-proposal-btn"
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
+                  className={`px-4 py-2 font-semibold text-xs rounded-xl transition-all flex items-center gap-1.5 cursor-pointer ${
+                    isLuxury 
+                      ? 'bg-[#111C35] hover:bg-[#1E293B] text-[#C5A059] border border-[#C5A059]/40 shadow-xs' 
+                      : 'bg-blue-600 hover:bg-blue-700 text-white shadow-md'
+                  }`}
                 >
                   <Plus className="h-4 w-4" />
                   + Website Development Proposal
@@ -833,20 +902,24 @@ export default function App() {
             {/* Smart search center console */}
             <div className="space-y-4">
               <div className="relative max-w-2xl mx-auto">
-                <Search className="absolute left-4 top-3.5 h-4.5 w-4.5 text-slate-400" />
+                <Search className={`absolute left-4 top-3.5 h-4.5 w-4.5 ${isLuxury ? 'text-[#C5A059]' : 'text-slate-400'}`} />
                 <input
                   type="text"
                   placeholder='Search by client, scope or type (e.g., "Show me the Mannai TechHub website proposal")...'
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-11 pr-12 py-3 border border-slate-300 rounded-xl font-sans text-xs shadow-sm bg-white placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-sha pr-8"
+                  className={`w-full pl-11 pr-12 py-3 border rounded-xl font-sans text-xs transition-shadow pr-8 ${
+                    isLuxury 
+                      ? 'bg-[#111C35]/65 border-[#C5A059]/25 text-white placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-[#C5A059]/25 focus:border-[#C5A059]' 
+                      : 'border-slate-300 shadow-sm bg-white placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-200 focus:border-blue-500'
+                  }`}
                   id="search-memory-input"
                 />
                 
                 {searchQuery && (
                   <button
                     onClick={() => setSearchQuery('')}
-                    className="absolute right-4 top-3.5 text-xs text-slate-400 hover:text-slate-600"
+                    className={`absolute right-4 top-3.5 text-xs ${isLuxury ? 'text-[#C5A059]/80 hover:text-white' : 'text-slate-400'}`}
                   >
                     Clear
                   </button>
@@ -855,14 +928,18 @@ export default function App() {
 
               {/* Suggestions Chips */}
               <div className="flex flex-wrap gap-2 items-center justify-center max-w-2xl mx-auto">
-                <span className="text-[10px] font-bold text-slate-400 font-mono uppercase shrink-0">
+                <span className={`text-[10px] font-bold font-mono uppercase shrink-0 ${isLuxury ? 'text-slate-300' : 'text-slate-400'}`}>
                   Search Prompts:
                 </span>
                 {searchSuggestions.map((s, idx) => (
                   <button
                     key={idx}
                     onClick={() => setSearchQuery(s.query)}
-                    className="px-3 py-1 font-sans text-[10px] border border-slate-200 hover:border-slate-350 bg-white hover:bg-slate-50 text-slate-600 rounded-full transition-colors cursor-pointer"
+                    className={`px-3 py-1 font-sans text-[10px] rounded-full transition-colors cursor-pointer border ${
+                      isLuxury 
+                        ? 'bg-[#111C35] border-[#C5A059]/15 hover:border-[#C5A059]/35 text-slate-300 hover:text-white' 
+                        : 'border-slate-200 hover:border-slate-350 bg-white hover:bg-slate-50 text-slate-600'
+                    }`}
                   >
                     "{s.label}"
                   </button>
@@ -872,11 +949,15 @@ export default function App() {
 
             {/* Search Results Table / Deck Grid */}
             <div className="space-y-4">
-              <div className="flex justify-between items-center bg-slate-100/50 px-4 py-2 border border-slate-200/80 rounded-lg">
-                <span className="text-xs font-mono font-bold text-slate-400 uppercase">
+              <div className={`flex justify-between items-center px-4 py-2 rounded-lg border ${
+                isLuxury 
+                  ? 'bg-[#111C35]/35 border-[#C5A059]/10 text-slate-100' 
+                  : 'bg-slate-100/50 border-slate-200/80 text-slate-700'
+              }`}>
+                <span className={`text-xs font-mono font-bold uppercase ${isLuxury ? 'text-[#C5A059]' : 'text-slate-400'}`}>
                   ACTIVE MEMORY DIRECTORY
                 </span>
-                <span className="text-xs font-sans text-slate-500">
+                <span className="text-xs font-sans">
                   Showing <strong>{filteredProposals.length}</strong> of <strong>{proposals.length}</strong> stored proposals
                 </span>
               </div>
@@ -892,22 +973,28 @@ export default function App() {
                           setProposalViewTab('document');
                           setViewingProposal(prop);
                         }}
-                        className="bg-white border border-slate-200 p-5 rounded-2xl hover:border-blue-300 hover:shadow-md transition-all cursor-pointer relative group flex flex-col justify-between"
+                        className={`p-5 rounded-2xl cursor-pointer relative group flex flex-col justify-between border transition-all ${
+                          isLuxury 
+                            ? 'bg-[#111C35]/65 border-[#C5A059]/20 hover:border-[#C5A059]/50 shadow-[0_8px_30px_rgb(0,0,0,0.3)] text-white hover:shadow-[#C5A059]/5' 
+                            : 'bg-white border border-slate-200 hover:border-blue-300 hover:shadow-md text-slate-800'
+                        }`}
                       >
                         {/* Type Tag indicator */}
                         <div className="absolute top-5 right-5 flex flex-col items-end gap-1.5">
                           <span className={`text-[9px] font-mono font-bold px-2.5 py-0.5 rounded-full uppercase leading-none ${
-                            isB ? 'bg-sky-50 text-sky-700' : 'bg-emerald-50 text-emerald-700'
+                            isB 
+                              ? isLuxury ? 'bg-[#C5A059]/15 text-[#C5A059]' : 'bg-sky-50 text-sky-700'
+                              : isLuxury ? 'bg-emerald-500/15 text-emerald-400' : 'bg-emerald-50 text-emerald-700'
                           }`}>
                             {isB ? "Identity" : "Website"}
                           </span>
                           <span className={`text-[8.5px] font-sans font-bold px-2 py-0.5 border rounded-full leading-none uppercase ${
-                            prop.status === 'Completed' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                            prop.status === 'Cancelled' ? 'bg-rose-50 text-rose-700 border-rose-200' :
-                            prop.status === 'Under Process' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                            prop.status === 'Under Review' ? 'bg-amber-50 text-amber-750 border-amber-200' :
-                            prop.status === 'Awaiting Client Feedback' ? 'bg-pink-50 text-pink-700 border-pink-200' :
-                            'bg-slate-100 text-slate-600 border-slate-205'
+                            prop.status === 'Completed' ? 'bg-emerald-500/10 text-emerald-450 border-emerald-500/20' :
+                            prop.status === 'Cancelled' ? 'bg-rose-500/10 text-rose-450 border-rose-500/20' :
+                            prop.status === 'Under Process' ? isLuxury ? 'bg-[#C5A059]/15 text-[#C5A059] border-[#C5A059]/30' : 'bg-blue-50 text-blue-700 border-blue-200' :
+                            prop.status === 'Under Review' ? 'bg-amber-500/10 text-amber-450 border-amber-500/20' :
+                            prop.status === 'Awaiting Client Feedback' ? 'bg-pink-500/10 text-pink-450 border-pink-500/20' :
+                            isLuxury ? 'bg-slate-800 text-slate-350 border-slate-700' : 'bg-slate-100 text-slate-600 border-slate-205'
                           }`}>
                             {prop.status || 'Draft'}
                           </span>
@@ -918,29 +1005,45 @@ export default function App() {
                             <Calendar className="h-3.5 w-3.5" />
                             <span className="font-mono text-[10px] mr-1">{prop.proposalDate}</span>
                             {prop.assignedUserName && (
-                              <span className="text-[9.5px] bg-slate-100/80 text-slate-600 font-sans px-1.5 py-0.5 rounded border border-slate-200 leading-none">
+                              <span className={`text-[9.5px] font-sans px-1.5 py-0.5 rounded border leading-none ${
+                                isLuxury 
+                                  ? 'bg-[#0B1120] text-[#C5A059] border-[#C5A059]/20' 
+                                  : 'bg-slate-100/80 text-slate-600 border-slate-200'
+                              }`}>
                                 Lead: {prop.assignedUserName}
                               </span>
                             )}
                           </div>
 
-                          <h3 className="font-serif font-bold text-slate-800 text-base leading-tight group-hover:text-blue-600 transition-colors">
+                          <h3 className={`font-serif font-bold text-base leading-tight transition-colors ${
+                            isLuxury 
+                              ? 'text-white group-hover:text-[#C5A059]' 
+                              : 'text-slate-800 group-hover:text-blue-600'
+                          }`}>
                             {prop.clientName || "Unnamed Client"}
                           </h3>
-                          <p className="font-sans text-[11px] text-slate-500 mt-1 lines-clamp-2 leading-relaxed">
+                          <p className={`font-sans text-[11px] mt-1 lines-clamp-2 leading-relaxed ${
+                            isLuxury ? 'text-slate-300' : 'text-slate-500'
+                          }`}>
                             {prop.companyName || (isB ? "Branding Strategy Suite" : "Custom Web Project")}
                           </p>
                           
-                          <p className="text-slate-400 text-[10px] italic font-sans mt-3 line-clamp-2 border-l-2 border-slate-100 pl-2">
+                          <p className={`text-[10px] italic font-sans mt-3 line-clamp-2 border-l-2 pl-2 ${
+                            isLuxury ? 'text-slate-400 border-[#C5A059]/40' : 'text-slate-400 border-slate-100'
+                          }`}>
                             "{prop.briefDescription || "Bespoke production strategic deck targeting operational deadlines and conversion metrics."}"
                           </p>
                         </div>
 
                         {/* Specs grid */}
-                        <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between gap-4">
+                        <div className={`mt-5 pt-4 border-t flex items-center justify-between gap-4 ${
+                          isLuxury ? 'border-slate-800/80' : 'border-slate-100'
+                        }`}>
                           <div className="flex flex-col">
-                            <span className="text-[8px] font-mono text-slate-400 uppercase tracking-wider block">Contract Value</span>
-                            <strong className="text-sm font-sans font-extrabold text-blue-700 mt-0.5">
+                            <span className="text-[8px] font-mono text-slate-450 uppercase tracking-wider block">Contract Value</span>
+                            <strong className={`text-sm font-sans font-extrabold mt-0.5 ${
+                              isLuxury ? 'text-[#C5A059]' : 'text-blue-700'
+                            }`}>
                               {formatQAR(prop.totalCost)} QAR
                             </strong>
                           </div>
@@ -953,7 +1056,9 @@ export default function App() {
                                 setProposalViewTab('document');
                                 setViewingProposal(prop);
                               }}
-                              className="p-1.5 hover:bg-slate-100 text-slate-500 hover:text-blue-600 rounded-md transition-colors"
+                              className={`p-1.5 rounded-md transition-colors ${
+                                isLuxury ? 'hover:bg-[#C5A059]/10 text-slate-400 hover:text-[#C5A059]' : 'hover:bg-slate-100 text-slate-500 hover:text-blue-600'
+                              }`}
                               title="Render PDF"
                             >
                               <Eye className="h-4.5 w-4.5" />
@@ -965,7 +1070,9 @@ export default function App() {
                                 setEditingProposal(prop);
                                 setIsCreating(true);
                               }}
-                              className="p-1.5 hover:bg-slate-100 text-slate-500 hover:text-blue-600 rounded-md transition-colors"
+                              className={`p-1.5 rounded-md transition-colors ${
+                                isLuxury ? 'hover:bg-[#C5A059]/10 text-slate-400 hover:text-[#C5A059]' : 'hover:bg-slate-100 text-[#C5A059] hover:text-blue-600'
+                              }`}
                               title="Modify Proposal"
                             >
                               <Edit3 className="h-4.5 w-4.5" />
@@ -973,7 +1080,9 @@ export default function App() {
                             {/* Delete block */}
                             <button
                               onClick={(e) => handleDeleteProposal(prop.id, e)}
-                              className="p-1.5 hover:bg-slate-100 text-slate-400 hover:text-rose-600 rounded-md transition-colors animate-none"
+                              className={`p-1.5 rounded-md transition-colors ${
+                                isLuxury ? 'hover:bg-rose-500/10 text-slate-400 hover:text-rose-400' : 'hover:bg-slate-100 text-slate-400 hover:text-rose-600'
+                              }`}
                               title="Delete from memory"
                             >
                               <Trash2 className="h-4.5 w-4.5" />
