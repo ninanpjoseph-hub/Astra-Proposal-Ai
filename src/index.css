@@ -142,3 +142,33 @@ body {
   background-color: #e2e8f0;
 }
 
+/* Enhanced form input text & placeholder contrast for superb accessibility (~25%+ darker than default slate-450) */
+input::placeholder,
+textarea::placeholder,
+select::placeholder {
+  color: #475569 !important; /* Perfect professional slate-600 contrast against light backgrounds while remaining distinct from user typing */
+  opacity: 1 !important;     /* Override default browser opacity dampening */
+}
+
+/* Style the text of standard inputs, textareas and date inputs so that pre-filled defaults & values are crisp and legible */
+input,
+textarea,
+select {
+  color: #1e293b; /* Premium dark slate-800 for high readability of user typing and pre-filled defaults */
+}
+
+/* Ensure empty/prefilled date inputs are highly legible across Chrome, Safari, and Firefox */
+input[type="date"] {
+  color: #1e293b;
+}
+
+input[type="date"]::-webkit-datetime-edit,
+input[type="date"]::-webkit-datetime-edit-fields-wrapper,
+input[type="date"]::-webkit-datetime-edit-text,
+input[type="date"]::-webkit-datetime-edit-day-field,
+input[type="date"]::-webkit-datetime-edit-month-field,
+input[type="date"]::-webkit-datetime-edit-year-field {
+  color: #1e293b !important;
+}
+
+
