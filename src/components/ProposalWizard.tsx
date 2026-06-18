@@ -25,10 +25,23 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
   // Wizard steps: 1 to 7
   const [step, setStep] = useState<number>(1);
   const [proposal, setProposal] = useState<Proposal>(() => {
-    if (initialProposal) {
-      return JSON.parse(JSON.stringify(initialProposal));
-    }
-    return createDefaultProposal('branding'); // Default to branding first
+    const rawP = initialProposal ? JSON.parse(JSON.stringify(initialProposal)) : createDefaultProposal('branding');
+    const defaults = createDefaultProposal(rawP.type);
+    return {
+      ...defaults,
+      ...rawP,
+      brandingScope: {
+        ...defaults.brandingScope,
+        ...(rawP.brandingScope || {})
+      },
+      websiteScope: {
+        ...defaults.websiteScope,
+        ...(rawP.websiteScope || {})
+      },
+      milestones: rawP.milestones || defaults.milestones || [],
+      resourceCosts: rawP.resourceCosts || defaults.resourceCosts || [],
+      history: rawP.history || defaults.history || [],
+    };
   });
 
   // Keep type local variable
@@ -134,14 +147,14 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
   const updateMilestone = (id: string, field: keyof Milestone, value: string) => {
     setProposal(prev => ({
       ...prev,
-      milestones: prev.milestones.map(m => m.id === id ? { ...m, [field]: value } : m)
+      milestones: (prev.milestones || []).map(m => m.id === id ? { ...m, [field]: value } : m)
     }));
   };
 
   const deleteMilestone = (id: string) => {
     setProposal(prev => ({
       ...prev,
-      milestones: prev.milestones.filter(m => m.id !== id)
+      milestones: (prev.milestones || []).filter(m => m.id !== id)
     }));
   };
 
@@ -149,20 +162,20 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
     const id = `m_custom_${generateId()}`;
     const newM: Milestone = {
       id,
-      week: `Week ${proposal.milestones.length + 1}`,
+      week: `Week ${(proposal.milestones || []).length + 1}`,
       title: "New Deliverable Module",
       description: "Provide a descriptive account of what will be validated."
     };
     setProposal(prev => ({
       ...prev,
-      milestones: [...prev.milestones, newM]
+      milestones: [...(prev.milestones || []), newM]
     }));
   };
 
   // Branding resource cost operations
   const updateResourceCost = (id: string, field: keyof ResourceCost, value: any) => {
     setProposal(prev => {
-      const updatedCosts = prev.resourceCosts.map(rc => {
+      const updatedCosts = (prev.resourceCosts || []).map(rc => {
         if (rc.id === id) {
           const updatedRC = { ...rc, [field]: value };
           return updatedRC;
@@ -183,7 +196,7 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
 
   const deleteResourceCost = (id: string) => {
     setProposal(prev => {
-      const updatedCosts = prev.resourceCosts.filter(rc => rc.id !== id);
+      const updatedCosts = (prev.resourceCosts || []).filter(rc => rc.id !== id);
       const newTotal = updatedCosts.reduce((sum, item) => sum + (item.hours * item.rate), 0);
       return {
         ...prev,
@@ -202,7 +215,7 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
       rate: 150
     };
     setProposal(prev => {
-      const updatedCosts = [...prev.resourceCosts, newRC];
+      const updatedCosts = [...(prev.resourceCosts || []), newRC];
       const newTotal = updatedCosts.reduce((sum, item) => sum + (item.hours * item.rate), 0);
       return {
         ...prev,
@@ -1633,7 +1646,7 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
 
               {/* Milestones dynamic list */}
               <div className="space-y-4 max-h-[380px] overflow-y-auto pr-2">
-                {proposal.milestones.map((m, index) => (
+                {(proposal.milestones || []).map((m, index) => (
                   <div 
                     key={m.id} 
                     className="flex flex-col md:flex-row gap-3 p-4 border border-slate-200 bg-slate-50/30 rounded-xl relative hover:border-slate-350 transition-colors"
@@ -1720,7 +1733,8 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
                       <span className="col-span-1"></span>
                     </div>
 
-                    {proposal.resourceCosts.map((rc) => (
+                    {/* Role Class / Title cost line loops */}
+                    {(proposal.resourceCosts || []).map((rc) => (
                       <div key={rc.id} className="grid grid-cols-12 gap-2 py-2 px-4 items-center text-center">
                         <input
                           type="text"

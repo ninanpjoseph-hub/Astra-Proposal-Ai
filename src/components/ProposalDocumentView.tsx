@@ -5,7 +5,7 @@
 
 import React from 'react';
 import { BRANDING_TEMPLATES, WEBSITE_TEMPLATES, DEFAULT_SCOPE_TEMPLATES } from '../staticTemplates';
-import { formatQAR, DEFAULT_BRANDING_MILESTONES, DEFAULT_WEBSITE_MILESTONES, triggerAutomatedFollowUp } from '../proposalUtils';
+import { formatQAR, DEFAULT_BRANDING_MILESTONES, DEFAULT_WEBSITE_MILESTONES, triggerAutomatedFollowUp, createDefaultProposal } from '../proposalUtils';
 import SitemapGenerator from './SitemapGenerator';
 import { groupScopeIntoPages } from '../utils/scopeClassifier';
 import { Check, Bookmark, DollarSign, Calendar, Landmark, BookOpen, Signature, Award, ChevronRight, FileText, Printer, Download, History, RotateCcw, Clock, Sliders, Upload, Trash2, Plus, AlertCircle, Coins, CreditCard, Shield, Users } from 'lucide-react';
@@ -275,7 +275,26 @@ export function AstraFooter({ pageNumber }: { pageNumber: string }) {
   return null;
 }
 
-export default function ProposalDocumentView({ proposal, onBack, showBackBtn = true, onRevert, onUpdateProposal, currentUser, initialTab = 'document' }: ProposalDocumentViewProps) {
+export default function ProposalDocumentView({ proposal: incomingProposal, onBack, showBackBtn = true, onRevert, onUpdateProposal, currentUser, initialTab = 'document' }: ProposalDocumentViewProps) {
+  const proposal = React.useMemo<Proposal>(() => {
+    const defaults = createDefaultProposal(incomingProposal.type);
+    return {
+      ...defaults,
+      ...incomingProposal,
+      brandingScope: {
+        ...defaults.brandingScope,
+        ...(incomingProposal.brandingScope || {})
+      },
+      websiteScope: {
+        ...defaults.websiteScope,
+        ...(incomingProposal.websiteScope || {})
+      },
+      milestones: incomingProposal.milestones || defaults.milestones || [],
+      resourceCosts: incomingProposal.resourceCosts || defaults.resourceCosts || [],
+      history: incomingProposal.history || defaults.history || [],
+    };
+  }, [incomingProposal]);
+
   const isBranding = proposal.type === 'branding';
   const templates = isBranding ? BRANDING_TEMPLATES : WEBSITE_TEMPLATES;
   
@@ -2414,7 +2433,7 @@ export default function ProposalDocumentView({ proposal, onBack, showBackBtn = t
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-150 text-slate-600">
-                    {proposal.resourceCosts.map((rc) => (
+                    {(proposal.resourceCosts || []).map((rc) => (
                       <tr key={rc.id} className="hover:bg-slate-50/40">
                         <td className="py-2.5 px-4 text-left font-medium text-slate-800">{rc.role}</td>
                         <td className="py-2.5 px-4 text-center">{rc.hours} hrs</td>
@@ -2851,7 +2870,7 @@ function PaymentTracker({
         const res = await fetch(`/api/proposals/${proposal.id}/payments`);
         if (res.ok) {
           const list = await res.json();
-          if (active) {
+          if (active && Array.isArray(list)) {
             const formatted = list.map((item: any) => ({
               id: item.id,
               timestamp: item.paymentDate || item.createdAt || new Date().toISOString(),

@@ -1,0 +1,1401 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import { 
+  Plus, Trash2, Edit3, Eye, Calendar, Building, Landmark, 
+  MapPin, User, FileText, ArrowUp, ArrowDown, Save, 
+  RotateCcw, Download, Printer, Search, PlusCircle, Check, 
+  Copy, CheckCircle2, ChevronRight, HelpCircle
+} from 'lucide-react';
+
+export interface ChequeQuotationItem {
+  id: string;
+  description: string;
+  unitPrice: number;
+  qty: number;
+}
+
+export interface ChequeQuotation {
+  id: string;
+  refNo: string;
+  date: string;
+  customerName: string;
+  customerCompany: string;
+  customerLocation: string;
+  customerContact?: string;
+  items: ChequeQuotationItem[];
+  currency: string;             // e.g. "QR"
+  currencyFull: string;         // e.g. "QATAR RIYAL"
+  subunitFull: string;          // e.g. "DIRHAM"
+  terms: string[];
+  preparedByName: string;
+  preparedByTitle: string;
+  preparedByCompany: string;
+  preparedByLocation: string;
+  updatedAt: string;
+}
+
+// Number to Words Converter
+function amountToWords(amount: number, currency: string = "QATAR RIYAL", subunit: string = "DIRHAM"): string {
+  const ones = ["", "ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN", "EIGHT", "NINE", "TEN", 
+                "ELEVEN", "TWELVE", "THIRTEEN", "FOURTEEN", "FIFTEEN", "SIXTEEN", "SEVENTEEN", "EIGHTEEN", "NINETEEN"];
+  const tens = ["", "", "TWENTY", "THIRTY", "FORTY", "FIFTY", "SIXTY", "SEVENTY", "EIGHTY", "NINETY"];
+  
+  function convertLessThanThousand(num: number): string {
+    if (num === 0) return "";
+    let str = "";
+    if (num >= 100) {
+      str += ones[Math.floor(num / 100)] + " HUNDRED ";
+      num %= 100;
+      if (num > 0) str += "AND ";
+    }
+    if (num >= 20) {
+      str += tens[Math.floor(num / 10)] + " ";
+      num %= 10;
+      if (num > 0) str += ones[num] + " ";
+    } else if (num > 0) {
+      str += ones[num] + " ";
+    }
+    return str;
+  }
+
+  function convert(num: number): string {
+    if (num === 0) return "ZERO";
+    let str = "";
+    
+    // Millions
+    if (num >= 1000000) {
+      str += convertLessThanThousand(Math.floor(num / 1000000)) + "MILLION ";
+      num %= 1000000;
+      if (num > 0 && num < 100) str += "AND ";
+    }
+    
+    // Thousands
+    if (num >= 1000) {
+      str += convertLessThanThousand(Math.floor(num / 1000)) + "THOUSAND ";
+      num %= 1000;
+      if (num > 0 && num < 100) str += "AND ";
+    }
+    
+    // Hundreds & Tens
+    str += convertLessThanThousand(num);
+    return str.trim();
+  }
+
+  const rounded = Math.round(amount * 100) / 100;
+  const whole = Math.floor(rounded);
+  const decimal = Math.round((rounded - whole) * 100);
+
+  let result = convert(whole) + " " + currency.toUpperCase();
+  
+  if (currency.toUpperCase() === "QATAR RIYAL" || currency.toUpperCase() === "QATAR RIYALS") {
+    result = convert(whole) + " QATAR RIYAL";
+  } else if (currency.toUpperCase() === "QAR") {
+    result = convert(whole) + " QATAR RIYAL";
+  }
+
+  if (decimal > 0) {
+    result += " AND " + convert(decimal) + " " + subunit.toUpperCase();
+  } else {
+    // No decimal suffix
+  }
+
+  return result.trim() + " ONLY";
+}
+
+// Suggestion helpers
+const DESCRIPTION_SUGGESTIONS = [
+  "Cheque Easy Software – 1 License",
+  "Cheque Easy Software Enterprise Edition – Unlimited Licenses",
+  "Canon LBP 6030 Laser Printer",
+  "High Speed Cheque MICR Laser Reader/Scanner",
+  "Software Customization & API Ledger Integration",
+  "Professional On-Site Installation & Training Support",
+  "Annual Maintenance Contract (AMC) – Dedicated Virtual Lead",
+  "Custom Premium Layout Alignment & Digital Watermarks Template Setup"
+];
+
+const DEFAULT_TERMS_TEMPLATES = [
+  {
+    name: "Standard Software & Hardware Bundle",
+    terms: [
+      "Payment: 100% on installation",
+      "License Validity - 3 Year",
+      "AMC – 750 QR/3 year after every 3 years",
+      "Manufacture warranty for Hardware"
+    ]
+  },
+  {
+    name: "Enterprise SLA - Annual Payment",
+    terms: [
+      "Payment: 50% Advance, 50% after deployment and user sign-off",
+      "License Validity - Perpetuity with annual cloud hosting terms",
+      "Support SLA: 24/7 dedicated telephone and on-site support coverage",
+      "Hardware warranty including local product swap within 4 business hours"
+    ]
+  },
+  {
+    name: "Consultation & Implementation Only",
+    terms: [
+      "Payment: 100% on delivery",
+      "Validity of Quotation: 30 Calendar Days",
+      "Work includes setup, staff validation, and 1 year basic patch upgrades",
+      "Assigned engineer leads dynamic database connections layout validation"
+    ]
+  }
+];
+
+export default function ChequeQuotationModule() {
+  const [quotations, setQuotations] = useState<ChequeQuotation[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeQuotation, setActiveQuotation] = useState<ChequeQuotation | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  
+  // Terms templates in local storage
+  const [customTemplates, setCustomTemplates] = useState<{name: string, terms: string[]}[]>([]);
+  const [newTemplateName, setNewTemplateName] = useState('');
+
+  // Form input states
+  const [formRefNo, setFormRefNo] = useState('');
+  const [formDate, setFormDate] = useState('');
+  const [formCustName, setFormCustName] = useState('');
+  const [formCustCompany, setFormCustCompany] = useState('');
+  const [formCustLocation, setFormCustLocation] = useState('');
+  const [formCustContact, setFormCustContact] = useState('');
+  
+  const [formCurrency, setFormCurrency] = useState('QR');
+  const [formCurrencyFull, setFormCurrencyFull] = useState('QATAR RIYAL');
+  const [formSubunitFull, setFormSubunitFull] = useState('DIRHAM');
+  
+  const [formItems, setFormItems] = useState<ChequeQuotationItem[]>([]);
+  const [formTerms, setFormTerms] = useState<string[]>([]);
+  
+  const [formPrepName, setFormPrepName] = useState('SHAMLAN');
+  const [formPrepTitle, setFormPrepTitle] = useState('PROJECT DIRECTOR');
+  const [formPrepCompany, setFormPrepCompany] = useState('ASTRA TECH');
+  const [formPrepLocation, setFormPrepLocation] = useState('DOHA – QATAR');
+
+  const [newTermText, setNewTermText] = useState('');
+  const [isCopied, setIsCopied] = useState(false);
+
+  const displayedQuotation = useMemo(() => {
+    if (!activeQuotation) return null;
+    if (isEditing) {
+      return {
+        id: activeQuotation.id,
+        refNo: formRefNo,
+        date: formDate,
+        customerName: formCustName,
+        customerCompany: formCustCompany,
+        customerLocation: formCustLocation,
+        customerContact: formCustContact,
+        currency: formCurrency,
+        currencyFull: formCurrencyFull,
+        subunitFull: formSubunitFull,
+        items: formItems || [],
+        terms: formTerms || [],
+        preparedByName: formPrepName,
+        preparedByTitle: formPrepTitle,
+        preparedByCompany: formPrepCompany,
+        preparedByLocation: formPrepLocation,
+      };
+    }
+    if (activeQuotation.id === 'new_temp') {
+      return {
+        id: 'new_temp',
+        refNo: formRefNo || 'PENDING',
+        date: formDate || new Date().toISOString().substring(0, 10),
+        customerName: formCustName || '',
+        customerCompany: formCustCompany || '',
+        customerLocation: formCustLocation || 'Doha-Qatar',
+        customerContact: formCustContact || '',
+        currency: formCurrency || 'QR',
+        currencyFull: formCurrencyFull || 'QATAR RIYAL',
+        subunitFull: formSubunitFull || 'DIRHAM',
+        items: formItems || [],
+        terms: formTerms || [],
+        preparedByName: formPrepName || 'SHAMLAN',
+        preparedByTitle: formPrepTitle || 'PROJECT DIRECTOR',
+        preparedByCompany: formPrepCompany || 'ASTRA TECH',
+        preparedByLocation: formPrepLocation || 'DOHA – QATAR',
+      };
+    }
+    return {
+      ...activeQuotation,
+      items: activeQuotation.items || [],
+      terms: activeQuotation.terms || [],
+    };
+  }, [
+    activeQuotation,
+    isEditing,
+    formRefNo,
+    formDate,
+    formCustName,
+    formCustCompany,
+    formCustLocation,
+    formCustContact,
+    formCurrency,
+    formCurrencyFull,
+    formSubunitFull,
+    formItems,
+    formTerms,
+    formPrepName,
+    formPrepTitle,
+    formPrepCompany,
+    formPrepLocation,
+  ]);
+
+  // Initialize data
+  useEffect(() => {
+    // Load Quotations
+    const cachedQuotations = localStorage.getItem('prowess_cheque_quotations_v1');
+    if (cachedQuotations) {
+      try {
+        const decoded = JSON.parse(cachedQuotations);
+        setQuotations(decoded);
+        if (decoded.length > 0) {
+          setActiveQuotation(decoded[0]);
+        } else {
+          loadDefaultQuotation();
+        }
+      } catch (err) {
+        loadDefaultQuotation();
+      }
+    } else {
+      loadDefaultQuotation();
+    }
+
+    // Load templates
+    const cachedTemplates = localStorage.getItem('prowess_cheque_templates_v1');
+    if (cachedTemplates) {
+      try {
+        setCustomTemplates(JSON.parse(cachedTemplates));
+      } catch (err) {
+        setCustomTemplates([]);
+      }
+    }
+  }, []);
+
+  const loadDefaultQuotation = () => {
+    const defaultQuotation: ChequeQuotation = {
+      id: "q_default_demo_1",
+      refNo: "AT/QT-06/26-6134",
+      date: "2026-06-02",
+      customerName: "ALMAKKI",
+      customerCompany: "TRADING AND CONTRACTING EST",
+      customerLocation: "Doha-Qatar",
+      customerContact: "",
+      currency: "QR",
+      currencyFull: "QATAR RIYAL",
+      subunitFull: "DIRHAM",
+      items: [
+        { id: "item_1", description: "Cheque Easy Software – 1 License", unitPrice: 1500, qty: 1 },
+        { id: "item_2", description: "Canon LBP 6030 Printer", unitPrice: 500, qty: 1 }
+      ],
+      terms: [
+        "Payment: 100% on installation",
+        "License Validity - 3 Year",
+        "AMC – 750 QR/3 year after every 3 years",
+        "Manufacture warranty for Hardware"
+      ],
+      preparedByName: "SHAMLAN",
+      preparedByTitle: "PROJECT DIRECTOR",
+      preparedByCompany: "ASTRA TECH",
+      preparedByLocation: "DOHA – QATAR",
+      updatedAt: new Date().toISOString()
+    };
+
+    setQuotations([defaultQuotation]);
+    setActiveQuotation(defaultQuotation);
+    localStorage.setItem('prowess_cheque_quotations_v1', JSON.stringify([defaultQuotation]));
+  };
+
+  // Switch active quotation
+  const handleSelectQuotation = (q: ChequeQuotation) => {
+    setActiveQuotation(q);
+    setIsEditing(false);
+  };
+
+  // Enter edit mode
+  const handleStartEdit = () => {
+    if (!activeQuotation) return;
+    setFormRefNo(activeQuotation.refNo);
+    setFormDate(activeQuotation.date);
+    setFormCustName(activeQuotation.customerName);
+    setFormCustCompany(activeQuotation.customerCompany);
+    setFormCustLocation(activeQuotation.customerLocation);
+    setFormCustContact(activeQuotation.customerContact || '');
+    setFormCurrency(activeQuotation.currency);
+    setFormCurrencyFull(activeQuotation.currencyFull);
+    setFormSubunitFull(activeQuotation.subunitFull);
+    setFormItems([...activeQuotation.items]);
+    setFormTerms([...activeQuotation.terms]);
+    setFormPrepName(activeQuotation.preparedByName);
+    setFormPrepTitle(activeQuotation.preparedByTitle);
+    setFormPrepCompany(activeQuotation.preparedByCompany);
+    setFormPrepLocation(activeQuotation.preparedByLocation);
+    
+    setIsEditing(true);
+  };
+
+  // Generate dynamic Ref Number
+  const handleGenerateRefNo = () => {
+    const d = formDate ? new Date(formDate) : new Date();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yy = String(d.getFullYear()).substring(2);
+    const rand = Math.floor(1000 + Math.random() * 9000);
+    setFormRefNo(`AT/QT-${mm}/${yy}-${rand}`);
+  };
+
+  // Launch fresh new quotation
+  const handleAddNewQuotation = () => {
+    const todayStr = new Date().toISOString().substring(0, 10);
+    const d = new Date();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yy = String(d.getFullYear()).substring(2);
+    const rand = Math.floor(1000 + Math.random() * 9000);
+    
+    setFormRefNo(`AT/QT-${mm}/${yy}-${rand}`);
+    setFormDate(todayStr);
+    setFormCustName('');
+    setFormCustCompany('');
+    setFormCustLocation('Doha-Qatar');
+    setFormCustContact('');
+    setFormCurrency('QR');
+    setFormCurrencyFull('QATAR RIYAL');
+    setFormSubunitFull('DIRHAM');
+    setFormItems([
+      { id: "item_init", description: "Cheque Easy Software – 1 License", unitPrice: 1500, qty: 1 }
+    ]);
+    setFormTerms([
+      "Payment: 100% on installation",
+      "License Validity - 3 Year",
+      "AMC – 750 QR/3 year after every 3 years",
+      "Manufacture warranty for Hardware"
+    ]);
+    setFormPrepName('SHAMLAN');
+    setFormPrepTitle('PROJECT DIRECTOR');
+    setFormPrepCompany('ASTRA TECH');
+    setFormPrepLocation('DOHA – QATAR');
+    
+    setIsEditing(true);
+    // Temp key to identify new
+    setActiveQuotation({ id: 'new_temp' } as any);
+  };
+
+  // Item management inside edit form
+  const handleAddItemRow = () => {
+    const newRow: ChequeQuotationItem = {
+      id: 'row_' + Math.random().toString(36).substring(2, 9),
+      description: '',
+      unitPrice: 0,
+      qty: 1
+    };
+    setFormItems([...formItems, newRow]);
+  };
+
+  const handleUpdateItemRow = (id: string, field: keyof ChequeQuotationItem, value: any) => {
+    setFormItems(prev => prev.map(item => {
+      if (item.id === id) {
+        return { ...item, [field]: value };
+      }
+      return item;
+    }));
+  };
+
+  const handleDeleteItemRow = (id: string) => {
+    if (formItems.length <= 1) {
+      alert("Quotation must have at least one product line item.");
+      return;
+    }
+    setFormItems(prev => prev.filter(i => i.id !== id));
+  };
+
+  // Terms and details inside edit form
+  const handleAddTerm = () => {
+    if (!newTermText.trim()) return;
+    setFormTerms([...formTerms, newTermText.trim()]);
+    setNewTermText('');
+  };
+
+  const handleUpdateTermInline = (index: number, val: string) => {
+    setFormTerms(prev => {
+      const updated = [...prev];
+      updated[index] = val;
+      return updated;
+    });
+  };
+
+  const handleRemoveTerm = (index: number) => {
+    setFormTerms(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleMoveTerm = (index: number, direction: 'up' | 'down') => {
+    if (direction === 'up' && index === 0) return;
+    if (direction === 'down' && index === formTerms.length - 1) return;
+    
+    setFormTerms(prev => {
+      const updated = [...prev];
+      const targetIdx = direction === 'up' ? index - 1 : index + 1;
+      const tmp = updated[index];
+      updated[index] = updated[targetIdx];
+      updated[targetIdx] = tmp;
+      return updated;
+    });
+  };
+
+  // Load preset templates
+  const handleLoadTemplate = (termsList: string[]) => {
+    if (window.confirm("Do you want to override current terms with this template?")) {
+      setFormTerms([...termsList]);
+    }
+  };
+
+  // Save new client/terms template
+  const handleSaveTermsTemplate = () => {
+    if (!newTemplateName.trim()) {
+      alert("Please provide a template name");
+      return;
+    }
+    const n = { name: newTemplateName.trim(), terms: [...formTerms] };
+    const list = [n, ...customTemplates];
+    setCustomTemplates(list);
+    localStorage.setItem('prowess_cheque_templates_v1', JSON.stringify(list));
+    setNewTemplateName('');
+    alert("Template saved successfully!");
+  };
+
+  const handleDeleteTemplate = (idx: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (window.confirm("Are you sure you want to delete this custom template?")) {
+      const list = customTemplates.filter((_, i) => i !== idx);
+      setCustomTemplates(list);
+      localStorage.setItem('prowess_cheque_templates_v1', JSON.stringify(list));
+    }
+  };
+
+  // Save quotation to persistence
+  const handleSaveQuotation = () => {
+    if (!formCustName.trim()) {
+      alert("Please enter customer name");
+      return;
+    }
+    if (!formRefNo.trim()) {
+      alert("A unique Quotation Reference Number is required");
+      return;
+    }
+
+    const isNew = !activeQuotation || activeQuotation.id === 'new_temp';
+    const targetId = isNew ? 'q_' + Math.random().toString(36).substring(2, 10) : activeQuotation!.id;
+
+    const saved: ChequeQuotation = {
+      id: targetId,
+      refNo: formRefNo.trim(),
+      date: formDate || new Date().toISOString().substring(0, 10),
+      customerName: formCustName.toUpperCase().trim(),
+      customerCompany: formCustCompany.toUpperCase().trim(),
+      customerLocation: formCustLocation.trim(),
+      customerContact: formCustContact.trim(),
+      currency: formCurrency.toUpperCase().trim(),
+      currencyFull: formCurrencyFull.trim(),
+      subunitFull: formSubunitFull.trim(),
+      items: formItems.map(it => ({
+        ...it,
+        description: it.description.trim(),
+        unitPrice: Number(it.unitPrice) || 0,
+        qty: Number(it.qty) || 1
+      })),
+      terms: formTerms,
+      preparedByName: formPrepName.toUpperCase().trim(),
+      preparedByTitle: formPrepTitle.toUpperCase().trim(),
+      preparedByCompany: formPrepCompany.toUpperCase().trim(),
+      preparedByLocation: formPrepLocation.toUpperCase().trim(),
+      updatedAt: new Date().toISOString()
+    };
+
+    setQuotations(prev => {
+      let next;
+      if (isNew) {
+        next = [saved, ...prev];
+      } else {
+        next = prev.map(q => q.id === targetId ? saved : q);
+      }
+      localStorage.setItem('prowess_cheque_quotations_v1', JSON.stringify(next));
+      return next;
+    });
+
+    setActiveQuotation(saved);
+    setIsEditing(false);
+  };
+
+  const handleDeleteQuotation = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (window.confirm("Are you sure you want to permanently delete this Cheque Printing Quotation?")) {
+      const filtered = quotations.filter(q => q.id !== id);
+      setQuotations(filtered);
+      localStorage.setItem('prowess_cheque_quotations_v1', JSON.stringify(filtered));
+      
+      if (activeQuotation?.id === id) {
+        if (filtered.length > 0) {
+          setActiveQuotation(filtered[0]);
+        } else {
+          setActiveQuotation(null);
+        }
+      }
+    }
+  };
+
+  // Print command
+  const handleTriggerPrint = () => {
+    window.print();
+  };
+
+  // Helper calculating live sums
+  const getTotals = (itemsList: ChequeQuotationItem[]) => {
+    return itemsList.reduce((acc, it) => acc + (it.unitPrice * it.qty), 0);
+  };
+
+  const filteredQuotations = quotations.filter(q => 
+    q.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    q.customerCompany.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    q.refNo.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  return (
+    <div className="space-y-6 font-sans">
+      
+      {/* Styles injected to hook window.print for standard A4 formatting */}
+      <style>{`
+        @media print {
+          body {
+            background: white !important;
+            padding: 0 !important;
+            margin: 0 !important;
+          }
+          nav, header, footer, .no-print, .btn, .editor-control-panel {
+            display: none !important;
+          }
+          .print-section {
+            display: block !important;
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 210mm !important;
+            min-height: 297mm !important;
+            margin: 0 !important;
+            padding: 18mm 12mm !important;
+            box-shadow: none !important;
+            border: none !important;
+            background: white !important;
+            color-adjust: exact !important;
+            -webkit-print-color-adjust: exact !important;
+          }
+          .watermark-container {
+            display: flex !important;
+            opacity: 0.05 !important;
+          }
+        }
+      `}</style>
+
+      {/* Main Container Grid */}
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+        
+        {/* Left Side: Directory & Controls Interface */}
+        <div className="xl:col-span-5 space-y-6 no-print editor-control-panel">
+          
+          {/* Active Quotation Stats Card */}
+          <div className="bg-white border border-slate-200 p-5 rounded-2xl shadow-xs">
+            <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-400 mb-3 block">
+              Quotation Management Console
+            </h3>
+            
+            <div className="flex flex-col sm:flex-row gap-3">
+              {/* Search bar */}
+              <div className="relative flex-grow">
+                <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search quotations..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2 border border-slate-350 rounded-xl text-xs bg-slate-50 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-150 focus:border-blue-500"
+                />
+              </div>
+
+              {/* Add New Button */}
+              <button
+                onClick={handleAddNewQuotation}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-xl shadow-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <PlusCircle className="h-4 w-4" />
+                New Quotation
+              </button>
+            </div>
+
+            {/* List entries */}
+            <div className="mt-4 max-h-[170px] overflow-y-auto space-y-2 border-t border-slate-100 pt-3">
+              {filteredQuotations.length > 0 ? (
+                filteredQuotations.map((q) => {
+                  const isActive = activeQuotation && activeQuotation.id === q.id;
+                  const total = getTotals(q.items);
+                  return (
+                    <div
+                      key={q.id}
+                      onClick={() => handleSelectQuotation(q)}
+                      className={`p-3 rounded-xl border text-left cursor-pointer transition-all flex justify-between items-center ${
+                        isActive 
+                        ? 'bg-blue-50 border-blue-300 shadow-3xs' 
+                        : 'bg-white border-slate-200 hover:border-slate-350'
+                      }`}
+                    >
+                      <div className="min-w-0 pr-3">
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <span className="text-[10px] font-mono bg-slate-100 px-1.5 py-0.5 rounded text-slate-500 font-bold border border-slate-200 leading-none">
+                            {q.refNo}
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-mono">
+                            {q.date}
+                          </span>
+                        </div>
+                        <h4 className="text-xs font-bold text-slate-800 truncate">
+                          {q.customerName || "No Client Name"}
+                        </h4>
+                        <p className="text-[10px] text-slate-500 truncate">
+                          {q.customerCompany || "No Company Specified"}
+                        </p>
+                      </div>
+
+                      <div className="flex flex-col items-end shrink-0 pl-1">
+                        <strong className="text-xs font-mono font-extrabold text-blue-700">
+                          {total.toLocaleString()} {q.currency}
+                        </strong>
+                        <button
+                          onClick={(e) => handleDeleteQuotation(q.id, e)}
+                          className="mt-1.5 p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-rose-600 transition-colors"
+                          title="Delete Quotation"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <p className="text-center text-xs text-slate-400 py-6">No matching records found.</p>
+              )}
+            </div>
+          </div>
+
+          {/* Form Editor Section */}
+          {isEditing && (
+            <div className="bg-slate-50 border-2 border-blue-400 rounded-2xl p-5 shadow-xs space-y-4 max-h-[700px] overflow-y-auto">
+              <div className="flex justify-between items-center border-b border-slate-200 pb-3">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-800">
+                    {activeQuotation?.id === 'new_temp' ? 'Create New Quotation' : 'Edit Quotation Details'}
+                  </h3>
+                  <p className="text-[10px] text-slate-500">Live preview adjusts instantly on the right sheet</p>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      if(activeQuotation?.id === 'new_temp') {
+                        if (quotations.length > 0) setActiveQuotation(quotations[0]);
+                      }
+                      setIsEditing(false);
+                    }}
+                    className="px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white text-[10px] font-semibold text-slate-600 hover:bg-slate-100"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSaveQuotation}
+                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-[10px] rounded-lg shadow-3xs flex items-center gap-1"
+                  >
+                    <Check className="h-3.5 w-3.5" />
+                    Save & Apply
+                  </button>
+                </div>
+              </div>
+
+              {/* Quotation Ref & Date */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-white p-3.5 border border-slate-200 rounded-xl">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-600">Reference Number</label>
+                  <div className="flex gap-1.5">
+                    <input
+                      type="text"
+                      value={formRefNo}
+                      onChange={(e) => setFormRefNo(e.target.value)}
+                      placeholder="e.g. AT/QT-06/26-6134"
+                      className="flex-grow px-2 py-1 border border-slate-300 rounded text-xs"
+                    />
+                    <button
+                      onClick={handleGenerateRefNo}
+                      className="px-2 bg-slate-900 hover:bg-slate-800 text-white font-mono text-[9px] font-bold rounded"
+                      title="Generate dynamic reference based on date"
+                    >
+                      Gen
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-600">Quotation Date</label>
+                  <input
+                    type="date"
+                    value={formDate}
+                    onChange={(e) => setFormDate(e.target.value)}
+                    className="w-full px-2 py-1 border border-slate-300 rounded text-xs"
+                  />
+                </div>
+              </div>
+
+              {/* Customer Details */}
+              <div className="space-y-2 bg-white p-3.5 border border-slate-200 rounded-xl">
+                <h4 className="text-[11px] font-extrabold text-slate-700 border-b border-slate-100 pb-1 flex items-center gap-1">
+                  <Building className="h-3.5 w-3.5 text-blue-500" />
+                  Client Recipient Details (To,)
+                </h4>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div className="space-y-0.5">
+                    <label className="text-[9px] font-bold text-slate-500">Customer Name / Lead ID</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. ALMAKKI"
+                      value={formCustName}
+                      onChange={(e) => setFormCustName(e.target.value)}
+                      className="w-full px-2.5 py-1 border border-slate-300 rounded text-xs"
+                    />
+                  </div>
+
+                  <div className="space-y-0.5">
+                    <label className="text-[9px] font-bold text-slate-500">Company Name / EST</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. TRADING AND CONTRACTING EST"
+                      value={formCustCompany}
+                      onChange={(e) => setFormCustCompany(e.target.value)}
+                      className="w-full px-2.5 py-1 border border-slate-300 rounded text-xs"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div className="space-y-0.5">
+                    <label className="text-[9px] font-bold text-slate-500">Location / Landmark</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Doha-Qatar"
+                      value={formCustLocation}
+                      onChange={(e) => setFormCustLocation(e.target.value)}
+                      className="w-full px-2.5 py-1 border border-slate-300 rounded text-xs"
+                    />
+                  </div>
+
+                  <div className="space-y-0.5">
+                    <label className="text-[9px] font-bold text-slate-500">Customer Contact / Phone (Optional)</label>
+                    <input
+                      type="text"
+                      placeholder="Tel: +974 4455XXXX"
+                      value={formCustContact}
+                      onChange={(e) => setFormCustContact(e.target.value)}
+                      className="w-full px-2.5 py-1 border border-slate-300 rounded text-xs"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Currency Configuration */}
+              <div className="space-y-2 bg-white p-3.5 border border-slate-200 rounded-xl">
+                <h4 className="text-[11px] font-extrabold text-slate-700 border-b border-slate-100 pb-1">
+                  Currency Setup
+                </h4>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="space-y-0.5">
+                    <label className="text-[9px] font-bold text-slate-500">Symbol</label>
+                    <input
+                      type="text"
+                      value={formCurrency}
+                      onChange={(e) => setFormCurrency(e.target.value)}
+                      placeholder="e.g. QR"
+                      className="w-full px-2 py-1 border border-slate-300 rounded text-xs font-mono"
+                    />
+                  </div>
+                  <div className="space-y-0.5">
+                    <label className="text-[9px] font-bold text-slate-500">Full Currency Name</label>
+                    <input
+                      type="text"
+                      value={formCurrencyFull}
+                      onChange={(e) => setFormCurrencyFull(e.target.value)}
+                      placeholder="e.g. QATAR RIYAL"
+                      className="w-full px-2 py-1 border border-slate-300 rounded text-xs"
+                    />
+                  </div>
+                  <div className="space-y-0.5">
+                    <label className="text-[9px] font-bold text-slate-500">Fraction Name</label>
+                    <input
+                      type="text"
+                      value={formSubunitFull}
+                      onChange={(e) => setFormSubunitFull(e.target.value)}
+                      placeholder="e.g. DIRHAM"
+                      className="w-full px-2 py-1 border border-slate-300 rounded text-xs"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Product Row Items */}
+              <div className="space-y-2 bg-white p-3.5 border border-slate-200 rounded-xl">
+                <div className="flex justify-between items-center border-b border-slate-100 pb-1">
+                  <h4 className="text-[11px] font-extrabold text-slate-700">
+                    Product & Hardware Lines (Itemized)
+                  </h4>
+                  <button
+                    onClick={handleAddItemRow}
+                    className="px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 rounded text-[9px] font-bold"
+                  >
+                    + Add Item Row
+                  </button>
+                </div>
+
+                <div className="space-y-3 mt-2">
+                  {formItems.map((item, index) => (
+                    <div key={item.id} className="p-2.5 border border-slate-150 rounded-lg bg-slate-50 space-y-2 relative">
+                      <div className="absolute top-1 right-1">
+                        <button
+                          onClick={() => handleDeleteItemRow(item.id)}
+                          className="text-slate-400 hover:text-rose-600 p-1"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                      </div>
+
+                      <div className="space-y-1">
+                        <div className="flex justify-between">
+                          <label className="text-[9px] font-mono text-slate-400">SI #{index + 1} Description</label>
+                        </div>
+                        
+                        <input
+                          type="text"
+                          value={item.description}
+                          onChange={(e) => handleUpdateItemRow(item.id, 'description', e.target.value)}
+                          placeholder="e.g. Cheque Easy Software – 1 License"
+                          className="w-full px-2 py-1 border border-slate-300 rounded text-xs"
+                          list="desc-suggestions"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-0.5">
+                          <label className="text-[8.5px] font-bold text-slate-500">Unit Price ({formCurrency})</label>
+                          <input
+                            type="number"
+                            value={item.unitPrice}
+                            onChange={(e) => handleUpdateItemRow(item.id, 'unitPrice', parseFloat(e.target.value) || 0)}
+                            className="w-full px-2 py-1 border border-slate-300 rounded text-xs font-mono"
+                          />
+                        </div>
+                        <div className="space-y-0.5">
+                          <label className="text-[8.5px] font-bold text-slate-500">Qty</label>
+                          <input
+                            type="number"
+                            value={item.qty}
+                            onChange={(e) => handleUpdateItemRow(item.id, 'qty', parseInt(e.target.value) || 1)}
+                            className="w-full px-2 py-1 border border-slate-300 rounded text-xs font-mono"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <datalist id="desc-suggestions">
+                  {DESCRIPTION_SUGGESTIONS.map((st, i) => <option key={i} value={st} />)}
+                </datalist>
+              </div>
+
+              {/* Terms and Conditions Section */}
+              <div className="space-y-2 bg-white p-3.5 border border-slate-200 rounded-xl">
+                <div className="flex justify-between items-center border-b border-slate-100 pb-1">
+                  <h4 className="text-[11px] font-extrabold text-slate-700">
+                    Terms & Conditions List
+                  </h4>
+                  <span className="text-[8.5px] text-slate-400">Arrange clauses dynamically</span>
+                </div>
+
+                {/* Pre-made template selector */}
+                <div className="bg-slate-50 border border-slate-200 p-2 rounded-lg mb-2">
+                  <label className="text-[8.5px] font-extrabold text-slate-500 block mb-1">Load Preset SLA Template</label>
+                  <div className="flex flex-wrap gap-1">
+                    {DEFAULT_TERMS_TEMPLATES.map((tmpl, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => handleLoadTemplate(tmpl.terms)}
+                        className="px-1.5 py-0.5 bg-white border border-slate-200 text-slate-600 hover:text-slate-800 text-[8.5px] font-sans font-bold rounded"
+                      >
+                        {tmpl.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Reordering list of current terms */}
+                <div className="space-y-2 max-h-[180px] overflow-y-auto pr-1">
+                  {formTerms.map((term, idx) => (
+                    <div key={idx} className="flex gap-1 items-center bg-slate-50 p-1.5 rounded border border-slate-150">
+                      <span className="text-[9px] font-bold text-slate-400 w-4 shrink-0 font-mono text-center">
+                        {idx + 1}
+                      </span>
+                      <input
+                        type="text"
+                        value={term}
+                        onChange={(e) => handleUpdateTermInline(idx, e.target.value)}
+                        className="flex-grow px-2 py-0.5 border border-slate-205 rounded text-[11px] bg-white text-slate-700"
+                      />
+                      
+                      <div className="flex shrink-0 gap-0.5">
+                        <button
+                          onClick={() => handleMoveTerm(idx, 'up')}
+                          disabled={idx === 0}
+                          className="p-0.5 bg-white border border-slate-200 rounded text-slate-500 hover:bg-slate-100 disabled:opacity-30"
+                        >
+                          <ArrowUp className="h-2.5 w-2.5" />
+                        </button>
+                        <button
+                          onClick={() => handleMoveTerm(idx, 'down')}
+                          disabled={idx === formTerms.length - 1}
+                          className="p-0.5 bg-white border border-slate-200 rounded text-slate-500 hover:bg-slate-100 disabled:opacity-30"
+                        >
+                          <ArrowDown className="h-2.5 w-2.5" />
+                        </button>
+                        <button
+                          onClick={() => handleRemoveTerm(idx)}
+                          className="p-0.5 bg-white border border-slate-200 rounded text-rose-500 hover:bg-rose-50"
+                        >
+                          <Trash2 className="h-2.5 w-2.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Addition form for single terms */}
+                <div className="pt-2 flex gap-1.5 border-t border-slate-100">
+                  <input
+                    type="text"
+                    value={newTermText}
+                    onChange={(e) => setNewTermText(e.target.value)}
+                    placeholder="Type customized terms clause..."
+                    className="flex-grow px-2 py-1 border border-slate-300 rounded text-xs"
+                    onKeyDown={(e) => e.key === 'Enter' && handleAddTerm()}
+                  />
+                  <button
+                    onClick={handleAddTerm}
+                    className="px-2.5 py-1 bg-slate-800 text-white text-xs font-bold rounded"
+                  >
+                    Add
+                  </button>
+                </div>
+
+                {/* Save reusable templates custom */}
+                <div className="pt-2 border-t border-slate-100 bg-slate-50/50 p-2 rounded-lg space-y-1.5 mt-2">
+                  <label className="text-[8.5px] font-extrabold text-slate-500 block">Save Current Clauses as Reusable Template</label>
+                  <div className="flex gap-1.5">
+                    <input
+                      type="text"
+                      placeholder="e.g. My Premium Terms Combo"
+                      value={newTemplateName}
+                      onChange={(e) => setNewTemplateName(e.target.value)}
+                      className="flex-grow px-2 py-0.5 border border-slate-300 rounded text-[10px]"
+                    />
+                    <button
+                      onClick={handleSaveTermsTemplate}
+                      className="px-2 py-1 rounded bg-blue-50 text-blue-700 hover:bg-blue-105 border border-blue-200 font-sans text-[9px] font-bold shrink-0"
+                    >
+                      Save Template
+                    </button>
+                  </div>
+
+                  {/* Saved list */}
+                  {customTemplates.length > 0 && (
+                    <div className="space-y-1 mt-1 pb-1">
+                      <span className="text-[8px] uppercase font-bold text-slate-400 block">Your Saved Templates:</span>
+                      <div className="flex flex-wrap gap-1">
+                        {customTemplates.map((t, idx) => (
+                          <div 
+                            key={idx}
+                            onClick={() => handleLoadTemplate(t.terms)}
+                            className="bg-white border rounded text-[8px] pl-1.5 pr-1 py-0.5 flex items-center gap-1 cursor-pointer hover:border-slate-350"
+                          >
+                            <span className="text-slate-600 font-bold max-w-[90px] truncate">{t.name}</span>
+                            <button
+                              onClick={(e) => handleDeleteTemplate(idx, e)}
+                              className="text-slate-400 hover:text-rose-600"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Prepared By credentials */}
+              <div className="space-y-2 bg-white p-3.5 border border-slate-200 rounded-xl">
+                <h4 className="text-[11px] font-extrabold text-slate-700 border-b border-slate-100 pb-1">
+                  Prepared By Sign-off Profile
+                </h4>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-0.5">
+                    <label className="text-[8.5px] font-bold text-slate-500">Officer Name</label>
+                    <input
+                      type="text"
+                      value={formPrepName}
+                      onChange={(e) => setFormPrepName(e.target.value)}
+                      className="w-full px-2 py-1 border border-slate-300 rounded text-xs"
+                    />
+                  </div>
+                  <div className="space-y-0.5">
+                    <label className="text-[8.5px] font-bold text-slate-500">Job Title</label>
+                    <input
+                      type="text"
+                      value={formPrepTitle}
+                      onChange={(e) => setFormPrepTitle(e.target.value)}
+                      className="w-full px-2 py-1 border border-slate-300 rounded text-xs"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-0.5">
+                    <label className="text-[8.5px] font-bold text-slate-500">Company</label>
+                    <input
+                      type="text"
+                      value={formPrepCompany}
+                      onChange={(e) => setFormPrepCompany(e.target.value)}
+                      className="w-full px-2 py-1 border border-slate-300 rounded text-xs"
+                    />
+                  </div>
+                  <div className="space-y-0.5">
+                    <label className="text-[8.5px] font-bold text-slate-500">Corporate Address</label>
+                    <input
+                      type="text"
+                      value={formPrepLocation}
+                      onChange={(e) => setFormPrepLocation(e.target.value)}
+                      className="w-full px-2 py-1 border border-slate-300 rounded text-xs"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Save apply */}
+              <div className="pt-2 flex justify-end gap-2">
+                <button
+                  onClick={() => setIsEditing(false)}
+                  className="px-4 py-2 border border-slate-200 rounded-xl bg-white text-xs font-semibold text-slate-600 hover:bg-slate-100"
+                >
+                  Discard Changes
+                </button>
+                <button
+                  onClick={handleSaveQuotation}
+                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-xl shadow-xs"
+                >
+                  Save & Apply Config
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Quick Guide card if not editing */}
+          {!isEditing && activeQuotation && (
+            <div className="bg-white border border-slate-200 p-5 rounded-2xl shadow-xs space-y-3">
+              <h4 className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400">
+                Action Toolbench
+              </h4>
+              <p className="text-xs text-slate-500 leading-normal">
+                Select a quotation from the list above, click <strong>Modify Details</strong> to edit products, prices, terms, client information, and update dates. Use the printable layout sheet on the right to direct print or export to PDF.
+              </p>
+
+              <div className="flex flex-col gap-2 pt-2">
+                <button
+                  onClick={handleStartEdit}
+                  className="w-full px-4 py-2 border border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <Edit3 className="h-4 w-4" />
+                  Modify Quotation details
+                </button>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={handleTriggerPrint}
+                    className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    <Printer className="h-4 w-4 text-blue-400" />
+                    Print Sheet
+                  </button>
+                  <button
+                    onClick={handleTriggerPrint}
+                    className="px-4 py-2 border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-xs rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    <Download className="h-4 w-4 text-slate-500" />
+                    Export PDF
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Help box */}
+          <div className="bg-slate-105 border border-slate-200 rounded-xl p-4 flex items-start gap-3">
+            <HelpCircle className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
+            <div>
+              <h5 className="font-sans font-bold text-slate-800 text-xs">A4 Printing Guidelines</h5>
+              <p className="text-[10px] text-slate-500 font-sans leading-relaxed mt-0.5">
+                For perfect pixel fidelity matching the physical specimen, ensure "Headers and footers" are unchecked, "Margins" are set to Default, and "Background graphics" is enabled in browser printing configuration popup.
+              </p>
+            </div>
+          </div>
+
+        </div>
+
+        {/* Right Side: High-Fidelity Custom Paper Sheet WYSIWYG */}
+        <div className="xl:col-span-7 flex justify-center">
+          
+          {displayedQuotation ? (
+            <div className="space-y-4 w-full">
+              
+              {/* Context Actions top line (visible in UI, hidden on print) */}
+              <div className="no-print flex items-center justify-between bg-slate-800 hover:bg-slate-850 text-white px-4 py-3 rounded-2xl shadow-xs transition-colors mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                  <span className="text-[11px] font-sans font-bold text-slate-200">
+                    Active: {displayedQuotation.refNo} ({displayedQuotation.customerName})
+                  </span>
+                </div>
+                
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleTriggerPrint}
+                    className="px-2.5 py-1 bg-blue-600 hover:bg-blue-500 text-[10px] font-bold rounded-lg flex items-center gap-1 cursor-pointer"
+                  >
+                    <Printer className="h-3 w-3" />
+                    Direct Print (A4)
+                  </button>
+                </div>
+              </div>
+
+              {/* The Actual Printed A4 Page */}
+              <div 
+                id="printable-quotation-sheet"
+                className="print-section bg-white border border-slate-300 w-full max-w-[210mm] min-h-[297mm] shadow-xl p-[15mm] relative text-black overflow-hidden flex flex-col justify-between font-sans selection:bg-yellow-105"
+                style={{ contentVisibility: 'auto' }}
+              >
+                
+                {/* 1. Large Pale Watermark Background Centered behind everything */}
+                <div className="watermark-container absolute inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden select-none opacity-[0.035]">
+                  <span className="font-sans font-black text-[120px] tracking-widest text-[#0b57d0] select-none rotate-[20deg] block">
+                    ASTRA
+                  </span>
+                </div>
+
+                {/* Main Content Body */}
+                <div className="relative z-10 space-y-6">
+                  
+                  {/* Dynamic Header Section */}
+                  <div className="border-b-2 border-slate-850 pb-5 flex justify-between items-start">
+                    
+                    {/* Header Left: Corporate Info */}
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        {/* Astra Technologies Logo */}
+                        <div className="bg-[#0b57d0] h-9 w-9 rounded flex items-center justify-center font-bold font-serif italic text-white text-lg">
+                          As
+                        </div>
+                        <div>
+                          <h2 className="text-lg font-serif font-extrabold text-slate-850 tracking-tight leading-none">
+                            Astra Technologies
+                          </h2>
+                          <p className="text-[9.5px] font-mono text-slate-500 uppercase tracking-widest mt-0.5">
+                            Integrations & Software Solutions
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="text-[9px] text-slate-500 font-sans pt-1.5 space-y-0.5">
+                        <p className="flex items-center gap-1">
+                          <MapPin className="h-2.5 w-2.5 text-blue-600 shrink-0" />
+                          <span>P.O. Box 2434, Grand Corporate Tower, West Bay, Doha – Qatar</span>
+                        </p>
+                        <p className="flex items-center gap-1">
+                          <span>Tel: +974 4493 8211</span>
+                          <span className="text-slate-300">•</span>
+                          <span>Web: www.astratech.qa</span>
+                          <span className="text-slate-300">•</span>
+                          <span>Email: projects@astratech.qa</span>
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Header Right: Meta Info */}
+                    <div className="text-right font-sans shrink-0">
+                      <div className="text-xs font-extrabold text-slate-900 tracking-tight">
+                        REF : {displayedQuotation.refNo}
+                      </div>
+                      <div className="text-[11px] text-slate-650 font-mono mt-1">
+                        {displayedQuotation.date ? new Date(displayedQuotation.date).toLocaleDateString('en-GB') : "02/06/2026"}
+                      </div>
+                    </div>
+
+                  </div>
+
+                  {/* To Recipient Customer Segment */}
+                  <div className="pt-2 font-sans text-xs">
+                    <p className="font-semibold text-slate-800 text-[11px] uppercase tracking-wide">To,</p>
+                    <div className="mt-1 font-bold text-[12px] text-slate-900 transition-all flex flex-col gap-0.5">
+                      <span className="border-b border-slate-600 inline-block pb-0.5 max-w-max">
+                        M/S – {displayedQuotation.customerName || "CUSTOMER NAME"} {displayedQuotation.customerCompany || "COMPANY / ORGANISATION"}
+                      </span>
+                      <span className="text-[11.5px] text-slate-850 font-semibold mt-0.5">
+                        {displayedQuotation.customerLocation || "Doha-Qatar"}
+                      </span>
+                      {displayedQuotation.customerContact && (
+                        <span className="text-[10px] text-slate-550 font-normal mt-0.5 italic">
+                          Contact: {displayedQuotation.customerContact}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Centered Quotation Title with specific styling */}
+                  <div className="text-center py-1">
+                    <h1 className="text-sm font-extrabold tracking-widest text-slate-850 uppercase underline decoration-double decoration-slate-800 inline-block px-4 py-0.5">
+                      QUOTATION
+                    </h1>
+                  </div>
+
+                  {/* Itemized Table */}
+                  <div className="border border-slate-800 rounded overflow-hidden">
+                    <table className="w-full text-xs font-sans border-collapse">
+                      <thead>
+                        <tr className="bg-slate-100 text-slate-850 font-extrabold border-b border-slate-800 text-left">
+                          <th className="py-2.5 px-3 border-r border-slate-800 w-12 text-center">SI</th>
+                          <th className="py-2.5 px-3 border-r border-slate-800">DESCRIPTION</th>
+                          <th className="py-2.5 px-3 border-r border-slate-800 text-right w-24">U.PRICE</th>
+                          <th className="py-2.5 px-3 border-r border-slate-800 text-center w-14">QTY</th>
+                          <th className="py-2.5 px-3 text-right w-28">AMOUNT</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {displayedQuotation.items.map((it, idx) => (
+                           <tr key={it.id} className="border-b border-slate-300 text-slate-900 hover:bg-slate-50/55">
+                             <td className="py-2 px-3 border-r border-slate-800 text-center font-mono">{idx + 1}</td>
+                             <td className="py-2 px-3 border-r border-slate-800 font-bold max-w-md break-words">{it.description}</td>
+                             <td className="py-2 px-3 border-r border-slate-800 text-right font-mono font-bold">{(it.unitPrice).toFixed(2)}</td>
+                             <td className="py-2 px-3 border-r border-slate-800 text-center font-mono">{it.qty}</td>
+                             <td className="py-2 px-3 text-right font-mono font-extrabold">
+                               {(it.unitPrice * it.qty).toFixed(2)} {displayedQuotation.currency}
+                             </td>
+                           </tr>
+                        ))}
+
+                        {/* Blank pacing rows to make page look standard size */}
+                        {displayedQuotation.items.length < 5 && 
+                          Array.from({ length: 5 - displayedQuotation.items.length }).map((_, idx) => (
+                            <tr key={`blank_${idx}`} className="border-b border-slate-300 h-8 opacity-40">
+                              <td className="border-r border-slate-800"></td>
+                              <td className="border-r border-slate-800"></td>
+                              <td className="border-r border-slate-800"></td>
+                              <td className="border-r border-slate-800"></td>
+                              <td></td>
+                            </tr>
+                          ))
+                        }
+
+                        {/* Grand Total Row */}
+                        <tr className="bg-slate-50/30 text-slate-900 font-extrabold border-t border-slate-800">
+                          <td colSpan={2} className="py-2.5 px-3 border-r border-slate-800 text-center uppercase tracking-wider">
+                            AMOUNT
+                          </td>
+                          <td className="border-r border-slate-800"></td>
+                          <td className="border-r border-slate-800"></td>
+                          <td className="py-2.5 px-3 text-right font-mono font-extrabold text-[#0b57d0] text-sm">
+                            {(getTotals(displayedQuotation.items)).toFixed(2)} {displayedQuotation.currency}
+                          </td>
+                        </tr>
+
+                        {/* Grand Total in Words Row */}
+                        <tr className="bg-white text-slate-900 font-extrabold">
+                          <td colSpan={5} className="py-2.5 px-3 border-t border-slate-800 text-left uppercase text-[9.5px] leading-relaxed border-b border-slate-800">
+                            <span className="underline decoration-[#0b57d0] decoration-2">AMOUNT :</span>{' '}
+                            {amountToWords(getTotals(displayedQuotation.items), displayedQuotation.currencyFull, displayedQuotation.subunitFull)}
+                          </td>
+                        </tr>
+
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Terms & Conditions Segment */}
+                  {displayedQuotation.terms.length > 0 && (
+                    <div className="pt-2 font-sans space-y-1">
+                      <h4 className="text-[11px] font-extrabold text-slate-850 uppercase tracking-widest">
+                        TERMS & CONDITION
+                      </h4>
+                      <ol className="list-decimal pl-4.5 space-y-1 text-slate-900 text-xs font-bold leading-normal">
+                        {displayedQuotation.terms.map((term, i) => (
+                          <li key={i} className="pl-1">
+                            {term}
+                          </li>
+                        ))}
+                      </ol>
+                    </div>
+                  )}
+
+                </div>
+
+                {/* Prepared By Footer sign off section */}
+                <div className="pt-8 border-t border-slate-100 mt-auto flex justify-between items-end">
+                  
+                  {/* Left Signature Segment */}
+                  <div className="space-y-4 font-sans text-xs">
+                    <p className="font-extrabold text-slate-800 border-b border-slate-600 inline-block pb-0.5">
+                      Prepared By
+                    </p>
+                    <div className="space-y-0.5 font-bold uppercase text-[10.5px] text-slate-900 tracking-tight">
+                      <p className="text-[11.5px] font-extrabold text-slate-950">{displayedQuotation.preparedByName || "SHAMLAN"}</p>
+                      <p className="text-slate-700">{displayedQuotation.preparedByTitle || "PROJECT DIRECTOR"}</p>
+                      <p className="text-slate-500">{displayedQuotation.preparedByCompany || "ASTRA TECH"}</p>
+                      <p className="text-slate-400 font-mono italic text-[9.5px] pt-1.5">{displayedQuotation.preparedByLocation || "DOHA – QATAR"}</p>
+                    </div>
+                  </div>
+
+                  {/* Right Signature Line for Stamp / Reception signoff */}
+                  <div className="text-center w-40 space-y-12">
+                    <div className="h-0 border-b border-slate-400 border-dashed"></div>
+                    <div className="text-[9.5px] font-mono font-bold text-slate-400 uppercase tracking-wider block">
+                      Client Seal & Sign
+                    </div>
+                  </div>
+
+                </div>
+
+              </div>
+              
+            </div>
+          ) : (
+            <div className="p-12 text-center bg-white border border-slate-200 border-dashed rounded-2xl max-w-sm mt-8">
+              <Landmark className="h-10 w-10 text-slate-450 mx-auto mb-3" />
+              <h4 className="text-slate-800 font-sans font-bold text-sm">No Active Quotation Selection</h4>
+              <p className="text-xs text-slate-500 mt-1">Please select an existing quotation on the left or create a new custom configuration.</p>
+            </div>
+          )}
+
+        </div>
+
+      </div>
+
+    </div>
+  );
+}

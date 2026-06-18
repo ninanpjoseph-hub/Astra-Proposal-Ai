@@ -10,6 +10,7 @@ import ProposalWizard from './components/ProposalWizard';
 import ProposalDocumentView from './components/ProposalDocumentView';
 import AdminPortal from './components/AdminPortal';
 import LandingPage from './components/LandingPage';
+import ChequeQuotationModule from './components/ChequeQuotationModule';
 import { 
   Plus, Search, FileText, Calendar, Building, Landmark, Trash2, Edit3, Eye, 
   HelpCircle, ChevronRight, BarChart3, Database, TrendingUp, Sparkles, AlertCircle,
@@ -98,6 +99,7 @@ export default function App() {
   // Separate view screen for reading & printing document
   const [viewingProposal, setViewingProposal] = useState<Proposal | null>(null);
   const [proposalViewTab, setProposalViewTab] = useState<'document' | 'history' | 'payment'>('document');
+  const [activeModule, setActiveModule] = useState<'proposals' | 'cheque-quotations'>('proposals');
   
   // Search state
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -546,11 +548,46 @@ export default function App() {
         </div>
       </header>
 
+      {/* MODULE TAB NAVIGATION BAR */}
+      <div className="no-print bg-white border-b border-slate-200 shadow-3xs">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 flex gap-6">
+          <button
+            onClick={() => {
+              setActiveModule('proposals');
+              setViewingProposal(null);
+              setIsCreating(false);
+            }}
+            className={`py-3.5 text-xs font-serif font-extrabold uppercase tracking-wider border-b-2 transition-all cursor-pointer flex items-center gap-2 ${
+              activeModule === 'proposals' 
+                ? 'border-blue-600 text-blue-700' 
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <FileText className="h-4 w-4" />
+            Proposals Directory
+          </button>
+          <button
+            onClick={() => {
+              setActiveModule('cheque-quotations');
+            }}
+            className={`py-3.5 text-xs font-serif font-extrabold uppercase tracking-wider border-b-2 transition-all cursor-pointer flex items-center gap-2 ${
+              activeModule === 'cheque-quotations' 
+                ? 'border-blue-600 text-blue-700' 
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <Landmark className="h-4 w-4" />
+            Cheque Printing Software Quotations
+          </button>
+        </div>
+      </div>
+
       {/* PRIMARY STAGE SCREEN SPACE */}
       <main className="flex-grow max-w-7xl mx-auto px-4 md:px-6 py-8 w-full">
         
-        {/* VIEW 1: ACTIVE PDF DOCUMENT RENDER SCREEN */}
-        {viewingProposal ? (
+        {activeModule === 'cheque-quotations' ? (
+          <ChequeQuotationModule />
+        ) : viewingProposal ? (
           <div id="full-screen-document-preview" className="space-y-4">
             <div className="no-print flex items-center gap-2 mb-2">
               <button
