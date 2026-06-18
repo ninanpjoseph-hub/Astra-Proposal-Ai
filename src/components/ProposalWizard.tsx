@@ -669,7 +669,7 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
                       </p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       {/* Pages total */}
                       <div className="flex flex-col gap-1.5 p-3.5 bg-white border border-slate-200/60 rounded-xl">
                         <div className="flex justify-between items-center mb-1">
@@ -678,14 +678,16 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
                             {proposal.websiteScope.totalPages} Pages
                           </span>
                         </div>
-                        <input
-                          type="range"
-                          min="2"
-                          max="50"
-                          value={proposal.websiteScope.totalPages}
-                          onChange={(e) => updateWebsiteScope('totalPages', Number(e.target.value))}
-                          className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-                        />
+                        <div className="relative w-full h-5 bg-slate-100 border-2 border-[#0b57d0] rounded-full flex items-center px-1">
+                          <input
+                            type="range"
+                            min="2"
+                            max="50"
+                            value={proposal.websiteScope.totalPages}
+                            onChange={(e) => updateWebsiteScope('totalPages', Number(e.target.value))}
+                            className="w-full appearance-none bg-transparent cursor-pointer focus:outline-hidden [&::-webkit-slider-runnable-track]:bg-transparent [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-blue-600 [&::-webkit-slider-thumb]:shadow-xs [&::-moz-range-track]:bg-transparent [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-blue-600 [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:shadow-xs"
+                          />
+                        </div>
                         <span className="text-[9px] text-slate-400">Slider adjusts vertical sitemap elements automatically below.</span>
                       </div>
 
@@ -698,15 +700,15 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
                             placeholder="e.g. English & Arabic (Dual-Language)"
                             value={proposal.websiteScope.languages}
                             onChange={(e) => updateWebsiteScope('languages', e.target.value)}
-                            className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-sans focus:outline-hidden"
+                            className="w-full px-3 py-1 border border-slate-300 rounded-lg text-xs font-sans focus:outline-hidden"
                           />
                         </div>
-                        <div className="flex flex-col gap-1 mt-1">
+                        <div className="flex flex-col gap-1 mt-0.5">
                           <label className="text-xs font-sans font-semibold text-slate-700">CMS Framework Type</label>
                           <select
                             value={proposal.websiteScope.cmsType}
                             onChange={(e) => updateWebsiteScope('cmsType', e.target.value)}
-                            className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-sans focus:outline-hidden bg-white"
+                            className="w-full px-3 py-1 border border-slate-300 rounded-lg text-xs font-sans focus:outline-hidden bg-white"
                           >
                             <option value="WordPress">WordPress Core (Yoast Setup)</option>
                             <option value="headless-strapi">Headless CMS (Strapi + Next.js)</option>
@@ -716,21 +718,27 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
                           </select>
                         </div>
                       </div>
-                    </div>
 
-                    <div className="flex flex-col gap-1 bg-white p-3.5 border border-slate-200/60 rounded-xl max-w-[280px]">
-                      <div className="flex justify-between items-center mb-1">
-                        <label className="text-xs font-sans font-bold text-slate-700">Launch Maintenance Support</label>
-                        <strong className="text-xs text-blue-700">{proposal.websiteScope.maintenancePeriod} Months</strong>
+                      {/* Launch Maintenance Support */}
+                      <div className="flex flex-col gap-1.5 p-3.5 bg-white border border-slate-200/60 rounded-xl">
+                        <div className="flex justify-between items-center mb-1">
+                          <label className="text-xs font-sans font-bold text-slate-700">Launch Maintenance Support</label>
+                          <span className="text-xs bg-blue-50 text-blue-700 px-2.5 py-0.5 rounded-full font-sans font-bold">
+                            {proposal.websiteScope.maintenancePeriod} Months
+                          </span>
+                        </div>
+                        <div className="relative w-full h-5 bg-slate-100 border-2 border-[#0b57d0] rounded-full flex items-center px-1">
+                          <input
+                            type="range"
+                            min="1"
+                            max="24"
+                            value={proposal.websiteScope.maintenancePeriod}
+                            onChange={(e) => updateWebsiteScope('maintenancePeriod', Number(e.target.value))}
+                            className="w-full appearance-none bg-transparent cursor-pointer focus:outline-hidden [&::-webkit-slider-runnable-track]:bg-transparent [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-blue-600 [&::-webkit-slider-thumb]:shadow-xs [&::-moz-range-track]:bg-transparent [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-blue-600 [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:shadow-xs"
+                          />
+                        </div>
+                        <span className="text-[9px] text-slate-400">Slider adjusts post-launch maintenance terms automatically below.</span>
                       </div>
-                      <input
-                        type="range"
-                        min="1"
-                        max="24"
-                        value={proposal.websiteScope.maintenancePeriod}
-                        onChange={(e) => updateWebsiteScope('maintenancePeriod', Number(e.target.value))}
-                        className="w-full accent-blue-600 cursor-pointer"
-                      />
                     </div>
                   </div>
 
