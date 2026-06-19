@@ -1,0 +1,22 @@
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# 🚀 Hostinger Phusion Passenger Node.js Configuration
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Enable Phusion Passenger Engine
+PassengerEnabled on
+PassengerAppType node
+PassengerStartupFile server.cjs
+
+# Routing, SPA Client Fallbacks, and API proxy mapping
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # Serve assets folder and other actual files directly without rewriting
+  RewriteCond %{REQUEST_FILENAME} -f
+  RewriteRule ^ - [L]
+
+  # All other path requests (e.g., dynamic screens / dashboard routes / API endpoints) 
+  # are forwarded straight to our compiled node.js server process
+  RewriteRule ^(.*)$ server.cjs/$1 [QSA,L]
+</IfModule>
