@@ -215,6 +215,37 @@ router.post('/', async (req, res) => {
       );
     }
 
+    // 1.5. Ensure prepared_by_user_id and assigned_user_id exist in users table to avoid FK constraints
+    if (p.preparedByUserId) {
+      const usersFound = await query('SELECT id FROM users WHERE id = ?', [p.preparedByUserId]);
+      if (usersFound.length === 0) {
+        const uEmail = `${p.preparedByUserId.toLowerCase()}@technoastra.com`;
+        const emailExists = await query('SELECT id FROM users WHERE email = ?', [uEmail]);
+        const finalEmail = emailExists.length > 0 
+          ? `${p.preparedByUserId.toLowerCase()}_${Math.random().toString(36).substring(2, 6)}@technoastra.com` 
+          : uEmail;
+        await query(
+          'INSERT INTO users (id, name, email, role, is_active, password) VALUES (?, ?, ?, ?, ?, ?)',
+          [p.preparedByUserId, p.preparedByName || 'Ninan P Joseph', finalEmail, 'Admin', 1, 'astra2026']
+        );
+      }
+    }
+
+    if (p.assignedUserId) {
+      const assigneesFound = await query('SELECT id FROM users WHERE id = ?', [p.assignedUserId]);
+      if (assigneesFound.length === 0) {
+        const uEmail = `${p.assignedUserId.toLowerCase()}@technoastra.com`;
+        const emailExists = await query('SELECT id FROM users WHERE email = ?', [uEmail]);
+        const finalEmail = emailExists.length > 0 
+          ? `${p.assignedUserId.toLowerCase()}_${Math.random().toString(36).substring(2, 6)}@technoastra.com` 
+          : uEmail;
+        await query(
+          'INSERT INTO users (id, name, email, role, is_active, password) VALUES (?, ?, ?, ?, ?, ?)',
+          [p.assignedUserId, p.assignedUserName || 'Assignee User', finalEmail, 'Designer', 1, 'astra123']
+        );
+      }
+    }
+
     // 2. Perform replacement save inside DB
     const sql = `
       REPLACE INTO proposals (

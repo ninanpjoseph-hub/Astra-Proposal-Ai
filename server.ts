@@ -81,6 +81,21 @@ async function startServer() {
   app.post('/api/activity-logs', async (req, res) => {
     const l = req.body;
     try {
+      if (l.userId) {
+        const usersFound = await query('SELECT id FROM users WHERE id = ?', [l.userId]);
+        if (usersFound.length === 0) {
+          const uEmail = `${l.userId.toLowerCase()}@technoastra.com`;
+          const emailExists = await query('SELECT id FROM users WHERE email = ?', [uEmail]);
+          const finalEmail = emailExists.length > 0 
+            ? `${l.userId.toLowerCase()}_${Math.random().toString(36).substring(2, 6)}@technoastra.com` 
+            : uEmail;
+          await query(
+            'INSERT INTO users (id, name, email, role, is_active, password) VALUES (?, ?, ?, ?, ?, ?)',
+            [l.userId, l.userName || 'System User', finalEmail, l.userRole || 'Admin', 1, 'astra2026']
+          );
+        }
+      }
+
       await query(`
         INSERT INTO activity_log (id, timestamp, user_id, user_name, user_role, action, details)
         VALUES (?, ?, ?, ?, ?, ?, ?)
