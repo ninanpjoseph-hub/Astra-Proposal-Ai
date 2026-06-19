@@ -711,18 +711,22 @@ export default function ChequeQuotationModule() {
           }
           .print-section {
             display: block !important;
-            position: absolute !important;
-            left: 0 !important;
-            top: 0 !important;
+            position: relative !important;
             width: 210mm !important;
             min-height: 297mm !important;
-            margin: 0 !important;
+            margin: 0 auto !important;
             padding: 18mm 12mm !important;
             box-shadow: none !important;
             border: none !important;
             background: white !important;
             color-adjust: exact !important;
             -webkit-print-color-adjust: exact !important;
+            page-break-after: always !important;
+            break-after: page !important;
+          }
+          .print-section:last-child {
+            page-break-after: avoid !important;
+            break-after: auto !important;
           }
           .watermark-container {
             display: flex !important;
@@ -1842,7 +1846,209 @@ export default function ChequeQuotationModule() {
                 </div>
 
               </div>
-              
+
+              {/* Standalone Statement of Accounts Page */}
+              {displayedQuotation.showLedgerOnPrint && (
+                <div 
+                  id="printable-ledger-sheet"
+                  className="print-section bg-white border border-slate-300 w-full max-w-[210mm] min-h-[297mm] shadow-xl p-[15mm] mt-4 relative text-black overflow-hidden flex flex-col justify-between font-sans selection:bg-yellow-105"
+                  style={{ contentVisibility: 'auto' }}
+                >
+                  
+                  {/* 1. Large Pale Watermark Background Centered behind everything */}
+                  <div className="watermark-container absolute inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden select-none opacity-[0.035]">
+                    <span className="font-sans font-black text-[120px] tracking-widest text-[#0b57d0] select-none rotate-[20deg] block">
+                      STATEMENT
+                    </span>
+                  </div>
+
+                  {/* Main Content Body */}
+                  <div className="relative z-10 space-y-6">
+                    
+                    {/* Dynamic Header Section */}
+                    <div className="border-b-2 border-slate-850 pb-5 flex justify-between items-start">
+                      
+                      {/* Header Left: Corporate Info */}
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          {/* Astra Technologies Logo */}
+                          <div className="bg-[#0b57d0] h-9 w-9 rounded flex items-center justify-center font-bold font-serif italic text-white text-lg">
+                            As
+                          </div>
+                          <div>
+                            <h2 className="text-lg font-serif font-extrabold text-slate-850 tracking-tight leading-none">
+                              Astra Technologies
+                            </h2>
+                            <p className="text-[9.5px] font-mono text-slate-500 uppercase tracking-widest mt-0.5">
+                              Integrations & Software Solutions
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="text-[9px] text-slate-500 font-sans pt-1.5 space-y-0.5">
+                          <p className="flex items-center gap-1">
+                            <MapPin className="h-2.5 w-2.5 text-blue-600 shrink-0" />
+                            <span>P.O. Box 2434, Grand Corporate Tower, West Bay, Doha – Qatar</span>
+                          </p>
+                          <p className="flex items-center gap-1">
+                            <span>Tel: +974 4493 8211</span>
+                            <span className="text-slate-300">•</span>
+                            <span>Web: www.astratech.qa</span>
+                            <span className="text-slate-300">•</span>
+                            <span>Email: projects@astratech.qa</span>
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Header Right: Meta Info */}
+                      <div className="text-right font-sans shrink-0">
+                        <div className="text-xs font-extrabold text-slate-900 tracking-tight">
+                          REF : {displayedQuotation.refNo}
+                        </div>
+                        <div className="text-[11px] text-slate-650 font-mono mt-1">
+                          {displayedQuotation.date ? new Date(displayedQuotation.date).toLocaleDateString('en-GB') : "02/06/2026"}
+                        </div>
+                      </div>
+
+                    </div>
+
+                    {/* To Recipient Customer Segment */}
+                    <div className="pt-2 font-sans text-xs">
+                      <p className="font-semibold text-slate-800 text-[11px] uppercase tracking-wide">To,</p>
+                      <div className="mt-1 font-bold text-[12px] text-slate-900 transition-all flex flex-col gap-0.5">
+                        <span className="border-b border-slate-600 inline-block pb-0.5 max-w-max">
+                          M/S – {displayedQuotation.customerName || "CUSTOMER NAME"} {displayedQuotation.customerCompany || "COMPANY / ORGANISATION"}
+                        </span>
+                        <span className="text-[11.5px] text-slate-850 font-semibold mt-0.5">
+                          {displayedQuotation.customerLocation || "Doha-Qatar"}
+                        </span>
+                        {displayedQuotation.customerContact && (
+                          <span className="text-[10px] text-slate-550 font-normal mt-0.5 italic">
+                            Contact: {displayedQuotation.customerContact}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Centered Title with specific styling */}
+                    <div className="text-center py-1">
+                      <h1 className="text-sm font-extrabold tracking-widest text-[#0b57d0] uppercase underline decoration-double decoration-slate-800 inline-block px-4 py-0.5">
+                        STATEMENT OF ACCOUNTS
+                      </h1>
+                    </div>
+
+                    {/* Description message */}
+                    <p className="text-xs font-bold leading-relaxed text-slate-800">
+                      We hereby submit the official Commercial Financial Statement of Accounts & payment receipts record detailing the payments, contract baseline, and active values for the software integrations described in proposal <span className="font-mono text-blue-700">{displayedQuotation.refNo}</span>.
+                    </p>
+
+                    {/* Standalone Financial Ledger Segment */}
+                    <div className="pt-2 font-sans space-y-2">
+                      <div className="flex justify-between items-center">
+                        <h4 className="text-[10px] font-extrabold text-slate-800 uppercase tracking-widest flex items-center gap-1">
+                          🗃️ STATEMENT OF ACCOUNTS & PAYMENTS RECORD
+                        </h4>
+                        <span className="text-[9px] font-bold px-2 py-0.5 border border-slate-400 font-mono tracking-tight text-slate-700 bg-slate-50 uppercase rounded">
+                          STATUS: {activeProjectStatus}
+                        </span>
+                      </div>
+
+                      <div className="border border-slate-800 rounded-lg overflow-hidden bg-white">
+                        <table className="w-full text-left text-[11px]">
+                          <thead className="bg-slate-50 border-b border-slate-800 font-extrabold text-slate-900">
+                            <tr>
+                              <th className="py-2 px-3 border-r border-slate-800 text-center font-bold w-12 text-[10px]">#</th>
+                              <th className="py-2 px-3 border-r border-slate-805 text-[10px]">POSTING DATE</th>
+                              <th className="py-2 px-3 border-r border-slate-805 text-[10px]">TRANSACTION / PAYMENT REFERENCE</th>
+                              <th className="py-2 px-3 text-right text-[10px]">CREDIT AMOUNT</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-300 font-bold">
+                            {/* Contract Value Statement Base */}
+                            <tr className="bg-slate-50/10 text-slate-900 border-b border-slate-450">
+                              <td className="py-2 px-3 border-r border-slate-800 text-center font-mono font-semibold">0</td>
+                              <td className="py-2 px-3 border-r border-slate-800 font-mono text-slate-500">{displayedQuotation.date}</td>
+                              <td className="py-2 px-3 border-r border-slate-800 text-slate-600 font-bold uppercase">Total Quotation Value Signed</td>
+                              <td className="py-2 px-3 text-right font-mono font-black text-slate-700">
+                                {activeTotalContract.toFixed(2)} {displayedQuotation.currency}
+                              </td>
+                            </tr>
+
+                            {/* List of payments */}
+                            {(displayedQuotation.payments || []).length > 0 ? (
+                              (displayedQuotation.payments || []).map((pay, pIdx) => (
+                                <tr key={pay.id} className="text-slate-800">
+                                  <td className="py-1.5 px-3 border-r border-slate-800 text-center font-mono text-slate-500">{pIdx + 1}</td>
+                                  <td className="py-1.5 px-3 border-r border-slate-800 font-mono">{pay.date}</td>
+                                  <td className="py-1.5 px-3 border-r border-slate-800 font-semibold uppercase">
+                                    {pay.reference} {pay.notes ? `(${pay.notes})` : ''}
+                                  </td>
+                                  <td className="py-1.5 px-3 text-right font-mono text-emerald-700">
+                                    - {pay.amount.toFixed(2)} {displayedQuotation.currency}
+                                  </td>
+                                </tr>
+                              ))
+                            ) : (
+                              <tr>
+                                <td colSpan={4} className="py-4 px-3 text-center text-slate-400 italic">
+                                  No receipts registered. Contract net balances remain outstanding.
+                                </td>
+                              </tr>
+                            )}
+
+                            {/* Calculation Ledgers */}
+                            <tr className="bg-slate-50/10 text-slate-900 font-extrabold border-t border-slate-800 text-[10px]">
+                              <td colSpan={3} className="py-2 px-3 border-r border-slate-800 text-right uppercase tracking-wider">
+                                Total Cash & Cheque Payments Deposited:
+                              </td>
+                              <td className="py-2 px-3 text-right font-mono font-black text-emerald-700">
+                                {activeTotalReceived.toFixed(2)} {displayedQuotation.currency}
+                              </td>
+                            </tr>
+                            
+                            <tr className="bg-[#f0f4f9] text-slate-900 font-bold border-t border-slate-800 text-[11px]">
+                              <td colSpan={3} className="py-2.5 px-3 border-r border-slate-800 text-right uppercase tracking-widest font-black text-[#0b57d0]">
+                                Outstanding Net Balance Payable:
+                              </td>
+                              <td className="py-2.5 px-3 text-right font-mono font-black text-[#0b57d0] text-xs">
+                                {activePendingBalance.toFixed(2)} {displayedQuotation.currency}
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                  </div>
+
+                  {/* Statement Verification Footer sign off section */}
+                  <div className="pt-8 border-t border-slate-100 mt-auto flex justify-between items-end">
+                    
+                    {/* Left Signature Segment */}
+                    <div className="space-y-4 font-sans text-xs">
+                      <p className="font-extrabold text-[#0b57d0] border-b border-blue-600 inline-block pb-0.5 uppercase tracking-wide">
+                        Verified By (Finance Dept)
+                      </p>
+                      <div className="space-y-0.5 font-bold uppercase text-[10.5px] text-slate-900 tracking-tight">
+                        <p className="text-[11.5px] font-extrabold text-slate-950">ASTRA TECH FINANCE DEPT</p>
+                        <p className="text-slate-700">Accounts & Ledger Verification</p>
+                        <p className="text-slate-500">ASTRA TECH</p>
+                        <p className="text-slate-405 font-mono italic text-[9.5px] pt-1.5">{displayedQuotation.preparedByLocation || "DOHA – QATAR"}</p>
+                      </div>
+                    </div>
+
+                    {/* Right Signature Acknowledgment */}
+                    <div className="text-center w-40 space-y-12">
+                      <div className="h-0 border-b border-slate-400 border-dashed"></div>
+                      <div className="text-[9.5px] font-mono font-bold text-slate-400 uppercase tracking-wider block">
+                        Customer Signature & Date
+                      </div>
+                    </div>
+
+                  </div>
+
+                </div>
+              )}
             </div>
           ) : (
             <div className="p-12 text-center bg-white border border-slate-200 border-dashed rounded-2xl max-w-sm mt-8">
