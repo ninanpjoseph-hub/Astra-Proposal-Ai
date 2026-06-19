@@ -163,6 +163,27 @@ export default function ChequeQuotationModule() {
   const [activeQuotation, setActiveQuotation] = useState<ChequeQuotation | null>(null);
   const [isEditing, setIsEditing] = useState(false);
 
+  // Invoice Mode states
+  const [chequeViewMode, setChequeViewMode] = useState<'quotation' | 'invoice'>('quotation');
+  const [invoiceNoOverride, setInvoiceNoOverride] = useState('');
+  const [invoiceDateOverride, setInvoiceDateOverride] = useState('');
+  const [customerIDOverride, setCustomerIDOverride] = useState('');
+  const [customerPOOverride, setCustomerPOOverride] = useState('');
+  const [paymentTermsOverride, setPaymentTermsOverride] = useState('');
+  const [attnDepartmentOverride, setAttnDepartmentOverride] = useState('Finance Department');
+  const [phoneNoOverride, setPhoneNoOverride] = useState('+974 4400 0000');
+
+  // Load invoice overrides when active quotation changes
+  useEffect(() => {
+    if (activeQuotation) {
+      setInvoiceNoOverride(`INV-${activeQuotation.refNo.replace('AST-CQ-', '')}`);
+      setInvoiceDateOverride(activeQuotation.date || new Date().toISOString().substring(0, 10));
+      setCustomerIDOverride(`CUST-${activeQuotation.refNo.replace(/[^0-9]/g, '') || '912'}`);
+      setCustomerPOOverride(`PO-${activeQuotation.refNo.replace(/[^0-9]/g, '') || '45021'}`);
+      setPaymentTermsOverride(activeQuotation.terms?.[0] || '100% on installation');
+    }
+  }, [activeQuotation]);
+
   // Payment Logging panel states (for active adding)
   const [logAmount, setLogAmount] = useState<string>('');
   const [logDate, setLogDate] = useState<string>('');
@@ -1552,31 +1573,61 @@ export default function ChequeQuotationModule() {
             <div className="space-y-4 w-full">
               
               {/* Context Actions top line (visible in UI, hidden on print) */}
-              <div className="no-print flex items-center justify-between bg-slate-800 hover:bg-slate-850 text-white px-4 py-3 rounded-2xl shadow-xs transition-colors mb-2">
-                <div className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                  <span className="text-[11px] font-sans font-bold text-slate-200">
-                    Active: {displayedQuotation.refNo} ({displayedQuotation.customerName})
-                  </span>
+              <div className="no-print flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between bg-slate-800 hover:bg-slate-850 text-white px-4 py-3 rounded-2xl shadow-xs transition-colors mb-2">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full">
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span className="text-[11px] font-sans font-bold text-slate-205">
+                      Active: {displayedQuotation.refNo}
+                    </span>
+                  </div>
+                  
+                  {/* View switcher tabs */}
+                  <div className="flex bg-slate-700/60 p-0.5 rounded-lg border border-slate-600/40 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setChequeViewMode('quotation')}
+                      className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all cursor-pointer ${
+                        chequeViewMode === 'quotation' 
+                          ? 'bg-blue-600 text-white shadow-xs' 
+                          : 'text-slate-300 hover:text-white hover:bg-slate-700/30'
+                      }`}
+                    >
+                      Quotation
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setChequeViewMode('invoice')}
+                      className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all cursor-pointer ${
+                        chequeViewMode === 'invoice' 
+                          ? 'bg-blue-600 text-white shadow-xs' 
+                          : 'text-slate-300 hover:text-white hover:bg-slate-700/30'
+                      }`}
+                    >
+                      Commercial Invoice
+                    </button>
+                  </div>
                 </div>
                 
-                <div className="flex gap-2">
+                <div className="flex gap-2 shrink-0 w-full sm:w-auto justify-end">
                   <button
                     onClick={handleTriggerPrint}
-                    className="px-2.5 py-1 bg-blue-600 hover:bg-blue-500 text-[10px] font-bold rounded-lg flex items-center gap-1 cursor-pointer"
+                    className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-[10px] font-bold rounded-lg flex items-center justify-center gap-1.5 cursor-pointer w-full sm:w-auto"
                   >
-                    <Printer className="h-3 w-3" />
-                    Direct Print (A4)
+                    <Printer className="h-3.5 w-3.5" />
+                    Print {chequeViewMode === 'quotation' ? 'Quotation' : 'Invoice'} (A4)
                   </button>
                 </div>
               </div>
 
-              {/* The Actual Printed A4 Page */}
-              <div 
-                id="printable-quotation-sheet"
-                className="print-section bg-white border border-slate-300 w-full max-w-[210mm] min-h-[297mm] shadow-xl p-[15mm] relative text-black overflow-hidden flex flex-col justify-between font-sans selection:bg-yellow-105"
-                style={{ contentVisibility: 'auto' }}
-              >
+              {chequeViewMode === 'quotation' ? (
+                <>
+                  {/* The Actual Printed A4 Page */}
+                  <div 
+                    id="printable-quotation-sheet"
+                    className="print-section bg-white border border-slate-300 w-full max-w-[210mm] min-h-[297mm] shadow-xl p-[15mm] relative text-black overflow-hidden flex flex-col justify-between font-sans selection:bg-yellow-105"
+                    style={{ contentVisibility: 'auto' }}
+                  >
                 
                 {/* 1. Large Pale Watermark Background Centered behind everything */}
                 <div className="watermark-container absolute inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden select-none opacity-[0.035]">
@@ -2049,14 +2100,265 @@ export default function ChequeQuotationModule() {
 
                 </div>
               )}
-            </div>
+            </>
           ) : (
-            <div className="p-12 text-center bg-white border border-slate-200 border-dashed rounded-2xl max-w-sm mt-8">
-              <Landmark className="h-10 w-10 text-slate-450 mx-auto mb-3" />
-              <h4 className="text-slate-800 font-sans font-bold text-sm">No Active Quotation Selection</h4>
-              <p className="text-xs text-slate-500 mt-1">Please select an existing quotation on the left or create a new custom configuration.</p>
+            <div 
+              id="printable-invoice-sheet"
+              className="print-section bg-white border border-slate-300 w-full max-w-[210mm] min-h-[297mm] shadow-xl p-[15mm] relative text-black overflow-hidden flex flex-col justify-between font-sans selection:bg-yellow-105"
+              style={{ contentVisibility: 'auto' }}
+            >
+              <div className="watermark-container absolute inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden select-none opacity-[0.035]">
+                <span className="font-sans font-black text-[120px] tracking-widest text-[#0b57d0] select-none rotate-[20deg] block">
+                  ASTRA
+                </span>
+              </div>
+
+              <div className="relative z-10 space-y-4">
+                {/* 1. Header Segment */}
+                <div className="flex justify-between items-start border-b-2 border-slate-800 pb-3">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <div className="bg-[#0b57d0] h-8 w-8 rounded flex items-center justify-center font-bold font-serif italic text-white text-base">
+                        As
+                      </div>
+                      <div>
+                        <h2 className="text-base font-serif font-extrabold text-[#0b57d0] tracking-tight leading-none text-blue-700">
+                          Astra Technologies
+                        </h2>
+                        <p className="text-[8.5px] font-mono text-slate-550 uppercase tracking-widest mt-0.5">
+                          Integrations & Software Solutions
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-[8.5px] text-slate-500 font-sans mt-2 space-y-0.5">
+                      <p>P.O. Box 2434, Grand Corporate Tower, West Bay, Doha – Qatar</p>
+                      <p>Tel: +974 4493 8211 • Web: www.technoastra.com • Email: projects@technoastra.com</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="font-sans font-black text-2xl text-slate-500 uppercase tracking-widest block">
+                      INVOICE
+                    </span>
+                  </div>
+                </div>
+
+                {/* 2. Bill To & Invoice Info Blocks */}
+                <div className="grid grid-cols-2 gap-6 pt-1">
+                  <div className="border border-slate-400 rounded-xs overflow-hidden bg-white flex flex-col">
+                    <div className="bg-slate-400 text-slate-900 font-bold px-3 py-1 text-[10px] font-sans uppercase">
+                      Bill To:
+                    </div>
+                    <div className="p-2.5 text-slate-850 text-[10.5px] font-sans space-y-1.5 flex-1 flex flex-col justify-center">
+                      <div className="flex gap-1.5 items-baseline">
+                        <span className="font-bold text-slate-500 w-16 shrink-0">Name:</span>
+                        <span className="font-black text-slate-900 leading-tight">
+                          {displayedQuotation.customerCompany || displayedQuotation.customerName || "CUSTOMER NAME"}
+                        </span>
+                      </div>
+                      <div className="flex gap-1.5 items-center">
+                        <span className="font-bold text-slate-500 w-16 shrink-0">Attn:</span>
+                        <input
+                          type="text"
+                          value={attnDepartmentOverride}
+                          onChange={(e) => setAttnDepartmentOverride(e.target.value)}
+                          className="w-full bg-transparent hover:bg-slate-50 focus:bg-white focus:ring-1 focus:ring-blue-500 px-1 py-0.5 border border-transparent hover:border-slate-300 rounded text-slate-900 font-bold text-[10.5px] focus:outline-hidden transition-all shrink"
+                        />
+                      </div>
+                      <div className="flex gap-1.5 items-center">
+                        <span className="font-bold text-slate-500 w-16 shrink-0">Phone No:</span>
+                        <input
+                          type="text"
+                          value={phoneNoOverride}
+                          onChange={(e) => setPhoneNoOverride(e.target.value)}
+                          className="w-full bg-transparent hover:bg-slate-50 focus:bg-white focus:ring-1 focus:ring-blue-500 px-1 py-0.5 border border-transparent hover:border-slate-300 rounded text-slate-900 font-bold text-[10.5px] focus:outline-hidden transition-all shrink"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="border border-slate-400 rounded-xs overflow-hidden bg-white flex flex-col">
+                    <div className="bg-slate-400 text-slate-900 font-bold px-3 py-1 text-[10px] font-sans uppercase">
+                      Invoice Details:
+                    </div>
+                    <div className="p-2.5 text-slate-850 text-[10.5px] font-sans space-y-1.5 flex-1 flex flex-col justify-center">
+                      <div className="flex gap-1.5 items-center">
+                        <span className="font-bold text-slate-500 w-24 shrink-0">Invoice Number:</span>
+                        <input
+                          type="text"
+                          value={invoiceNoOverride}
+                          onChange={(e) => setInvoiceNoOverride(e.target.value)}
+                          className="w-full bg-transparent hover:bg-slate-50 focus:bg-white focus:ring-1 focus:ring-blue-500 px-1 py-0.5 border border-transparent hover:border-slate-300 rounded text-slate-900 font-bold text-[10.5px] focus:outline-hidden transition-all shrink"
+                        />
+                      </div>
+                      <div className="flex gap-1.5 items-center">
+                        <span className="font-bold text-slate-500 w-24 shrink-0">Invoice Date:</span>
+                        <input
+                          type="text"
+                          value={invoiceDateOverride}
+                          onChange={(e) => setInvoiceDateOverride(e.target.value)}
+                          className="w-full bg-transparent hover:bg-slate-50 focus:bg-white focus:ring-1 focus:ring-blue-500 px-1 py-0.5 border border-transparent hover:border-slate-300 rounded text-slate-900 font-bold text-[10.5px] focus:outline-hidden transition-all shrink"
+                        />
+                      </div>
+                      <div className="flex gap-1.5 items-center">
+                        <span className="font-bold text-slate-500 w-24 shrink-0">Page:</span>
+                        <span className="font-black text-slate-900">1</span>
+                      </div>
+                      <div className="flex gap-1.5 items-center">
+                        <span className="font-bold text-slate-500 w-24 shrink-0">Contact:</span>
+                        <span className="font-black text-slate-900 text-[10.5px]">projects@technoastra.com</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. Customer Meta Info Segment (ID, PO, Terms) */}
+                <div className="grid grid-cols-3 border border-slate-400 overflow-hidden text-center text-[10px] font-sans mt-2">
+                  <div className="border-r border-slate-400 flex flex-col">
+                    <div className="bg-slate-400 text-slate-950 font-bold py-1 border-b border-slate-400 uppercase tracking-wide">
+                      Customer ID
+                    </div>
+                    <input
+                      type="text"
+                      value={customerIDOverride}
+                      onChange={(e) => setCustomerIDOverride(e.target.value)}
+                      className="text-center w-full py-1 bg-transparent border-0 font-bold text-slate-900 focus:ring-0 focus:outline-hidden text-[10.5px]"
+                    />
+                  </div>
+                  <div className="border-r border-slate-400 flex flex-col">
+                    <div className="bg-slate-400 text-slate-950 font-bold py-1 border-b border-slate-400 uppercase tracking-wide">
+                      Customer PO
+                    </div>
+                    <input
+                      type="text"
+                      value={customerPOOverride}
+                      onChange={(e) => setCustomerPOOverride(e.target.value)}
+                      className="text-center w-full py-1 bg-transparent border-0 font-bold text-slate-900 focus:ring-0 focus:outline-hidden text-[10.5px]"
+                    />
+                  </div>
+                  <div className="flex flex-col">
+                    <div className="bg-slate-400 text-slate-950 font-bold py-1 border-b border-slate-400 uppercase tracking-wide">
+                      Payment Terms
+                    </div>
+                    <input
+                      type="text"
+                      value={paymentTermsOverride}
+                      onChange={(e) => setPaymentTermsOverride(e.target.value)}
+                      className="text-center w-full py-1 bg-transparent border-0 font-bold text-slate-909 focus:ring-0 focus:outline-hidden text-[10.5px]"
+                    />
+                  </div>
+                </div>
+
+                {/* 4. Products & Services Table */}
+                <div className="border border-slate-400 rounded-xs overflow-hidden mt-2">
+                  <table className="w-full text-left text-[11px] font-sans border-collapse">
+                    <thead>
+                      <tr className="bg-slate-400 text-slate-950 font-bold text-center border-b border-slate-400 uppercase">
+                        <th className="py-2 px-2 border-r border-slate-400 text-center w-12 text-[10px]">SL</th>
+                        <th className="py-2.5 px-3 border-r border-slate-400 text-left text-[10px]">Description</th>
+                        <th className="py-2 px-2 border-r border-slate-400 text-center w-20 text-[10px]">Quantity</th>
+                        <th className="py-2.5 px-3 border-r border-slate-400 text-right w-24 text-[10px]">Unit Price</th>
+                        <th className="py-2.5 px-3 text-right w-28 text-[10px]">Amount QAR</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200">
+                      {displayedQuotation.items.map((it, idx) => (
+                        <tr key={it.id} className="text-slate-900 font-bold hover:bg-slate-50/50">
+                          <td className="py-2 px-2 border-r border-slate-200 text-center font-mono">
+                            {idx + 1}
+                          </td>
+                          <td className="py-2 px-3 border-r border-slate-200 text-left text-[10.5px]">
+                            {it.description}
+                          </td>
+                          <td className="py-2 px-2 border-r border-slate-200 text-center font-mono">
+                            {it.qty}
+                          </td>
+                          <td className="py-2 px-3 border-r border-slate-200 text-right font-mono">
+                            {(it.unitPrice).toFixed(2)}
+                          </td>
+                          <td className="py-2 px-3 text-right font-mono">
+                            {(it.unitPrice * it.qty).toFixed(2)}
+                          </td>
+                        </tr>
+                      ))}
+
+                      {/* Filler rows */}
+                      {displayedQuotation.items.length < 8 && 
+                        Array.from({ length: 8 - displayedQuotation.items.length }).map((_, idx) => (
+                          <tr key={`invoice-filler-${idx}`} className="h-8">
+                            <td className="py-2 border-r border-slate-200"></td>
+                            <td className="py-2 border-r border-slate-200"></td>
+                            <td className="py-2 border-r border-slate-200"></td>
+                            <td className="py-2 border-r border-slate-200"></td>
+                            <td className="py-2"></td>
+                          </tr>
+                        ))}
+                        
+                      <tr className="bg-slate-50 font-bold border-t border-slate-400">
+                        <td colSpan={4} className="py-2 px-3 border-r border-slate-400 text-right uppercase tracking-wider text-[9.5px]">
+                          Grand Total:
+                        </td>
+                        <td className="py-2 px-3 text-right font-mono font-black text-slate-800 text-[11px]">
+                          {(getTotals(displayedQuotation.items)).toFixed(2)}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* 5. Payments & Accounts Info */}
+                <div className="grid grid-cols-12 gap-6 mt-3 pt-1">
+                  <div className="col-span-8 text-[10px] space-y-1 text-slate-850">
+                    <p className="font-extrabold text-slate-950 uppercase tracking-wide text-[10.5px]">
+                      Payment can be made by bank
+                    </p>
+                    <div className="space-y-0.5 text-slate-900 font-bold text-[10.5px]">
+                      <p>Payable to: <span className="font-extrabold text-[#0b57d0]">Doha Bank</span></p>
+                      <p className="leading-snug">Account Holder Name: <span className="text-slate-950 uppercase select-all">ASTRA TRADING AND CONTRACTING AND SERVICES</span></p>
+                      <p>Branch: <span className="text-slate-950 font-semibold">Main Branch</span></p>
+                      <p>Account Number: <span className="text-slate-950 font-mono select-all">225-377033-001-0010-000</span></p>
+                      <p>Swift Code: <span className="text-slate-950 font-mono select-all">DOHBQAQA</span></p>
+                      <p>IBAN: <span className="text-blue-600 font-mono tracking-tight select-all">QA35 DOHB 0225 0377 0330 0100 1000 0</span></p>
+                    </div>
+                  </div>
+
+                  <div className="col-span-4 flex flex-col justify-end text-right">
+                    <div className="border border-slate-400 rounded-xs overflow-hidden">
+                      <div className="bg-slate-400 text-slate-950 font-bold px-3 py-1 text-[9.5px] uppercase font-sans tracking-wide text-center">
+                        Grand Total:
+                      </div>
+                      <div className="p-2.5 bg-white text-right font-mono text-sm font-black text-blue-600 tracking-tight">
+                        {(getTotals(displayedQuotation.items)).toFixed(2)} QAR
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 6. Signatures stamp segment */}
+              <div className="pt-10 mt-auto flex justify-between items-end text-slate-800 text-[10px] font-sans">
+                <div className="text-center w-40 space-y-1.5">
+                  <div className="h-0 border-b border-slate-600"></div>
+                  <p className="font-sans font-black uppercase text-slate-900 tracking-wide text-[10px]">
+                    Approved By
+                  </p>
+                </div>
+                <div className="text-center w-40 space-y-1.5">
+                  <div className="h-0 border-b border-slate-600"></div>
+                  <p className="font-sans font-black uppercase text-slate-900 tracking-wide text-[10px]">
+                    Received By
+                  </p>
+                </div>
+              </div>
             </div>
           )}
+        </div>
+      ) : (
+        <div className="p-12 text-center bg-white border border-slate-200 border-dashed rounded-2xl max-w-sm mt-8">
+          <Landmark className="h-10 w-10 text-slate-450 mx-auto mb-3" />
+          <h4 className="text-slate-800 font-sans font-bold text-sm">No Active Quotation Selection</h4>
+          <p className="text-xs text-slate-500 mt-1">Please select an existing quotation on the left or create a new custom configuration.</p>
+        </div>
+      )}
 
         </div>
 
