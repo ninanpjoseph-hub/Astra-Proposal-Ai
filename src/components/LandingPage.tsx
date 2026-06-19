@@ -175,18 +175,22 @@ export default function LandingPage({ onLogin, theme = 'luxury-dark' }: LandingP
                 )}
 
                 <div>
-                  <label className="block text-[10px] uppercase font-mono tracking-wider font-bold text-slate-400 mb-1.5">
+                  <label className="block text-[10.5px] uppercase font-mono tracking-widest font-extrabold text-slate-350 mb-1.5">
                     Username / Email Address
                   </label>
                   <div className="relative font-sans">
-                    <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-500" />
+                    <Mail className={`absolute left-3.5 top-3.5 h-4 w-4 ${isLuxury ? 'text-[#C5A059]/80' : 'text-slate-400'}`} />
                     <input 
                       type="email"
                       required
                       placeholder="e.g. ninanpjoseph@gmail.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className={`w-full pl-10 pr-4 py-2.5 rounded-xl font-sans text-xs text-white placeholder-slate-500 focus:outline-hidden focus:ring-2 transition-all ${isLuxury ? 'bg-[#1E293B]/60 border border-[#C5A059]/20 focus:ring-[#C5A059]/20 focus:border-[#C5A059]' : 'bg-slate-900 border border-slate-800 focus:ring-blue-500/20 focus:border-blue-500'}`}
+                      className={`w-full pl-11 pr-4 py-3 rounded-xl font-sans text-xs dark-login-input transition-all duration-200 outline-none ${
+                        isLuxury 
+                          ? 'bg-[#080d1a] border border-[#C5A059]/30 focus:bg-[#050810] focus:ring-2 focus:ring-[#C5A059]/30 focus:border-[#C5A059] shadow-inner' 
+                          : 'bg-slate-900 border border-slate-800 focus:bg-slate-950 focus:ring-2 focus:ring-blue-500/25 focus:border-blue-500'
+                      }`}
                       id="login-email-input"
                     />
                   </div>
@@ -194,31 +198,35 @@ export default function LandingPage({ onLogin, theme = 'luxury-dark' }: LandingP
 
                 <div>
                   <div className="flex justify-between items-center mb-1.5">
-                    <label className="block text-[10px] uppercase font-mono tracking-wider font-bold text-slate-400">
+                    <label className="block text-[10.5px] uppercase font-mono tracking-widest font-extrabold text-slate-350">
                       Access Password
                     </label>
-                    <span className="text-[10px] font-sans text-slate-500">
+                    <span className="text-[10px] font-sans font-medium text-slate-500">
                       Standard validation active
                     </span>
                   </div>
                   
                   <div className="relative font-sans">
-                    <Key className="absolute left-3 top-3 h-4 w-4 text-slate-500" />
+                    <Key className={`absolute left-3.5 top-3.5 h-4 w-4 ${isLuxury ? 'text-[#C5A059]/80' : 'text-slate-400'}`} />
                     <input 
                       type={showPassword ? "text" : "password"}
                       required
                       placeholder="••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className={`w-full pl-10 pr-10 py-2.5 rounded-xl font-sans text-xs text-white placeholder-slate-500 focus:outline-hidden focus:ring-2 transition-all ${isLuxury ? 'bg-[#1E293B]/60 border border-[#C5A059]/20 focus:ring-[#C5A059]/20 focus:border-[#C5A059]' : 'bg-slate-900 border border-slate-800 focus:ring-blue-500/20 focus:border-blue-500'}`}
+                      className={`w-full pl-11 pr-11 py-3 rounded-xl font-sans text-xs dark-login-input transition-all duration-200 outline-none ${
+                        isLuxury 
+                          ? 'bg-[#080d1a] border border-[#C5A059]/30 focus:bg-[#050810] focus:ring-2 focus:ring-[#C5A059]/30 focus:border-[#C5A059] shadow-inner' 
+                          : 'bg-slate-900 border border-slate-800 focus:bg-slate-950 focus:ring-2 focus:ring-blue-500/25 focus:border-blue-500'
+                      }`}
                       id="login-password-input"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-3.5 text-slate-500 hover:text-slate-300 cursor-pointer"
+                      className={`absolute right-3.5 top-3.5 text-slate-500 hover:text-slate-200 transition-colors cursor-pointer ${isLuxury ? 'hover:text-[#C5A059]' : 'hover:text-blue-400'}`}
                     >
-                      {showPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
                 </div>

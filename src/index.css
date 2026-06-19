@@ -151,10 +151,31 @@ select::placeholder {
 }
 
 /* Style the text of standard inputs, textareas and date inputs so that pre-filled defaults & values are crisp and legible */
-input,
-textarea,
-select {
+input:not(.dark-login-input),
+textarea:not(.dark-login-input),
+select:not(.dark-login-input) {
   color: #1e293b; /* Premium dark slate-800 for high readability of user typing and pre-filled defaults */
+}
+
+/* Custom premium login inputs styling to ensure perfect readability in the dark luxury theme */
+.dark-login-input {
+  color: #ffffff !important; /* Pure white text for ultimate contrast */
+  font-weight: 500 !important;
+}
+
+.dark-login-input::placeholder {
+  color: #94a3b8 !important; /* Readable light slate gray placeholder */
+  opacity: 0.65 !important;
+}
+
+/* Clear autofill styles for login inputs to maintain luxury dark presentation */
+.dark-login-input:-webkit-autofill,
+.dark-login-input:-webkit-autofill:hover,
+.dark-login-input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #ffffff !important;
+  -webkit-box-shadow: 0 0 0px 1000px #0b1120 inset !important;
+  box-shadow: 0 0 0px 1000px #0b1120 inset !important;
+  transition: background-color 5000s ease-in-out 0s;
 }
 
 /* Ensure empty/prefilled date inputs are highly legible across Chrome, Safari, and Firefox */
