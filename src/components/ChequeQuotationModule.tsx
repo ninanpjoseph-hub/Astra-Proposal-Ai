@@ -1616,9 +1616,9 @@ export default function ChequeQuotationModule() {
                         <p className="flex items-center gap-1">
                           <span>Tel: +974 4493 8211</span>
                           <span className="text-slate-300">•</span>
-                          <span>Web: www.astratech.qa</span>
+                          <span>Web: www.technoastra.com</span>
                           <span className="text-slate-300">•</span>
-                          <span>Email: projects@astratech.qa</span>
+                          <span>Email: projects@technoastra.com</span>
                         </p>
                       </div>
                     </div>
@@ -1893,9 +1893,9 @@ export default function ChequeQuotationModule() {
                           <p className="flex items-center gap-1">
                             <span>Tel: +974 4493 8211</span>
                             <span className="text-slate-300">•</span>
-                            <span>Web: www.astratech.qa</span>
+                            <span>Web: www.technoastra.com</span>
                             <span className="text-slate-300">•</span>
-                            <span>Email: projects@astratech.qa</span>
+                            <span>Email: projects@technoastra.com</span>
                           </p>
                         </div>
                       </div>
