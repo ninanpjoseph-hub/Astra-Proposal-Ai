@@ -63,14 +63,35 @@ export async function query<T = any>(sql: string, params?: any[]): Promise<T> {
 /**
  * Exercises a connection test query (SELECT 1) to verify database configuration.
  */
-export async function testConnection(): Promise<{ success: boolean; message: string }> {
+export async function testConnection(): Promise<{ success: boolean; message: string; host?: string; port?: string; database?: string; user?: string }> {
   try {
     const rows = await query('SELECT 1 as val');
     if (rows && Array.isArray(rows) && rows.length > 0 && rows[0].val === 1) {
-      return { success: true, message: 'Successfully established contact with Hostinger MySQL Database!' };
+      return { 
+        success: true, 
+        message: 'Successfully established contact with Hostinger MySQL Database!',
+        host: process.env.DB_HOST,
+        port: process.env.DB_PORT || '3306',
+        database: process.env.DB_NAME,
+        user: process.env.DB_USER
+      };
     }
-    return { success: false, message: 'Database connection test returned abnormal payload.' };
+    return { 
+      success: false, 
+      message: 'Database connection test returned abnormal payload.',
+      host: process.env.DB_HOST,
+      port: process.env.DB_PORT || '3306',
+      database: process.env.DB_NAME,
+      user: process.env.DB_USER
+    };
   } catch (error: any) {
-    return { success: false, message: `Database offline or unreachable: ${error.message}` };
+    return { 
+      success: false, 
+      message: `Database offline or unreachable: ${error.message}`,
+      host: process.env.DB_HOST,
+      port: process.env.DB_PORT || '3306',
+      database: process.env.DB_NAME,
+      user: process.env.DB_USER
+    };
   }
 }

@@ -47,6 +47,7 @@ export default function App() {
   const [isDbConnected, setIsDbConnected] = useState<boolean>(false);
   const [dbStatusDetails, setDbStatusDetails] = useState<string>("Detecting connection...");
   const [showDbDiagnostics, setShowDbDiagnostics] = useState<boolean>(false);
+  const [dbInfo, setDbInfo] = useState<{ host?: string; port?: string; database?: string; user?: string }>({});
   
   // Theme state: defaulting to 'luxury-dark' representing Elite Wealth platform
   const [dashboardTheme, setDashboardTheme] = useState<'luxury-dark' | 'classic'>(() => {
@@ -121,6 +122,15 @@ export default function App() {
         const dbTestRes = await fetch('/api/proposals/test-db');
         const dbTestData = await dbTestRes.json();
         
+        if (dbTestData) {
+          setDbInfo({
+            host: dbTestData.host,
+            port: dbTestData.port,
+            database: dbTestData.database,
+            user: dbTestData.user
+          });
+        }
+
         if (dbTestData && dbTestData.success) {
           setIsDbConnected(true);
           setDbStatusDetails("Hostinger Connected");
@@ -1197,10 +1207,10 @@ export default function App() {
                   <div className="space-y-1.5 font-mono text-[10.5px]">
                     <span className="text-slate-400 uppercase font-bold text-[9.5px] tracking-wider block">Container Environment parameters:</span>
                     <div className="bg-slate-900 text-slate-300 p-3 rounded-lg border border-slate-850 space-y-1 select-all font-mono">
-                      <div>DB_HOST: "u314254887_astra_proposal"</div>
-                      <div>DB_PORT: "3306"</div>
-                      <div>DB_NAME: "astra_proposal"</div>
-                      <div>DB_USER: "astra_db_admin"</div>
+                      <div>DB_HOST: "{dbInfo.host || 'Not configured (Empty)'}"</div>
+                      <div>DB_PORT: "{dbInfo.port || '3306'}"</div>
+                      <div>DB_NAME: "{dbInfo.database || 'Not configured (Empty)'}"</div>
+                      <div>DB_USER: "{dbInfo.user || 'Not configured (Empty)'}"</div>
                     </div>
                   </div>
 
@@ -1218,7 +1228,7 @@ export default function App() {
                   <div className="bg-blue-50/50 dark:bg-blue-950/10 border border-blue-100 dark:border-blue-950/40 p-3.5 rounded-xl space-y-1 text-slate-700 dark:text-slate-350">
                     <p className="font-bold text-[11px] text-blue-700 dark:text-blue-400">Why proposals do not sync on different computers:</p>
                     <p className="mt-0.5 text-[10.5px] leading-relaxed">
-                      Because the server hostname resolves in a DNS error (<strong className="font-mono text-slate-805 dark:text-white">getaddrinfo EAI_AGAIN</strong>), the system fell back to your browser's <strong className="font-semibold text-slate-805 dark:text-white">localStorage</strong>. Storing files locally means they are saved inside this browser only, and are completely missing on other devices or when you log in elsewhere.
+                      Because the server database host fell back to offline mode, the system defaults to your browser's <strong className="font-semibold text-slate-805 dark:text-white">localStorage</strong>. Storing files locally means they are saved inside this browser only, and are completely missing on other devices or when you log in elsewhere.
                     </p>
                   </div>
 
@@ -1227,13 +1237,13 @@ export default function App() {
                     <p className="font-bold text-slate-800 dark:text-slate-200">How to establish correct connection:</p>
                     <ol className="list-decimal pl-4 space-y-2 leading-relaxed">
                       <li>
-                        <strong>Update DB_HOST parameter:</strong> In Hostinger hPanel, locate the actual Host name or IP under <em>"MySQL Server"</em> (usually looks like an IP address or a server address, e.g. <code className="bg-slate-100 dark:bg-slate-900 px-1 py-0.5 rounded font-mono">109.84...</code> or <code className="bg-slate-100 dark:bg-slate-900 px-1 py-0.5 rounded font-mono">sql123.main-hosting.eu</code>). Currently, you have set it to <code className="bg-slate-105 dark:bg-slate-900 px-1 py-0.5 rounded font-mono text-rose-500">"u314254887_astra_proposal"</code>, which is actually a database name, NOT a host address.
+                        <strong>Update DB_HOST parameter:</strong> In Hostinger hPanel, locate the actual Host name or IP under <em>"MySQL Server"</em> (usually looks like an IP address or a server address, e.g. <code className="bg-slate-100 dark:bg-slate-900 px-1 py-0.5 rounded font-mono">109.84...</code> or <code className="bg-slate-100 dark:bg-slate-900 px-1 py-0.5 rounded font-mono">sql123.main-hosting.eu</code>). Currently, you have set it to <code className="bg-slate-105 dark:bg-slate-900 px-1 py-0.5 rounded font-mono text-rose-500">"{dbInfo.host || 'Not set'}"</code>. If this is a database name, NOT a host address, please correct it.
                       </li>
                       <li>
                         <strong>Apply Secrets in AI Studio:</strong> Open the <strong>Settings</strong> or <strong>Secrets</strong> panel of your AI Studio Workspace, locate the active secrets list, and update <code className="font-mono bg-slate-100 dark:bg-slate-900 px-1 py-0.5 rounded">DB_HOST</code>.
                       </li>
                       <li>
-                        <strong>Allow Remote MySQL access:</strong> Open Hostinger's hPanel, navigate to the **Remote MySQL** tab of your database, and authorize access for standard hosts (using <code className="font-mono bg-slate-100 dark:bg-slate-900 px-1 py-0.5 rounded">%</code> wildcard) to allow the Cloud Run runtime to issue ingress handshakes.
+                        <strong>Allow Remote MySQL access:</strong> Open Hostinger's hPanel, navigate to the **Remote MySQL** tab of your database, and authorize access for standard hosts (using <code className="font-mono bg-slate-100 dark:bg-slate-905 px-1 py-0.5 rounded">%</code> wildcard) to allow the Cloud Run runtime to issue ingress handshakes.
                       </li>
                     </ol>
                   </div>
@@ -1248,9 +1258,10 @@ export default function App() {
                   <div className="bg-slate-50 dark:bg-slate-900/30 p-3.5 rounded-xl border border-slate-100 dark:border-slate-900 space-y-1 block">
                     <p className="font-bold text-slate-800 dark:text-slate-300">Connected database info:</p>
                     <ul className="list-disc pl-4 mt-1 font-mono text-[10.5px]">
-                      <li>Host: "u314254887_astra_proposal"</li>
-                      <li>Schema: "astra_proposal"</li>
-                      <li>User: "astra_db_admin"</li>
+                      <li>Host: "{dbInfo.host || 'Not set'}"</li>
+                      <li>Schema: "{dbInfo.database || 'Not set'}"</li>
+                      <li>User: "{dbInfo.user || 'Not set'}"</li>
+                      <li>Port: "{dbInfo.port || '3306'}"</li>
                     </ul>
                   </div>
                 </div>
