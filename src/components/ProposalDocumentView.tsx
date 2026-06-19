@@ -4,6 +4,8 @@
  */
 
 import React from 'react';
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
 import { BRANDING_TEMPLATES, WEBSITE_TEMPLATES, DEFAULT_SCOPE_TEMPLATES } from '../staticTemplates';
 import { formatQAR, DEFAULT_BRANDING_MILESTONES, DEFAULT_WEBSITE_MILESTONES, triggerAutomatedFollowUp, createDefaultProposal } from '../proposalUtils';
 import SitemapGenerator from './SitemapGenerator';
@@ -488,20 +490,17 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
       }
 
       setProgressText('Spinning up high-fidelity PDF engines...');
-      
-      const { jsPDF } = await import('jspdf');
-      const html2canvas = (await import('html2canvas')).default;
 
       // Temporarily override window.getComputedStyle to intercept oklch/oklab color values live during html2canvas traversal
       window.getComputedStyle = function (elt, pseudoElt) {
         const style = originalGetComputedStyle.call(window, elt, pseudoElt);
         return new Proxy(style, {
-          get(target, prop) {
+          get(target, prop, receiver) {
             if (prop === 'getPropertyValue') {
               return (name: string) => {
-                const val = target.getPropertyValue(name);
-                if (typeof val === 'string' && (val.includes('oklch') || val.includes('oklab'))) {
-                  let cleaned = val;
+                const valStr = target.getPropertyValue(name);
+                if (typeof valStr === 'string' && (valStr.includes('oklch') || valStr.includes('oklab'))) {
+                  let cleaned = valStr;
                   if (cleaned.includes('oklch')) {
                     cleaned = replaceOklchInCss(cleaned);
                   }
@@ -510,24 +509,34 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
                   }
                   return cleaned;
                 }
-                return val;
+                return valStr;
               };
             }
-            const val = target[prop as any];
-            if (typeof val === 'string' && (val.includes('oklch') || val.includes('oklab'))) {
-              let cleaned = val;
-              if (cleaned.includes('oklch')) {
-                cleaned = replaceOklchInCss(cleaned);
+
+            try {
+              // Retrieve property with native target as the receiver to prevent Illegal Invocation on native getter methods
+              const val = Reflect.get(target, prop, target);
+              if (typeof val === 'string' && (val.includes('oklch') || val.includes('oklab'))) {
+                let cleaned = val;
+                if (cleaned.includes('oklch')) {
+                  cleaned = replaceOklchInCss(cleaned);
+                }
+                if (cleaned.includes('oklab')) {
+                  cleaned = replaceOklabInCss(cleaned);
+                }
+                return cleaned;
               }
-              if (cleaned.includes('oklab')) {
-                cleaned = replaceOklabInCss(cleaned);
+              if (typeof val === 'function') {
+                return val.bind(target);
               }
-              return cleaned;
+              return val;
+            } catch (err) {
+              const val = target[prop as any];
+              if (typeof val === 'function') {
+                return val.bind(target);
+              }
+              return val;
             }
-            if (typeof val === 'function') {
-              return val.bind(target);
-            }
-            return val;
           }
         });
       };
@@ -619,36 +628,72 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
 
       const totalPages = pageElements.length;
 
-      for (let i = 0; i < totalPages; i++) {
+       for (let i = 0; i < totalPages; i++) {
         const element = pageElements[i] as HTMLElement;
         setProgressText(`Converting page layout ${i + 1} of ${totalPages}...`);
         
-        // Render element to canvas
-        // Important: DO NOT use allowTaint: true as it causes a SecurityError when toDataURL is called on canvas element.
-        // Also avoid windowWidth and windowHeight which clip pages on narrow mobile screens/iframes.
-        const canvas = await html2canvas(element, {
-          scale: 2,
-          useCORS: true,
-          allowTaint: false,
-          logging: false,
-          scrollX: 0,
-          scrollY: 0,
-          backgroundColor: '#ffffff',
-          width: element.offsetWidth || 794,
-          height: element.offsetHeight || 1123,
-        });
+        try {
+          // Render element to canvas
+          // Important: DO NOT use allowTaint: true as it causes a SecurityError when toDataURL is called on canvas element.
+          // Also avoid windowWidth and windowHeight which clip pages on narrow mobile screens/iframes.
+          const canvas = await html2canvas(element, {
+            scale: 2,
+            useCORS: true,
+            allowTaint: false,
+            logging: false,
+            scrollX: 0,
+            scrollY: 0,
+            backgroundColor: '#ffffff',
+            width: element.offsetWidth || 794,
+            height: element.offsetHeight || 1123,
+          });
 
-        const imgData = canvas.toDataURL('image/jpeg', 0.95);
-        
-        // A4 dimensions
-        const pdfWidth = 210;
-        const pdfHeight = 297;
-        
-        if (i > 0) {
-          pdf.addPage();
+          const imgData = canvas.toDataURL('image/jpeg', 0.95);
+          
+          // A4 dimensions
+          const pdfWidth = 210;
+          const pdfHeight = 297;
+          
+          if (i > 0) {
+            pdf.addPage();
+          }
+          
+          pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
+        } catch (pageError) {
+          console.error(`Error rendering page ${i + 1}:`, pageError);
+          // Retry without useCORS / allowTaint safely to see if that resolves cross-origin problems
+          try {
+            const canvasFallback = await html2canvas(element, {
+              scale: 1.5,
+              useCORS: false,
+              allowTaint: true,
+              logging: false,
+              scrollX: 0,
+              scrollY: 0,
+              backgroundColor: '#ffffff',
+              width: element.offsetWidth || 794,
+              height: element.offsetHeight || 1123,
+            });
+            const imgData = canvasFallback.toDataURL('image/jpeg', 0.9);
+            const pdfWidth = 210;
+            const pdfHeight = 297;
+            if (i > 0) {
+              pdf.addPage();
+            }
+            pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
+          } catch (fallbackError) {
+            console.error(`Complete failure on page ${i + 1}:`, fallbackError);
+            if (i > 0) {
+              pdf.addPage();
+            }
+            pdf.setFont("helvetica", "bold");
+            pdf.setFontSize(14);
+            pdf.text(`[Error rendering Proposal Page ${i + 1}]`, 20, 50);
+            pdf.setFont("helvetica", "normal");
+            pdf.setFontSize(10);
+            pdf.text('This page contained complex resources or cross-origin images that could not be processed directly.', 20, 60);
+          }
         }
-        
-        pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
       }
 
       setProgressText('Wrapping and downloading strategic asset...');
@@ -1329,7 +1374,7 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
               COMMERCIAL PROPOSAL FOR
             </p>
             <h1 className="font-serif text-5xl md:text-6xl font-bold text-slate-900 leading-tight tracking-tight mb-6">
-              {isBranding ? "Visual Branding & Identity" : "Custom Web Software Architecture"}
+              {isBranding ? "Visual Branding & Identity" : "Proposed Website Structure & Functionality"}
             </h1>
             <div className="w-24 h-1 bg-[#d3af00] mb-8 rounded-full"></div>
             
