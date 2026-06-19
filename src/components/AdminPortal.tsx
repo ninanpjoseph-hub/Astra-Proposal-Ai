@@ -3,10 +3,12 @@ import {
   Plus, Trash2, Calendar, CheckSquare, Square, Users, Mail, ShieldAlert, 
   BarChart3, Activity, Bell, Lock, Unlock, LogOut, Check, ChevronDown, 
   Clock, RefreshCw, AlertCircle, TrendingUp, Sparkles, UserCheck, UserX,
-  FileText, Shield, Sparkle, Coins, DollarSign, Wallet, CreditCard
+  FileText, Shield, Sparkle, Coins, DollarSign, Wallet, CreditCard,
+  FilePlus, ClipboardList
 } from 'lucide-react';
 import { Proposal, User, UserRole, ProposalStatus, Reminder, ActivityLog } from '../types';
 import { formatQAR, generateId, triggerAutomatedFollowUp } from '../proposalUtils';
+import { InvoiceModal, StatementOfAccountModal } from './FinanceModals';
 
 interface AdminPortalProps {
   proposals: Proposal[];
@@ -80,6 +82,10 @@ export default function AdminPortal({
   };
 
   const [showLoginModal, setShowLoginModal] = useState<boolean>(false);
+  
+  // Finance Modal States
+  const [activeInvoiceProposal, setActiveInvoiceProposal] = useState<Proposal | null>(null);
+  const [activeStatementProposal, setActiveStatementProposal] = useState<Proposal | null>(null);
   
   // Login credentials mock state
   const [loginEmail, setLoginEmail] = useState<string>('');
@@ -2454,19 +2460,39 @@ export default function AdminPortal({
                         </div>
                       </div>
 
-                      {/* Action Button */}
-                      <button
-                        onClick={() => {
-                          if (onViewProposalDetail) {
-                            onViewProposalDetail(p, 'payment');
-                          } else {
-                            alert(`Please navigate to raw details view manually for proposal ${p.id}.`);
-                          }
-                        }}
-                        className="w-full py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-xl shadow-xs hover:shadow-sm transition-all text-center cursor-pointer flex items-center justify-center gap-1.5"
-                      >
-                        <CreditCard className="h-3.5 w-3.5" /> View Details & Breakdown
-                      </button>
+                      {/* Action Button Stack */}
+                      <div className="flex flex-col gap-2 w-full mt-3">
+                        <button
+                          onClick={() => {
+                            if (onViewProposalDetail) {
+                              onViewProposalDetail(p, 'payment');
+                            } else {
+                              alert(`Please navigate to raw details view manually for proposal ${p.id}.`);
+                            }
+                          }}
+                          className="w-full py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-xl shadow-xs hover:shadow-sm transition-all text-center cursor-pointer flex items-center justify-center gap-1.5"
+                        >
+                          <CreditCard className="h-3.5 w-3.5" /> View Details & Breakdown
+                        </button>
+                        
+                        <button
+                          onClick={() => {
+                            setActiveInvoiceProposal(p);
+                          }}
+                          className="w-full py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-xl shadow-xs hover:shadow-sm transition-all text-center cursor-pointer flex items-center justify-center gap-1.5"
+                        >
+                          <FilePlus className="h-3.5 w-3.5" /> Create Invoice
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            setActiveStatementProposal(p);
+                          }}
+                          className="w-full py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-xl shadow-xs hover:shadow-sm transition-all text-center cursor-pointer flex items-center justify-center gap-1.5"
+                        >
+                          <ClipboardList className="h-3.5 w-3.5" /> Generate Statement of Account
+                        </button>
+                      </div>
                     </div>
                   );
                 })}
@@ -2564,6 +2590,22 @@ export default function AdminPortal({
             </div>
           </div>
         </div>
+      )}
+
+      {activeInvoiceProposal && (
+        <InvoiceModal
+          proposal={activeInvoiceProposal}
+          onClose={() => setActiveInvoiceProposal(null)}
+          currentUser={currentUser}
+        />
+      )}
+
+      {activeStatementProposal && (
+        <StatementOfAccountModal
+          proposal={activeStatementProposal}
+          onClose={() => setActiveStatementProposal(null)}
+          currentUser={currentUser}
+        />
       )}
 
     </div>
