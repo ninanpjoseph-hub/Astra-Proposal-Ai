@@ -14,18 +14,16 @@ const router = express.Router();
   }
 
   try {
-    // Drop old table to ensure we recreate it with the precise requested structure and constraint keys
-    await query("DROP TABLE IF EXISTS `proposal_payments`");
-    
+    // Ensure table exists with correct schema matching our query field properties
     await query(`
-      CREATE TABLE \`proposal_payments\` (
+      CREATE TABLE IF NOT EXISTS \`proposal_payments\` (
         \`id\` VARCHAR(50) NOT NULL,
         \`proposal_id\` VARCHAR(50) NOT NULL,
-        \`payment_number\` INT NOT NULL,
         \`amount\` DECIMAL(12,2) NOT NULL DEFAULT 0.00,
         \`payment_date\` DATE NOT NULL,
-        \`payment_reference\` VARCHAR(255) NULL,
-        \`payment_method\` VARCHAR(100) NOT NULL DEFAULT 'Bank Transfer',
+        \`reference\` VARCHAR(255) NULL,
+        \`method\` VARCHAR(100) NOT NULL DEFAULT 'Bank Transfer',
+        \`type\` VARCHAR(50) NOT NULL DEFAULT 'Custom',
         \`notes\` TEXT NULL,
         \`recorded_by\` VARCHAR(50) NULL,
         \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -35,7 +33,7 @@ const router = express.Router();
         CONSTRAINT \`fk_proposal_payments_user\` FOREIGN KEY (\`recorded_by\`) REFERENCES \`users\` (\`id\`) ON DELETE SET NULL
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
-    console.log("✔️ [Migration] Managed successfully: proposal_payments table dropped and recreated with requested constraints, columns, and indexes.");
+    console.log("✔️ [Migration] Managed successfully: proposal_payments table checked/created with correct columns.");
   } catch (err: any) {
     console.error("Migration error creating proposal_payments table:", err);
   }

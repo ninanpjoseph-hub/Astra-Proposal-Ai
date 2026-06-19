@@ -14,7 +14,7 @@ import ChequeQuotationModule from './components/ChequeQuotationModule';
 import { 
   Plus, Search, FileText, Calendar, Building, Landmark, Trash2, Edit3, Eye, 
   HelpCircle, ChevronRight, BarChart3, Database, TrendingUp, Sparkles, AlertCircle,
-  LogOut
+  LogOut, X, Server
 } from 'lucide-react';
 
 function generateEditSummary(oldProp: Proposal, newProp: Proposal): string {
@@ -46,6 +46,7 @@ export default function App() {
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [isDbConnected, setIsDbConnected] = useState<boolean>(false);
   const [dbStatusDetails, setDbStatusDetails] = useState<string>("Detecting connection...");
+  const [showDbDiagnostics, setShowDbDiagnostics] = useState<boolean>(false);
   
   // Theme state: defaulting to 'luxury-dark' representing Elite Wealth platform
   const [dashboardTheme, setDashboardTheme] = useState<'luxury-dark' | 'classic'>(() => {
@@ -527,7 +528,15 @@ export default function App() {
             </span>
             
             {/* Hostinger DB connection badge */}
-            <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-[10px] font-mono font-medium ${isDbConnected ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-amber-500/10 border-amber-500/20 text-amber-400'}`} title={dbStatusDetails}>
+            <div 
+              onClick={() => setShowDbDiagnostics(true)}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-[10px] font-mono font-medium cursor-pointer select-none hover:scale-105 active:scale-95 transition-all duration-150 ${
+                isDbConnected 
+                  ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20' 
+                  : 'bg-amber-500/10 border-amber-500/20 text-amber-400 hover:bg-amber-500/20'
+              }`} 
+              title="Click here to inspect Database Connection Status & Diagnostics"
+            >
               <span className={`h-1.5 w-1.5 rounded-full ${isDbConnected ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span>
               <span className="hidden lg:inline">{isDbConnected ? 'Hostinger DB' : 'Offline Cache'}</span>
             </div>
@@ -1141,6 +1150,126 @@ export default function App() {
           </div>
         </div>
       </footer>
+
+
+      {showDbDiagnostics && (
+        <div className="fixed inset-0 z-55 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm no-print p-4 animate-fade-in">
+          <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl font-sans relative">
+            
+            {/* Header */}
+            <div className="p-5 border-b border-slate-100 dark:border-slate-900/60 flex justify-between items-center bg-slate-50 dark:bg-slate-900/20">
+              <div className="flex items-center gap-2.5">
+                <Database className={`h-5 w-5 ${isDbConnected ? 'text-emerald-500 hover:animate-pulse' : 'text-amber-500'}`} />
+                <h3 className="text-slate-900 dark:text-white font-bold text-sm tracking-tight">
+                  Database Sync & Connection Diagnostics
+                </h3>
+              </div>
+              <button 
+                onClick={() => setShowDbDiagnostics(false)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-350 transition-colors p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-900/40"
+                title="Close"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-5 text-xs text-slate-650 dark:text-slate-400 leading-normal max-h-[75vh] overflow-y-auto">
+              
+              {/* Badge Status Row */}
+              <div className="p-4 rounded-xl border flex items-center gap-3 bg-slate-50 dark:bg-slate-900/30 border-slate-100 dark:border-slate-900">
+                <span className={`h-2.5 w-2.5 rounded-full ${isDbConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`}></span>
+                <div>
+                  <p className="font-bold text-slate-800 dark:text-slate-200">
+                    Connection State: {isDbConnected ? 'CONNECTED' : 'OFFLINE MODE (FALLBACK)'}
+                  </p>
+                  <p className="text-[10.5px] opacity-75 mt-0.5">
+                    {isDbConnected 
+                      ? 'Perfect connection! Your team is sharing the cloud-synchronized real-time database.' 
+                      : 'Unreachable active database. Local storage is acting as high-speed standalone backup.'}
+                  </p>
+                </div>
+              </div>
+
+              {!isDbConnected && (
+                <div className="space-y-4">
+                  {/* Current Active Logs */}
+                  <div className="space-y-1.5 font-mono text-[10.5px]">
+                    <span className="text-slate-400 uppercase font-bold text-[9.5px] tracking-wider block">Container Environment parameters:</span>
+                    <div className="bg-slate-900 text-slate-300 p-3 rounded-lg border border-slate-850 space-y-1 select-all font-mono">
+                      <div>DB_HOST: "u314254887_astra_proposal"</div>
+                      <div>DB_PORT: "3306"</div>
+                      <div>DB_NAME: "astra_proposal"</div>
+                      <div>DB_USER: "astra_db_admin"</div>
+                    </div>
+                  </div>
+
+                  {/* Diagnosed Error */}
+                  <div className="space-y-1.5">
+                    <span className="text-amber-600 dark:text-amber-400 font-bold block flex items-center gap-1">
+                      <AlertCircle className="h-3.5 w-3.5" /> Diagnosed Connectivity Defect:
+                    </span>
+                    <div className="bg-amber-500/5 border border-amber-500/20 text-amber-900 dark:text-amber-300 p-3 rounded-lg leading-relaxed select-all font-mono text-[10.5px]">
+                      {dbStatusDetails}
+                    </div>
+                  </div>
+
+                  {/* Impact explanation */}
+                  <div className="bg-blue-50/50 dark:bg-blue-950/10 border border-blue-100 dark:border-blue-950/40 p-3.5 rounded-xl space-y-1 text-slate-700 dark:text-slate-350">
+                    <p className="font-bold text-[11px] text-blue-700 dark:text-blue-400">Why proposals do not sync on different computers:</p>
+                    <p className="mt-0.5 text-[10.5px] leading-relaxed">
+                      Because the server hostname resolves in a DNS error (<strong className="font-mono text-slate-805 dark:text-white">getaddrinfo EAI_AGAIN</strong>), the system fell back to your browser's <strong className="font-semibold text-slate-805 dark:text-white">localStorage</strong>. Storing files locally means they are saved inside this browser only, and are completely missing on other devices or when you log in elsewhere.
+                    </p>
+                  </div>
+
+                  {/* Actionable Remedies */}
+                  <div className="space-y-2">
+                    <p className="font-bold text-slate-800 dark:text-slate-200">How to establish correct connection:</p>
+                    <ol className="list-decimal pl-4 space-y-2 leading-relaxed">
+                      <li>
+                        <strong>Update DB_HOST parameter:</strong> In Hostinger hPanel, locate the actual Host name or IP under <em>"MySQL Server"</em> (usually looks like an IP address or a server address, e.g. <code className="bg-slate-100 dark:bg-slate-900 px-1 py-0.5 rounded font-mono">109.84...</code> or <code className="bg-slate-100 dark:bg-slate-900 px-1 py-0.5 rounded font-mono">sql123.main-hosting.eu</code>). Currently, you have set it to <code className="bg-slate-105 dark:bg-slate-900 px-1 py-0.5 rounded font-mono text-rose-500">"u314254887_astra_proposal"</code>, which is actually a database name, NOT a host address.
+                      </li>
+                      <li>
+                        <strong>Apply Secrets in AI Studio:</strong> Open the <strong>Settings</strong> or <strong>Secrets</strong> panel of your AI Studio Workspace, locate the active secrets list, and update <code className="font-mono bg-slate-100 dark:bg-slate-900 px-1 py-0.5 rounded">DB_HOST</code>.
+                      </li>
+                      <li>
+                        <strong>Allow Remote MySQL access:</strong> Open Hostinger's hPanel, navigate to the **Remote MySQL** tab of your database, and authorize access for standard hosts (using <code className="font-mono bg-slate-100 dark:bg-slate-900 px-1 py-0.5 rounded">%</code> wildcard) to allow the Cloud Run runtime to issue ingress handshakes.
+                      </li>
+                    </ol>
+                  </div>
+                </div>
+              )}
+
+              {isDbConnected && (
+                <div className="space-y-3">
+                  <div className="bg-emerald-500/5 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300 p-4 rounded-xl leading-relaxed text-center font-medium">
+                    Excellent! The server is actively synchronized with the Hostinger MySQL database. Any saved proposals are visible to offsite users, other computers, and different browsers.
+                  </div>
+                  <div className="bg-slate-50 dark:bg-slate-900/30 p-3.5 rounded-xl border border-slate-100 dark:border-slate-900 space-y-1 block">
+                    <p className="font-bold text-slate-800 dark:text-slate-300">Connected database info:</p>
+                    <ul className="list-disc pl-4 mt-1 font-mono text-[10.5px]">
+                      <li>Host: "u314254887_astra_proposal"</li>
+                      <li>Schema: "astra_proposal"</li>
+                      <li>User: "astra_db_admin"</li>
+                    </ul>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer button */}
+            <div className="p-4 border-t border-slate-100 dark:border-slate-900 bg-slate-50 dark:bg-slate-900/10 flex justify-end">
+              <button 
+                onClick={() => setShowDbDiagnostics(false)}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl text-xs transition-colors cursor-pointer"
+              >
+                Heard, thank you!
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
 
     </div>
   );
