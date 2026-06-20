@@ -153,6 +153,40 @@ export interface Proposal {
   letterheadFullPage?: boolean; // Whether the custom letterhead is a full A4 page template
   showWatermark?: boolean; // Whether to display a clean background watermark
   customWatermarkText?: string; // Optional custom watermark text
+  supplierItems?: SupplierLinkedItem[]; // Supplier-linked items for internal calculation/auditing
+}
+
+export interface Supplier {
+  id: string;
+  name: string;
+  contactPerson?: string;
+  mobile?: string;
+  email?: string;
+  companyName?: string;
+  notes?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface SupplierPayment {
+  id: string;
+  supplierId: string;
+  proposalId?: string;
+  amount: number;
+  paymentDate: string;
+  reference?: string;
+  notes?: string;
+  createdAt?: string;
+}
+
+export interface SupplierLinkedItem {
+  id: string;
+  description: string;
+  supplierId: string;
+  supplierName: string;
+  purchaseCost: number; // buy price (per unit)
+  unitPrice: number;    // sell price (per unit)
+  qty: number;
 }
 
 export enum UserRole {

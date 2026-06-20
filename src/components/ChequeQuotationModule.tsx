@@ -11,6 +11,9 @@ export interface ChequeQuotationItem {
   description: string;
   unitPrice: number;
   qty: number;
+  supplierId?: string;
+  supplierName?: string;
+  purchaseCost?: number;
 }
 
 export interface ChequeQuotationReceipt {
@@ -162,6 +165,28 @@ export default function ChequeQuotationModule() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeQuotation, setActiveQuotation] = useState<ChequeQuotation | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [suppliersList, setSuppliersList] = useState<any[]>([]);
+
+  useEffect(() => {
+    // Read the current supplier list
+    const loadLocalSuppliers = () => {
+      const cached = localStorage.getItem('prowess_suppliers_v1');
+      if (cached) {
+        setSuppliersList(JSON.parse(cached));
+      } else {
+        fetch('/api/proposals/suppliers/all')
+          .then(res => res.json())
+          .then(data => {
+            if (Array.isArray(data)) {
+              setSuppliersList(data);
+              localStorage.setItem('prowess_suppliers_v1', JSON.stringify(data));
+            }
+          })
+          .catch(e => console.warn("Failed fetching suppliers inside Cheque Printing model", e));
+      }
+    };
+    loadLocalSuppliers();
+  }, [activeQuotation, isEditing]);
 
   // Invoice Mode states
   const [chequeViewMode, setChequeViewMode] = useState<'quotation' | 'invoice'>('quotation');
@@ -1068,6 +1093,67 @@ export default function ChequeQuotationModule() {
                             className="w-full px-2 py-1 border border-slate-300 rounded text-xs font-mono"
                           />
                         </div>
+                      </div>
+
+                      {/* SUPPLIER SCM LINKING */}
+                      <div className="border-t border-dashed border-slate-200 mt-2 pt-2 text-[10.5px] space-y-1.5">
+                        <div className="flex items-center gap-1.5">
+                          <input 
+                            type="checkbox" 
+                            id={`sourced-chk-${item.id}`}
+                            checked={!!item.supplierId}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                const defaultSup = suppliersList[0];
+                                handleUpdateItemRow(item.id, 'supplierId', defaultSup?.id || 'default_sup');
+                                handleUpdateItemRow(item.id, 'supplierName', defaultSup?.name || 'Partner Supplier');
+                                handleUpdateItemRow(item.id, 'purchaseCost', Math.round(item.unitPrice * 0.7)); // default purchase cost: 70% of unit price
+                              } else {
+                                handleUpdateItemRow(item.id, 'supplierId', '');
+                                handleUpdateItemRow(item.id, 'supplierName', '');
+                                handleUpdateItemRow(item.id, 'purchaseCost', 0);
+                              }
+                            }}
+                            className="cursor-pointer rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5"
+                          />
+                          <label htmlFor={`sourced-chk-${item.id}`} className="font-bold text-slate-600 cursor-pointer text-[9.5px]">
+                            Sourced from external Supplier (Internal only)
+                          </label>
+                        </div>
+
+                        {!!item.supplierId && (
+                          <div className="grid grid-cols-2 gap-2 p-2 bg-slate-100/50 border border-slate-150 rounded-lg">
+                            <div className="space-y-0.5">
+                              <label className="text-[8px] font-extrabold uppercase text-slate-400 block">Sourcing Partner</label>
+                              <select
+                                value={item.supplierId || ''}
+                                onChange={(e) => {
+                                  const selectedId = e.target.value;
+                                  const supObj = suppliersList.find(s => s.id === selectedId);
+                                  handleUpdateItemRow(item.id, 'supplierId', selectedId);
+                                  handleUpdateItemRow(item.id, 'supplierName', supObj ? supObj.name : 'Partner Supplier');
+                                }}
+                                className="w-full p-1 border border-slate-300 rounded bg-white text-[10.5px]"
+                              >
+                                {suppliersList.map(s => (
+                                  <option key={s.id} value={s.id}>{s.name}</option>
+                                ))}
+                                {suppliersList.length === 0 && (
+                                  <option value="default_sup">Doha Tech Hub Systems</option>
+                                )}
+                              </select>
+                            </div>
+                            <div className="space-y-0.5">
+                              <label className="text-[8px] font-extrabold uppercase text-slate-400 block">Purchase Cost ({formCurrency})</label>
+                              <input
+                                type="number"
+                                value={item.purchaseCost || 0}
+                                onChange={(e) => handleUpdateItemRow(item.id, 'purchaseCost', parseFloat(e.target.value) || 0)}
+                                className="w-full p-1 border border-slate-300 rounded text-[10.5px] font-mono"
+                              />
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}

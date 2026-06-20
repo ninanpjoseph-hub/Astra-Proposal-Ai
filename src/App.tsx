@@ -11,10 +11,11 @@ import ProposalDocumentView from './components/ProposalDocumentView';
 import AdminPortal from './components/AdminPortal';
 import LandingPage from './components/LandingPage';
 import ChequeQuotationModule from './components/ChequeQuotationModule';
+import SupplierProfitDesk from './components/SupplierProfitDesk';
 import { 
   Plus, Search, FileText, Calendar, Building, Landmark, Trash2, Edit3, Eye, 
   HelpCircle, ChevronRight, BarChart3, Database, TrendingUp, Sparkles, AlertCircle,
-  LogOut, X, Server
+  LogOut, X, Server, Users
 } from 'lucide-react';
 
 function generateEditSummary(oldProp: Proposal, newProp: Proposal): string {
@@ -109,7 +110,7 @@ export default function App() {
   // Separate view screen for reading & printing document
   const [viewingProposal, setViewingProposal] = useState<Proposal | null>(null);
   const [proposalViewTab, setProposalViewTab] = useState<'document' | 'history' | 'payment'>('document');
-  const [activeModule, setActiveModule] = useState<'proposals' | 'cheque-quotations'>('proposals');
+  const [activeModule, setActiveModule] = useState<'proposals' | 'cheque-quotations' | 'suppliers'>('proposals');
   
   // Search state
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -742,13 +743,32 @@ export default function App() {
             <Landmark className="h-4 w-4" />
             Cheque Printing Software Quotations
           </button>
+          <button
+            onClick={() => {
+              setActiveModule('suppliers');
+            }}
+            className={`py-3.5 text-xs font-serif font-extrabold uppercase tracking-wider border-b-2 transition-all cursor-pointer flex items-center gap-2 ${
+              activeModule === 'suppliers' 
+                ? isLuxury 
+                  ? 'border-[#C5A059] text-[#C5A059]' 
+                  : 'border-blue-600 text-blue-700' 
+                : isLuxury 
+                  ? 'border-transparent text-slate-400 hover:text-white' 
+                  : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <Users className="h-4 w-4" />
+            Supplier Partnership & Profits
+          </button>
         </div>
       </div>
 
       {/* PRIMARY STAGE SCREEN SPACE */}
       <main className="flex-grow max-w-7xl mx-auto px-4 md:px-6 py-8 w-full">
         
-        {activeModule === 'cheque-quotations' ? (
+        {activeModule === 'suppliers' ? (
+          <SupplierProfitDesk />
+        ) : activeModule === 'cheque-quotations' ? (
           <ChequeQuotationModule />
         ) : viewingProposal ? (
           <div id="full-screen-document-preview" className="space-y-4">

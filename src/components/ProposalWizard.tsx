@@ -75,6 +75,25 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
 
   const isBranding = proposal.type === 'branding';
 
+  const [suppliersList, setSuppliersList] = useState<any[]>([]);
+
+  useEffect(() => {
+    const list = localStorage.getItem('prowess_suppliers_v1');
+    if (list) {
+      setSuppliersList(JSON.parse(list));
+    } else {
+      fetch('/api/proposals/suppliers/all')
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data)) {
+            setSuppliersList(data);
+            localStorage.setItem('prowess_suppliers_v1', JSON.stringify(data));
+          }
+        })
+        .catch(e => console.warn("Could not load suppliers inside Proposal Wizard", e));
+    }
+  }, []);
+
   // Enhanced scope module editing states
   const [customItemTitle, setCustomItemTitle] = useState('');
   const [customItemDesc, setCustomItemDesc] = useState('');
@@ -1821,6 +1840,152 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
                   </div>
                 </div>
               )}
+
+              {/* Supplier Linked items list inside Proposal */}
+              <div className="border border-slate-200 mt-6 p-4 rounded-xl bg-slate-50/50 space-y-3">
+                <div className="flex justify-between items-center border-b border-slate-150 pb-2">
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-800">Third-Party Sourcing Margin Planner</h4>
+                    <p className="text-[10px] text-slate-400">Map auxiliary items (e.g. hardware, readers, special servers) sourced from external partners.</p>
+                  </div>
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      const list = proposal.supplierItems || [];
+                      const defaultSup = suppliersList[0];
+                      const newItem = {
+                        id: 'item_' + Math.random().toString(36).substring(2, 9),
+                        description: '',
+                        supplierId: defaultSup?.id || 'default_sup',
+                        supplierName: defaultSup?.name || 'Partner Supplier',
+                        purchaseCost: 0,
+                        unitPrice: 0,
+                        qty: 1
+                      };
+                      updateField('supplierItems', [...list, newItem]);
+                    }}
+                    className="px-2.5 py-1 bg-white hover:bg-slate-100 text-[10.5px] border border-slate-200 font-bold text-slate-705 rounded-lg flex items-center gap-1 cursor-pointer"
+                  >
+                    <Plus className="h-3.5 w-3.5" /> Add Sourced Item
+                  </button>
+                </div>
+
+                {(!proposal.supplierItems || proposal.supplierItems.length === 0) ? (
+                  <p className="text-[10.5px] text-slate-400 italic text-center py-2">No third-party sourced hardware or software items mapped yet.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {proposal.supplierItems.map((item, index) => (
+                      <div key={item.id} className="p-3 bg-white border border-slate-200 rounded-lg space-y-2 relative">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const next = (proposal.supplierItems || []).filter(x => x.id !== item.id);
+                            updateField('supplierItems', next);
+                          }}
+                          className="absolute top-2 right-2 text-slate-400 hover:text-rose-600 cursor-pointer"
+                        >
+                          ✕
+                        </button>
+                        
+                        <div className="space-y-1">
+                          <label className="text-[9px] uppercase font-bold text-slate-400">SI #{index + 1} Description</label>
+                          <input 
+                            type="text"
+                            value={item.description}
+                            placeholder="e.g. MICR Scanner System"
+                            onChange={(e) => {
+                              const next = (proposal.supplierItems || []).map(x => x.id === item.id ? { ...x, description: e.target.value } : x);
+                              updateField('supplierItems', next);
+                            }}
+                            className="w-full px-2 py-1.5 border border-slate-300 rounded text-xs"
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-2 text-xs">
+                          <div className="space-y-0.5">
+                            <label className="text-[9.5px] font-bold text-slate-500">Supplier Sourced</label>
+                            <select
+                              value={item.supplierId}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                const match = suppliersList.find(s => s.id === val);
+                                const next = (proposal.supplierItems || []).map(x => x.id === item.id ? { 
+                                  ...x, 
+                                  supplierId: val,
+                                  supplierName: match?.name || 'Partner Supplier' 
+                                } : x);
+                                updateField('supplierItems', next);
+                              }}
+                              className="w-full p-1 border border-slate-300 rounded bg-white text-[11px]"
+                            >
+                              {suppliersList.map(s => (
+                                <option key={s.id} value={s.id}>{s.name}</option>
+                              ))}
+                              {suppliersList.length === 0 && (
+                                <option value="default_sup">Doha Sourcing Co</option>
+                              )}
+                            </select>
+                          </div>
+
+                          <div className="space-y-0.5">
+                            <label className="text-[9.5px] font-bold text-slate-500">Qty</label>
+                            <input 
+                              type="number"
+                              value={item.qty}
+                              min="1"
+                              onChange={(e) => {
+                                const val = parseInt(e.target.value) || 1;
+                                const next = (proposal.supplierItems || []).map(x => x.id === item.id ? { ...x, qty: val } : x);
+                                updateField('supplierItems', next);
+                              }}
+                              className="w-full p-1 border border-slate-300 rounded text-[11px] font-mono"
+                            />
+                          </div>
+
+                          <div className="space-y-0.5">
+                            <label className="text-[9.5px] font-bold text-slate-500">Buying Price (QAR)</label>
+                            <input 
+                              type="number"
+                              value={item.purchaseCost}
+                              min="0"
+                              onChange={(e) => {
+                                const val = parseFloat(e.target.value) || 0;
+                                const next = (proposal.supplierItems || []).map(x => x.id === item.id ? { ...x, purchaseCost: val } : x);
+                                updateField('supplierItems', next);
+                              }}
+                              className="w-full p-1 border border-slate-300 rounded text-[11px] font-mono"
+                            />
+                          </div>
+
+                          <div className="space-y-0.5">
+                            <label className="text-[9.5px] font-bold text-slate-500">Selling Price (QAR)</label>
+                            <input 
+                              type="number"
+                              value={item.unitPrice}
+                              min="0"
+                              onChange={(e) => {
+                                const val = parseFloat(e.target.value) || 0;
+                                const next = (proposal.supplierItems || []).map(x => x.id === item.id ? { ...x, unitPrice: val } : x);
+                                updateField('supplierItems', next);
+                              }}
+                              className="w-full p-1 border border-slate-300 rounded text-[11px] font-mono"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Internal Margin Analysis */}
+                        <div className="bg-slate-50 p-1.5 px-2.5 rounded border border-dashed border-slate-200 flex justify-between items-center text-[10px] text-slate-500 font-mono">
+                          <span>Purchase Cost: { (item.purchaseCost * item.qty).toLocaleString() } QAR</span>
+                          <span>Selling Cost: { (item.unitPrice * item.qty).toLocaleString() } QAR</span>
+                          <span className="font-bold text-emerald-600">
+                            Profit: +{ ((item.unitPrice * item.qty) - (item.purchaseCost * item.qty)).toLocaleString() } QAR
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               {/* Shared payment details */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-200">

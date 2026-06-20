@@ -14,6 +14,54 @@ const router = express.Router();
   }
 
   try {
+    await query("ALTER TABLE proposals ADD COLUMN supplier_items JSON NULL");
+    console.log("✔️ [Migration] Managed successfully: supplier_items JSON added to proposals.");
+  } catch (err: any) {
+    // If it already exists, ignore safely
+  }
+
+  try {
+    await query(`
+      CREATE TABLE IF NOT EXISTS \`suppliers\` (
+        \`id\` VARCHAR(50) NOT NULL,
+        \`name\` VARCHAR(255) NOT NULL,
+        \`contact_person\` VARCHAR(255) NULL,
+        \`mobile\` VARCHAR(50) NULL,
+        \`email\` VARCHAR(255) NULL,
+        \`company_name\` VARCHAR(255) NULL,
+        \`notes\` TEXT NULL,
+        \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        \`updated_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (\`id\`)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+    console.log("✔️ [Migration] Managed successfully: suppliers table checked/created.");
+  } catch (err: any) {
+    console.error("Migration error creating suppliers table:", err);
+  }
+
+  try {
+    await query(`
+      CREATE TABLE IF NOT EXISTS \`supplier_payments\` (
+        \`id\` VARCHAR(50) NOT NULL,
+        \`supplier_id\` VARCHAR(50) NOT NULL,
+        \`proposal_id\` VARCHAR(50) NULL,
+        \`amount\` DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+        \`payment_date\` DATE NOT NULL,
+        \`reference\` VARCHAR(255) NULL,
+        \`notes\` TEXT NULL,
+        \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (\`id\`),
+        KEY \`idx_supplier_id\` (\`supplier_id\`),
+        CONSTRAINT \`fk_supplier_payments_supplier\` FOREIGN KEY (\`supplier_id\`) REFERENCES \`suppliers\` (\`id\`) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+    console.log("✔️ [Migration] Managed successfully: supplier_payments table checked/created.");
+  } catch (err: any) {
+    console.error("Migration error creating supplier_payments table:", err);
+  }
+
+  try {
     // Ensure table exists with correct schema matching our query field properties
     await query(`
       CREATE TABLE IF NOT EXISTS \`proposal_payments\` (
@@ -254,8 +302,8 @@ router.post('/', async (req, res) => {
         weeks, development_cost, plugin_cost, maintenance_cost, additional_cost, total_cost, payment_terms,
         prepared_by_name, prepared_by_company, prepared_by_title, prepared_by_user_id, assigned_user_id, assigned_user_name,
         shared_user_ids, custom_letterhead, letterhead_height, letterhead_mode, letterhead_full_page, show_watermark, custom_watermark_text,
-        created_at, updated_at, payment_entries
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        created_at, updated_at, payment_entries, supplier_items
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const sharedUsersJson = JSON.stringify(p.sharedUserIds || []);
@@ -264,6 +312,7 @@ router.post('/', async (req, res) => {
     const milestonesJson = JSON.stringify(p.milestones || []);
     const resourceCostsJson = JSON.stringify(p.resourceCosts || []);
     const paymentEntriesJson = JSON.stringify(p.paymentEntries || []);
+    const supplierItemsJson = JSON.stringify(p.supplierItems || []);
 
     const params = [
       p.id, p.type, p.status || 'Draft', clientId, p.clientName, p.companyName, p.proposalDate, p.briefDescription || '',
@@ -272,7 +321,7 @@ router.post('/', async (req, res) => {
       p.preparedByName || '', p.preparedByCompany || '', p.preparedByTitle || '', p.preparedByUserId || null, p.assignedUserId || null, p.assignedUserName || '',
       sharedUsersJson, p.customLetterhead || null, p.letterheadHeight || 100, p.letterheadMode || 'minimal', p.letterheadFullPage ? 1 : 0, p.showWatermark ? 1 : 0, p.customWatermarkText || '',
       p.createdAt || new Date().toISOString(), p.updatedAt || new Date().toISOString(),
-      paymentEntriesJson
+      paymentEntriesJson, supplierItemsJson
     ];
 
     await query(sql, params);
@@ -446,6 +495,104 @@ router.delete('/:proposalId/payments/:paymentId', async (req, res) => {
     res.json({ success: true, message: 'Payment voided successfully.' });
   } catch (error: any) {
     res.status(500).json({ error: 'Failed to void payment: ' + error.message });
+  }
+});
+
+/**
+ * GET All Suppliers
+ */
+router.get('/suppliers/all', async (req, res) => {
+  try {
+    const suppliers = await query('SELECT * FROM suppliers ORDER BY name ASC');
+    res.json(suppliers);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST Save or replace Supplier
+ */
+router.post('/suppliers/save', async (req, res) => {
+  const s = req.body;
+  try {
+    await query(`
+      REPLACE INTO suppliers (id, name, contact_person, mobile, email, company_name, notes)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `, [
+      s.id || 'sup_' + Math.random().toString(36).substring(2, 11),
+      s.name,
+      s.contactPerson || s.contact_person || '',
+      s.mobile || '',
+      s.email || '',
+      s.companyName || s.company_name || '',
+      s.notes || ''
+    ]);
+    res.json({ success: true, message: 'Supplier saved.' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * DELETE Supplier
+ */
+router.delete('/suppliers/delete/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    await query('DELETE FROM suppliers WHERE id = ?', [id]);
+    res.json({ success: true, message: 'Supplier deleted.' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * GET All Supplier Payments
+ */
+router.get('/supplier-payments/all', async (req, res) => {
+  try {
+    const payments = await query('SELECT * FROM supplier_payments ORDER BY payment_date DESC');
+    res.json(payments);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST Log Supplier Payment
+ */
+router.post('/supplier-payments/save', async (req, res) => {
+  const p = req.body;
+  try {
+    await query(`
+      REPLACE INTO supplier_payments (id, supplier_id, proposal_id, amount, payment_date, reference, notes)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `, [
+      p.id || 'sup_pay_' + Math.random().toString(36).substring(2, 11),
+      p.supplierId || p.supplier_id,
+      p.proposalId || p.proposal_id || null,
+      parseFloat(p.amount) || 0.00,
+      p.paymentDate || p.payment_date || new Date().toISOString().split('T')[0],
+      p.reference || '',
+      p.notes || ''
+    ]);
+    res.json({ success: true, message: 'Supplier payment saved successfully.' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * DELETE Supplier Payment
+ */
+router.delete('/supplier-payments/delete/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    await query('DELETE FROM supplier_payments WHERE id = ?', [id]);
+    res.json({ success: true, message: 'Supplier payment deleted.' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
   }
 });
 
