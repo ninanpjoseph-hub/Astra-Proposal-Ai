@@ -173,16 +173,7 @@ export default function ChequeQuotationModule() {
   const [attnDepartmentOverride, setAttnDepartmentOverride] = useState('Finance Department');
   const [phoneNoOverride, setPhoneNoOverride] = useState('+974 4400 0000');
 
-  // Load invoice overrides when active quotation changes
-  useEffect(() => {
-    if (activeQuotation) {
-      setInvoiceNoOverride(`INV-${activeQuotation.refNo.replace('AST-CQ-', '')}`);
-      setInvoiceDateOverride(activeQuotation.date || new Date().toISOString().substring(0, 10));
-      setCustomerIDOverride(`CUST-${activeQuotation.refNo.replace(/[^0-9]/g, '') || '912'}`);
-      setCustomerPOOverride(`PO-${activeQuotation.refNo.replace(/[^0-9]/g, '') || '45021'}`);
-      setPaymentTermsOverride(activeQuotation.terms?.[0] || '100% on installation');
-    }
-  }, [activeQuotation]);
+
 
   // Payment Logging panel states (for active adding)
   const [logAmount, setLogAmount] = useState<string>('');
@@ -309,6 +300,18 @@ export default function ChequeQuotationModule() {
   const [formPrepTitle, setFormPrepTitle] = useState('PROJECT DIRECTOR');
   const [formPrepCompany, setFormPrepCompany] = useState('ASTRA TECH');
   const [formPrepLocation, setFormPrepLocation] = useState('DOHA – QATAR');
+
+  // Load invoice overrides when active quotation changes
+  useEffect(() => {
+    if (activeQuotation) {
+      const ref = activeQuotation.refNo || formRefNo || 'PENDING';
+      setInvoiceNoOverride(`INV-${ref.replace('AST-CQ-', '')}`);
+      setInvoiceDateOverride(activeQuotation.date || formDate || new Date().toISOString().substring(0, 10));
+      setCustomerIDOverride(`CUST-${ref.replace(/[^0-9]/g, '') || '912'}`);
+      setCustomerPOOverride(`PO-${ref.replace(/[^0-9]/g, '') || '45021'}`);
+      setPaymentTermsOverride(activeQuotation.terms?.[0] || (formTerms && formTerms[0]) || '100% on installation');
+    }
+  }, [activeQuotation, formRefNo, formDate, formTerms]);
 
   const [newTermText, setNewTermText] = useState('');
   const [isCopied, setIsCopied] = useState(false);
