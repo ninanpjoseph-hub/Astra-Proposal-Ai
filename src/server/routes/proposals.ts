@@ -42,6 +42,29 @@ const router = express.Router();
 
   try {
     await query(`
+      CREATE TABLE IF NOT EXISTS \`supplier_items\` (
+        \`id\` VARCHAR(50) NOT NULL,
+        \`proposal_id\` VARCHAR(50) NOT NULL,
+        \`supplier_id\` VARCHAR(50) NOT NULL,
+        \`description\` VARCHAR(255) NOT NULL,
+        \`qty\` INT NOT NULL DEFAULT 1,
+        \`purchase_cost\` DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+        \`unit_price\` DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+        \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (\`id\`),
+        KEY \`idx_proposal_id\` (\`proposal_id\`),
+        KEY \`idx_supplier_id\` (\`supplier_id\`),
+        CONSTRAINT \`fk_supplier_items_proposal\` FOREIGN KEY (\`proposal_id\`) REFERENCES \`proposals\` (\`id\`) ON DELETE CASCADE,
+        CONSTRAINT \`fk_supplier_items_supplier\` FOREIGN KEY (\`supplier_id\`) REFERENCES \`suppliers\` (\`id\`) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+    console.log("✔️ [Migration] Managed successfully: supplier_items relation table checked/created.");
+  } catch (err: any) {
+    console.error("Migration error creating supplier_items table:", err);
+  }
+
+  try {
+    await query(`
       CREATE TABLE IF NOT EXISTS \`supplier_payments\` (
         \`id\` VARCHAR(50) NOT NULL,
         \`supplier_id\` VARCHAR(50) NOT NULL,
@@ -218,6 +241,50 @@ router.get('/', async (req, res) => {
     sql += ' ORDER BY updated_at DESC';
 
     const records = await query(sql, params);
+
+    // Supplement proposals with relational supplier items if present
+    try {
+      const allSupplierItems = await query('SELECT si.*, s.name AS supplier_name FROM supplier_items si LEFT JOIN suppliers s ON si.supplier_id = s.id');
+      const itemsMap: Record<string, any[]> = {};
+      
+      allSupplierItems.forEach((it: any) => {
+        if (!itemsMap[it.proposal_id]) {
+          itemsMap[it.proposal_id] = [];
+        }
+        itemsMap[it.proposal_id].push({
+          id: it.id,
+          description: it.description,
+          supplierId: it.supplier_id,
+          supplierName: it.supplier_name || 'Partner Supplier',
+          purchaseCost: Number(it.purchase_cost) || 0,
+          unitPrice: Number(it.unit_price) || 0,
+          qty: Number(it.qty) || 1
+        });
+      });
+
+      records.forEach((rec: any) => {
+        if (itemsMap[rec.id]) {
+          rec.supplierItems = itemsMap[rec.id];
+        } else if (rec.supplier_items) {
+          rec.supplierItems = typeof rec.supplier_items === 'string'
+            ? JSON.parse(rec.supplier_items)
+            : rec.supplier_items;
+        } else {
+          rec.supplierItems = [];
+        }
+      });
+    } catch (err: any) {
+      records.forEach((rec: any) => {
+        if (rec.supplier_items) {
+          rec.supplierItems = typeof rec.supplier_items === 'string'
+            ? JSON.parse(rec.supplier_items)
+            : rec.supplier_items;
+        } else {
+          rec.supplierItems = [];
+        }
+      });
+    }
+
     res.json(records);
   } catch (error: any) {
     console.warn('Database offline, returning fallback notice:', error.message);
@@ -236,7 +303,31 @@ router.get('/:id', async (req, res) => {
     if (records.length === 0) {
       return res.status(404).json({ error: 'Proposal not found' });
     }
-    res.json(records[0]);
+    const rec = records[0];
+
+    // Supplement with relational supplier items if present
+    try {
+      const items = await query('SELECT si.*, s.name AS supplier_name FROM supplier_items si LEFT JOIN suppliers s ON si.supplier_id = s.id WHERE si.proposal_id = ?', [id]);
+      rec.supplierItems = items.map((it: any) => ({
+        id: it.id,
+        description: it.description,
+        supplierId: it.supplier_id,
+        supplierName: it.supplier_name || 'Partner Supplier',
+        purchaseCost: Number(it.purchase_cost) || 0,
+        unitPrice: Number(it.unit_price) || 0,
+        qty: Number(it.qty) || 1
+      }));
+    } catch (err: any) {
+      if (rec.supplier_items) {
+        rec.supplierItems = typeof rec.supplier_items === 'string'
+          ? JSON.parse(rec.supplier_items)
+          : rec.supplier_items;
+      } else {
+        rec.supplierItems = [];
+      }
+    }
+
+    res.json(rec);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
@@ -302,8 +393,8 @@ router.post('/', async (req, res) => {
         weeks, development_cost, plugin_cost, maintenance_cost, additional_cost, total_cost, payment_terms,
         prepared_by_name, prepared_by_company, prepared_by_title, prepared_by_user_id, assigned_user_id, assigned_user_name,
         shared_user_ids, custom_letterhead, letterhead_height, letterhead_mode, letterhead_full_page, show_watermark, custom_watermark_text,
-        created_at, updated_at, payment_entries, supplier_items
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        created_at, updated_at, payment_entries
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const sharedUsersJson = JSON.stringify(p.sharedUserIds || []);
@@ -312,7 +403,6 @@ router.post('/', async (req, res) => {
     const milestonesJson = JSON.stringify(p.milestones || []);
     const resourceCostsJson = JSON.stringify(p.resourceCosts || []);
     const paymentEntriesJson = JSON.stringify(p.paymentEntries || []);
-    const supplierItemsJson = JSON.stringify(p.supplierItems || []);
 
     const params = [
       p.id, p.type, p.status || 'Draft', clientId, p.clientName, p.companyName, p.proposalDate, p.briefDescription || '',
@@ -321,10 +411,40 @@ router.post('/', async (req, res) => {
       p.preparedByName || '', p.preparedByCompany || '', p.preparedByTitle || '', p.preparedByUserId || null, p.assignedUserId || null, p.assignedUserName || '',
       sharedUsersJson, p.customLetterhead || null, p.letterheadHeight || 100, p.letterheadMode || 'minimal', p.letterheadFullPage ? 1 : 0, p.showWatermark ? 1 : 0, p.customWatermarkText || '',
       p.createdAt || new Date().toISOString(), p.updatedAt || new Date().toISOString(),
-      paymentEntriesJson, supplierItemsJson
+      paymentEntriesJson
     ];
 
     await query(sql, params);
+
+    // Save relational supplier items
+    try {
+      await query('DELETE FROM supplier_items WHERE proposal_id = ?', [p.id]);
+      const items = p.supplierItems || [];
+      for (const item of items) {
+        await query(`
+          INSERT INTO supplier_items (id, proposal_id, supplier_id, description, qty, purchase_cost, unit_price)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        `, [
+          item.id || 'item_' + Math.random().toString(36).substring(2, 11),
+          p.id,
+          item.supplierId || 'default_sup',
+          item.description || 'Sourced Item',
+          parseInt(item.qty) || 1,
+          parseFloat(item.purchaseCost) || 0.00,
+          parseFloat(item.unitPrice) || 0.00
+        ]);
+      }
+    } catch (siError: any) {
+      console.warn('Could not save relational supplier_items:', siError.message);
+    }
+
+    // Dynamic update for legacy JSON column (if it still exists in public DB)
+    try {
+      const supplierItemsJson = JSON.stringify(p.supplierItems || []);
+      await query('UPDATE proposals SET supplier_items = ? WHERE id = ?', [supplierItemsJson, p.id]);
+    } catch (jsonErr) {
+      // Safely ignore if user dropped this column
+    }
 
     // 3. Upsert CRM Pipeline
     let pipelineStage = 'Lead';
