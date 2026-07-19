@@ -550,7 +550,46 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   const { id } = req.params;
   try {
+    // Manually delete related records from other tables to bypass any foreign key constraint holds
+    try {
+      await query('DELETE FROM crm_pipeline WHERE proposal_id = ?', [id]);
+    } catch (e: any) {
+      console.warn("Soft delete/cleanup on crm_pipeline bypassed or unsuccessful:", e.message);
+    }
+
+    try {
+      await query('DELETE FROM proposal_version_history WHERE proposal_id = ?', [id]);
+    } catch (e: any) {
+      console.warn("Soft delete/cleanup on proposal_version_history bypassed or unsuccessful:", e.message);
+    }
+
+    try {
+      await query('DELETE FROM file_attachments WHERE proposal_id = ?', [id]);
+    } catch (e: any) {
+      console.warn("Soft delete/cleanup on file_attachments bypassed or unsuccessful:", e.message);
+    }
+
+    try {
+      await query('DELETE FROM proposal_payments WHERE proposal_id = ?', [id]);
+    } catch (e: any) {
+      console.warn("Soft delete/cleanup on proposal_payments bypassed or unsuccessful:", e.message);
+    }
+
+    try {
+      await query('DELETE FROM supplier_items WHERE proposal_id = ?', [id]);
+    } catch (e: any) {
+      console.warn("Soft delete/cleanup on supplier_items bypassed or unsuccessful:", e.message);
+    }
+
+    try {
+      await query('UPDATE supplier_payments SET proposal_id = NULL WHERE proposal_id = ?', [id]);
+    } catch (e: any) {
+      console.warn("Soft delete/cleanup on supplier_payments bypassed or unsuccessful:", e.message);
+    }
+
+    // Now complete the hard delete of the main proposal
     await query('DELETE FROM proposals WHERE id = ?', [id]);
+    
     res.json({ success: true, message: 'Proposal deleted successfully from persistent database.' });
   } catch (error: any) {
     res.status(500).json({ error: error.message });

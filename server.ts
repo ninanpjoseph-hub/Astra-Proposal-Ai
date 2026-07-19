@@ -60,6 +60,33 @@ async function startServer() {
   app.delete('/api/users/:id', async (req, res) => {
     const { id } = req.params;
     try {
+      // Clean up references in other tables to bypass any foreign key constraint holds
+      try {
+        await query('UPDATE proposals SET prepared_by_user_id = NULL WHERE prepared_by_user_id = ?', [id]);
+      } catch (e: any) {
+        console.warn('Bypassed proposals prepared_by_user_id update:', e.message);
+      }
+      try {
+        await query('UPDATE proposals SET assigned_user_id = NULL, assigned_user_name = NULL WHERE assigned_user_id = ?', [id]);
+      } catch (e: any) {
+        console.warn('Bypassed proposals assigned_user_id update:', e.message);
+      }
+      try {
+        await query('UPDATE activity_log SET user_id = NULL WHERE user_id = ?', [id]);
+      } catch (e: any) {
+        console.warn('Bypassed activity_log user_id update:', e.message);
+      }
+      try {
+        await query('DELETE FROM notifications WHERE user_id = ?', [id]);
+      } catch (e: any) {
+        console.warn('Bypassed notifications delete:', e.message);
+      }
+      try {
+        await query('UPDATE proposal_payments SET recorded_by = NULL WHERE recorded_by = ?', [id]);
+      } catch (e: any) {
+        console.warn('Bypassed proposal_payments update:', e.message);
+      }
+
       await query('DELETE FROM users WHERE id = ?', [id]);
       res.json({ success: true, message: 'User deleted from DB.' });
     } catch (error: any) {
