@@ -283,7 +283,8 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
       const currentService = (currentScope as any)[serviceKey] || {};
       const updatedService = {
         ...currentService,
-        [field]: value
+        [field]: value,
+        ...(field === 'cost' ? { unitPrice: value } : {})
       };
       const updatedScope = {
         ...currentScope,

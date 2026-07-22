@@ -82,8 +82,8 @@ export function createDefaultModularServicesScope(): ModularServicesScope {
       clientBenefits: "Identify critical bottlenecks, enhance Google ranking potential, reduce security risks, and improve conversion rate and user experience.",
       termsConditions: "Audit findings are based on current site architecture. Implementation of recommended fixes is subject to separate deployment agreement or AMC.",
       quantity: 1,
-      unitPrice: 2500,
-      cost: 2500
+      unitPrice: 0,
+      cost: 0
     },
     hostingDomain: {
       entries: [
