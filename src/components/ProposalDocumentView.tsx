@@ -3156,93 +3156,98 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
               <p className="pr-2">{proposal.paymentTerms}</p>
             </div>
 
-            {/* What Your Investment Covers */}
-            <div style={{ marginBottom: '16px' }}>
-              <span style={{ display: 'block', fontSize: '9.5px', fontFamily: 'sans-serif', letterSpacing: '0.15em', textTransform: 'uppercase', color: '#B8962E', fontWeight: 'bold', marginBottom: '6px' }}>
-                WHAT YOUR INVESTMENT COVERS
-              </span>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
-                {[
-                  { icon: "🎨", title: "UX/UI Design", desc: "Wireframes, visual design, and component architecture" },
-                  { icon: "⚙️", title: "Development", desc: "Full-stack build, integrations, and QA" },
-                  { icon: "🛡️", title: "Support", desc: "3-month maintenance, training, and AMC coverage" }
-                ].map((item, idx) => (
-                  <div
-                    key={idx}
-                    style={{
-                      backgroundColor: '#fafaf8',
-                      border: '1px solid #e0ddd5',
-                      borderRadius: '8px',
-                      padding: '12px 10px',
-                      textAlign: 'center',
-                      boxSizing: 'border-box'
-                    }}
-                  >
-                    <div style={{ fontSize: '15px', marginBottom: '3px' }}>{item.icon}</div>
-                    <h5 style={{ fontSize: '10.5px', fontWeight: 'bold', color: '#1a2744', marginBottom: '2px' }}>{item.title}</h5>
-                    <p style={{ fontSize: '9px', color: '#6b7280', lineHeight: '1.25', margin: '0' }}>{item.desc}</p>
+            {/* What Your Investment Covers & Milestone Timeline - Omitted for Modular IT Services */}
+            {!isServices && (
+              <>
+                {/* What Your Investment Covers */}
+                <div style={{ marginBottom: '16px' }}>
+                  <span style={{ display: 'block', fontSize: '9.5px', fontFamily: 'sans-serif', letterSpacing: '0.15em', textTransform: 'uppercase', color: '#B8962E', fontWeight: 'bold', marginBottom: '6px' }}>
+                    WHAT YOUR INVESTMENT COVERS
+                  </span>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
+                    {[
+                      { icon: "🎨", title: "UX/UI Design", desc: "Wireframes, visual design, and component architecture" },
+                      { icon: "⚙️", title: "Development", desc: "Full-stack build, integrations, and QA" },
+                      { icon: "🛡️", title: "Support", desc: "3-month maintenance, training, and AMC coverage" }
+                    ].map((item, idx) => (
+                      <div
+                        key={idx}
+                        style={{
+                          backgroundColor: '#fafaf8',
+                          border: '1px solid #e0ddd5',
+                          borderRadius: '8px',
+                          padding: '12px 10px',
+                          textAlign: 'center',
+                          boxSizing: 'border-box'
+                        }}
+                      >
+                        <div style={{ fontSize: '15px', marginBottom: '3px' }}>{item.icon}</div>
+                        <h5 style={{ fontSize: '10.5px', fontWeight: 'bold', color: '#1a2744', marginBottom: '2px' }}>{item.title}</h5>
+                        <p style={{ fontSize: '9px', color: '#6b7280', lineHeight: '1.25', margin: '0' }}>{item.desc}</p>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Visual Payment Milestone Strip */}
-            <div>
-              <span style={{ display: 'block', fontSize: '9.5px', fontFamily: 'sans-serif', letterSpacing: '0.15em', textTransform: 'uppercase', color: '#B8962E', fontWeight: 'bold', marginBottom: '6px' }}>
-                MILESTONE INVESTMENT TIMELINE
-              </span>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
-                
-                {/* Milestone 1: First Navy */}
-                <div style={{ 
-                  flex: '1', 
-                  backgroundColor: '#1a2744', 
-                  color: '#ffffff', 
-                  borderRadius: '6px', 
-                  padding: '10px 8px', 
-                  textAlign: 'center', 
-                  boxSizing: 'border-box' 
-                }}>
-                  <div style={{ fontSize: '13px', fontWeight: 'bold' }}>50%</div>
-                  <div style={{ fontSize: '9px', color: '#cbd5e1', textTransform: 'uppercase', fontWeight: 'medium', marginTop: '2px' }}>On Signing</div>
                 </div>
 
-                {/* Arrow */}
-                <div style={{ color: '#B8962E', fontWeight: 'bold', fontSize: '14px' }}>→</div>
+                {/* Visual Payment Milestone Strip */}
+                <div>
+                  <span style={{ display: 'block', fontSize: '9.5px', fontFamily: 'sans-serif', letterSpacing: '0.15em', textTransform: 'uppercase', color: '#B8962E', fontWeight: 'bold', marginBottom: '6px' }}>
+                    MILESTONE INVESTMENT TIMELINE
+                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
+                    
+                    {/* Milestone 1: First Navy */}
+                    <div style={{ 
+                      flex: '1', 
+                      backgroundColor: '#1a2744', 
+                      color: '#ffffff', 
+                      borderRadius: '6px', 
+                      padding: '10px 8px', 
+                      textAlign: 'center', 
+                      boxSizing: 'border-box' 
+                    }}>
+                      <div style={{ fontSize: '13px', fontWeight: 'bold' }}>50%</div>
+                      <div style={{ fontSize: '9px', color: '#cbd5e1', textTransform: 'uppercase', fontWeight: 'medium', marginTop: '2px' }}>On Signing</div>
+                    </div>
 
-                {/* Milestone 2: Gold */}
-                <div style={{ 
-                  flex: '1', 
-                  backgroundColor: '#B8962E', 
-                  color: '#ffffff', 
-                  borderRadius: '6px', 
-                  padding: '10px 8px', 
-                  textAlign: 'center', 
-                  boxSizing: 'border-box' 
-                }}>
-                  <div style={{ fontSize: '13px', fontWeight: 'bold' }}>25%</div>
-                  <div style={{ fontSize: '9px', color: '#ffffff', textTransform: 'uppercase', fontWeight: 'medium', marginTop: '2px' }}>Design Approval</div>
+                    {/* Arrow */}
+                    <div style={{ color: '#B8962E', fontWeight: 'bold', fontSize: '14px' }}>→</div>
+
+                    {/* Milestone 2: Gold */}
+                    <div style={{ 
+                      flex: '1', 
+                      backgroundColor: '#B8962E', 
+                      color: '#ffffff', 
+                      borderRadius: '6px', 
+                      padding: '10px 8px', 
+                      textAlign: 'center', 
+                      boxSizing: 'border-box' 
+                    }}>
+                      <div style={{ fontSize: '13px', fontWeight: 'bold' }}>25%</div>
+                      <div style={{ fontSize: '9px', color: '#ffffff', textTransform: 'uppercase', fontWeight: 'medium', marginTop: '2px' }}>Design Approval</div>
+                    </div>
+
+                    {/* Arrow */}
+                    <div style={{ color: '#B8962E', fontWeight: 'bold', fontSize: '14px' }}>→</div>
+
+                    {/* Milestone 3: Second Navy */}
+                    <div style={{ 
+                      flex: '1', 
+                      backgroundColor: '#1a2744', 
+                      color: '#ffffff', 
+                      borderRadius: '6px', 
+                      padding: '10px 8px', 
+                      textAlign: 'center', 
+                      boxSizing: 'border-box' 
+                    }}>
+                      <div style={{ fontSize: '13px', fontWeight: 'bold' }}>25%</div>
+                      <div style={{ fontSize: '9px', color: '#cbd5e1', textTransform: 'uppercase', fontWeight: 'medium', marginTop: '2px' }}>On Launch</div>
+                    </div>
+
+                  </div>
                 </div>
-
-                {/* Arrow */}
-                <div style={{ color: '#B8962E', fontWeight: 'bold', fontSize: '14px' }}>→</div>
-
-                {/* Milestone 3: Second Navy */}
-                <div style={{ 
-                  flex: '1', 
-                  backgroundColor: '#1a2744', 
-                  color: '#ffffff', 
-                  borderRadius: '6px', 
-                  padding: '10px 8px', 
-                  textAlign: 'center', 
-                  boxSizing: 'border-box' 
-                }}>
-                  <div style={{ fontSize: '13px', fontWeight: 'bold' }}>25%</div>
-                  <div style={{ fontSize: '9px', color: '#cbd5e1', textTransform: 'uppercase', fontWeight: 'medium', marginTop: '2px' }}>On Launch</div>
-                </div>
-
-              </div>
-            </div>
+              </>
+            )}
           </div>
 
           {/* Footer */}
@@ -3258,14 +3263,10 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
           {/* Top Letterhead Header */}
           <ProposalPageHeader proposal={proposal} pageNumber={getPageNumberById("acceptance")} />
 
-          {/* Thin full-width navy header band */}
-          <div className="mx-[-20mm] print:mx-[-15mm] bg-[#1a2744] py-1.5 text-center mt-3 mb-5">
-            <span className="text-[10px] font-sans tracking-[0.25em] font-bold text-[#B8962E] block">
+          <div className="my-auto w-full max-w-xl mx-auto font-sans relative z-10">
+            <span className="text-xs font-sans tracking-widest text-[#B8962E] font-bold uppercase mb-2 block">
               OFFICIAL RATIFICATION
             </span>
-          </div>
-
-          <div className="my-auto w-full max-w-xl mx-auto font-sans relative z-10">
             <h2 className="font-serif text-3xl font-bold text-slate-950 mb-6">
               Acceptance & Authorization
             </h2>
