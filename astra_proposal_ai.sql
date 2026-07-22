@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS `clients` (
 -- 3. PROPOSALS Table
 CREATE TABLE IF NOT EXISTS `proposals` (
   `id` VARCHAR(50) NOT NULL,
-  `type` ENUM('branding', 'website') NOT NULL,
+  `type` VARCHAR(50) NOT NULL DEFAULT 'website', -- 'branding', 'website', 'services'
   `status` VARCHAR(50) NOT NULL DEFAULT 'Draft', -- 'Draft', 'Under Review', 'Won', 'Lost', etc.
   `client_id` VARCHAR(50) NULL,
   `client_name` VARCHAR(255) NOT NULL,
@@ -41,8 +41,11 @@ CREATE TABLE IF NOT EXISTS `proposals` (
   -- Flexible JSON structures for scopes, milestones, and resource costs
   `branding_scope` JSON NULL,
   `website_scope` JSON NULL,
+  `services_scope` JSON NULL,
   `milestones` JSON NULL,
   `resource_costs` JSON NULL,
+  `supplier_items` JSON NULL,
+  `payment_entries` JSON NULL,
   
   -- Financial variables
   `weeks` INT NOT NULL DEFAULT 5,
@@ -89,7 +92,7 @@ CREATE TABLE IF NOT EXISTS `proposals` (
 CREATE TABLE IF NOT EXISTS `proposal_templates` (
   `id` VARCHAR(50) NOT NULL,
   `name` VARCHAR(255) NOT NULL,
-  `type` ENUM('branding', 'website') NOT NULL,
+  `type` VARCHAR(50) NOT NULL DEFAULT 'website',
   `description` TEXT NULL,
   `structure_data` JSON NOT NULL, -- Standard configurations for milestones, paymentTerms, etc.
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -264,5 +267,53 @@ CREATE TABLE IF NOT EXISTS `proposal_payments` (
   KEY `idx_proposal_id` (`proposal_id`),
   CONSTRAINT `fk_proposal_payments_proposal` FOREIGN KEY (`proposal_id`) REFERENCES `proposals` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_proposal_payments_user` FOREIGN KEY (`recorded_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 8. SUPPLIERS Table
+CREATE TABLE IF NOT EXISTS `suppliers` (
+  `id` VARCHAR(50) NOT NULL,
+  `name` VARCHAR(255) NOT NULL,
+  `contact_person` VARCHAR(255) NULL,
+  `mobile` VARCHAR(100) NULL,
+  `email` VARCHAR(255) NULL,
+  `company_name` VARCHAR(255) NULL,
+  `notes` TEXT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 9. SUPPLIER ITEMS Table
+CREATE TABLE IF NOT EXISTS `supplier_items` (
+  `id` VARCHAR(50) NOT NULL,
+  `proposal_id` VARCHAR(50) NOT NULL,
+  `supplier_id` VARCHAR(50) NULL,
+  `description` TEXT NOT NULL,
+  `qty` INT DEFAULT 1,
+  `purchase_cost` DECIMAL(12,2) DEFAULT 0.00,
+  `unit_price` DECIMAL(12,2) DEFAULT 0.00,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_supplier_items_proposal` (`proposal_id`),
+  KEY `idx_supplier_items_supplier` (`supplier_id`),
+  CONSTRAINT `fk_supplier_items_proposal` FOREIGN KEY (`proposal_id`) REFERENCES `proposals` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_supplier_items_supplier` FOREIGN KEY (`supplier_id`) REFERENCES `suppliers` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 10. SUPPLIER PAYMENTS Table
+CREATE TABLE IF NOT EXISTS `supplier_payments` (
+  `id` VARCHAR(50) NOT NULL,
+  `supplier_id` VARCHAR(50) NOT NULL,
+  `proposal_id` VARCHAR(50) NULL,
+  `amount` DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+  `payment_date` DATE NOT NULL,
+  `reference` VARCHAR(255) NULL,
+  `notes` TEXT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_supplier_payments_supplier` (`supplier_id`),
+  KEY `idx_supplier_payments_proposal` (`proposal_id`),
+  CONSTRAINT `fk_supplier_payments_supplier` FOREIGN KEY (`supplier_id`) REFERENCES `suppliers` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_supplier_payments_proposal` FOREIGN KEY (`proposal_id`) REFERENCES `proposals` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
