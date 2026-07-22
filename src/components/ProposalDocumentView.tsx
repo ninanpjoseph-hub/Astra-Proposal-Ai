@@ -7,7 +7,7 @@ import React from 'react';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import { BRANDING_TEMPLATES, WEBSITE_TEMPLATES, DEFAULT_SCOPE_TEMPLATES } from '../staticTemplates';
-import { formatQAR, DEFAULT_BRANDING_MILESTONES, DEFAULT_WEBSITE_MILESTONES, triggerAutomatedFollowUp, createDefaultProposal } from '../proposalUtils';
+import { formatQAR, DEFAULT_BRANDING_MILESTONES, DEFAULT_WEBSITE_MILESTONES, triggerAutomatedFollowUp, createDefaultProposal, getModularDeliverableLineItems } from '../proposalUtils';
 import SitemapGenerator from './SitemapGenerator';
 import { groupScopeIntoPages } from '../utils/scopeClassifier';
 import { Check, Bookmark, DollarSign, Calendar, Landmark, BookOpen, Signature, Award, ChevronRight, FileText, Printer, Download, History, RotateCcw, Clock, Sliders, Upload, Trash2, Plus, AlertCircle, Coins, CreditCard, Shield, Users } from 'lucide-react';
@@ -3038,51 +3038,38 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
 
             {isServices ? (
               /* Modular IT Services Financials Table */
-              <div className="border border-slate-200 rounded-xl overflow-hidden mb-6 bg-white">
+              <div className="border border-slate-200 rounded-xl overflow-hidden mb-6 bg-white shadow-xs">
                 <table className="min-w-full text-xs font-sans">
                   <thead>
                     <tr className="bg-slate-100 border-b border-slate-200 text-slate-700">
-                      <th className="py-2.5 px-4 text-left font-semibold">Service Module</th>
+                      <th className="py-2.5 px-4 text-left font-semibold">Service / Deliverable Item</th>
                       <th className="py-2.5 px-4 text-left font-semibold">Deliverable Scope & Terms</th>
-                      <th className="py-2.5 px-4 text-right font-semibold">Module Cost</th>
+                      <th className="py-2.5 px-3 text-center font-semibold">Qty</th>
+                      <th className="py-2.5 px-4 text-right font-semibold">Unit Price</th>
+                      <th className="py-2.5 px-4 text-right font-semibold">Total Amount</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-150 text-slate-600">
-                    {(proposal.servicesScope?.selectedServices || []).includes('website_audit') && (
-                      <tr className="hover:bg-slate-50/40">
-                        <td className="py-2.5 px-4 font-bold text-slate-800">Website Audit & Technical Review</td>
-                        <td className="py-2.5 px-4 text-slate-500">Technical, SEO, Speed & Security Vulnerability Report</td>
-                        <td className="py-2.5 px-4 text-right font-bold text-slate-900">{formatQAR(proposal.servicesScope?.websiteAudit?.cost || 0)}</td>
+                    {getModularDeliverableLineItems(proposal.servicesScope).map((item) => (
+                      <tr key={item.id} className="hover:bg-slate-50/40">
+                        <td className="py-3 px-4 font-bold text-slate-800">
+                          <div>{item.deliverableName}</div>
+                          {item.moduleTitle !== item.deliverableName && (
+                            <div className="text-[10px] text-slate-400 font-normal">{item.moduleTitle}</div>
+                          )}
+                        </td>
+                        <td className="py-3 px-4 text-slate-500 max-w-xs">{item.scopeDescription}</td>
+                        <td className="py-3 px-3 text-center font-semibold text-slate-700 whitespace-nowrap">
+                          {item.quantity} {item.unitLabel}
+                        </td>
+                        <td className="py-3 px-4 text-right font-medium text-slate-700 whitespace-nowrap">
+                          {formatQAR(item.unitPrice)}
+                        </td>
+                        <td className="py-3 px-4 text-right font-bold text-slate-900 whitespace-nowrap">
+                          {formatQAR(item.totalCost)}
+                        </td>
                       </tr>
-                    )}
-                    {(proposal.servicesScope?.selectedServices || []).includes('hosting_domain') && (
-                      <tr className="hover:bg-slate-50/40">
-                        <td className="py-2.5 px-4 font-bold text-slate-800">Hosting & Domain Renewal</td>
-                        <td className="py-2.5 px-4 text-slate-500">Cloud Hosting ({proposal.servicesScope?.hostingDomain?.hostingRenewalYears || 1} Yr) & Domain Registry ({proposal.servicesScope?.hostingDomain?.domainName || ''})</td>
-                        <td className="py-2.5 px-4 text-right font-bold text-slate-900">{formatQAR(proposal.servicesScope?.hostingDomain?.cost || 0)}</td>
-                      </tr>
-                    )}
-                    {(proposal.servicesScope?.selectedServices || []).includes('ssl_renewal') && (
-                      <tr className="hover:bg-slate-50/40">
-                        <td className="py-2.5 px-4 font-bold text-slate-800">SSL Certificate & Renewal</td>
-                        <td className="py-2.5 px-4 text-slate-500">2048-bit RSA Encryption SSL Certificate ({proposal.servicesScope?.sslRenewal?.sslYears || 1} Yr)</td>
-                        <td className="py-2.5 px-4 text-right font-bold text-slate-900">{formatQAR(proposal.servicesScope?.sslRenewal?.cost || 0)}</td>
-                      </tr>
-                    )}
-                    {(proposal.servicesScope?.selectedServices || []).includes('amc') && (
-                      <tr className="hover:bg-slate-50/40">
-                        <td className="py-2.5 px-4 font-bold text-slate-800">Annual Maintenance Contract (AMC)</td>
-                        <td className="py-2.5 px-4 text-slate-500">CMS updates, Health Monitoring, Backups & SLA ({proposal.servicesScope?.amc?.contractPeriod || '12 Months'})</td>
-                        <td className="py-2.5 px-4 text-right font-bold text-slate-900">{formatQAR(proposal.servicesScope?.amc?.cost || 0)}</td>
-                      </tr>
-                    )}
-                    {(proposal.servicesScope?.selectedServices || []).includes('custom_service') && (
-                      <tr className="hover:bg-slate-50/40">
-                        <td className="py-2.5 px-4 font-bold text-slate-800">{proposal.servicesScope?.customService?.title || 'Custom Service Scope'}</td>
-                        <td className="py-2.5 px-4 text-slate-500">{proposal.servicesScope?.customService?.deliverables || 'Custom deliverables and scope of work'}</td>
-                        <td className="py-2.5 px-4 text-right font-bold text-slate-900">{formatQAR(proposal.servicesScope?.customService?.cost || 0)}</td>
-                      </tr>
-                    )}
+                    ))}
                   </tbody>
                 </table>
               </div>

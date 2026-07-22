@@ -3,8 +3,20 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Proposal, ProposalType, Milestone, ResourceCost, ProposalStatus, Reminder, ModularServicesScope } from './types';
+import { Proposal, ProposalType, Milestone, ResourceCost, ProposalStatus, Reminder, ModularServicesScope, ModularServiceId } from './types';
 import { DEFAULT_SCOPE_TEMPLATES } from './staticTemplates';
+
+export interface ModularDeliverableLineItem {
+  id: string;
+  moduleKey: ModularServiceId;
+  moduleTitle: string;
+  deliverableName: string;
+  scopeDescription: string;
+  quantity: number;
+  unitLabel: string;
+  unitPrice: number;
+  totalCost: number;
+}
 
 // Simple unique ID generator
 export function generateId(): string {
@@ -63,17 +75,28 @@ export function createDefaultModularServicesScope(): ModularServicesScope {
       cmsPluginCheck: true,
       detailedAuditReport: true,
       deliverables: "Comprehensive PDF Audit Report, Executive Summary, Prioritized Action Items, SEO & Speed Optimization Roadmap, Security Vulnerability Matrix",
+      deliverablesSummary: "Technical, SEO, Speed & Security Vulnerability Audit Report",
       estimatedTimeline: "1 - 2 Weeks",
       clientBenefits: "Identify critical bottlenecks, enhance Google ranking potential, reduce security risks, and improve conversion rate and user experience.",
       termsConditions: "Audit findings are based on current site architecture. Implementation of recommended fixes is subject to separate deployment agreement or AMC.",
+      quantity: 1,
+      unitPrice: 2500,
       cost: 2500
     },
     hostingDomain: {
       hostingRenewalYears: 1,
+      hostingQty: 1,
+      hostingUnitPrice: 1400,
+      hostingCost: 1400,
       domainRenewalYears: 1,
       includeDomain: true,
+      includeDomainRenewal: true,
+      serverSpecs: "High-Performance Cloud Server / NVMe SSD Storage / 99.9% Uptime SLA / Automated Daily Backups / Free SSL Certificate / Unlimited Bandwidth",
       hostingSpecifications: "High-Performance Cloud Server / NVMe SSD Storage / 99.9% Uptime SLA / Automated Daily Backups / Free SSL Certificate / Unlimited Bandwidth",
       domainName: "clientdomain.com",
+      domainQty: 2,
+      domainUnitPrice: 200,
+      domainCost: 400,
       domains: [
         {
           id: "dom-1",
@@ -99,7 +122,10 @@ export function createDefaultModularServicesScope(): ModularServicesScope {
     },
     sslRenewal: {
       sslYears: 1,
+      quantity: 1,
+      unitPrice: 600,
       certificateType: "2048-bit RSA High-Assurance SSL Certificate (HTTPS)",
+      sslType: "2048-bit RSA High-Assurance SSL Certificate",
       installationConfig: true,
       validationTesting: true,
       securityBenefits: "Encrypts user data transmission, builds customer trust badge, prevents browser 'Not Secure' warnings, and satisfies search engine HTTPS ranking requirements.",
@@ -120,7 +146,11 @@ export function createDefaultModularServicesScope(): ModularServicesScope {
       technicalSupportHours: "Up to 5 Hours / Month Dedicated Tech Support",
       monthlyReports: true,
       slaResponseTime: "24 Hours Response Time for Standard Tickets / 4 Hours for Critical Outages",
+      contractPeriod: "12 Months Annual Contract",
+      supportHoursMonthly: "Up to 5 Hours / Month",
       termsConditions: "AMC covers routine updates, minor content adjustments, and bug fixes. Major functional redesigns or custom feature additions are quoted separately.",
+      quantity: 1,
+      unitPrice: 4500,
       cost: 4500
     },
     customService: {
@@ -130,21 +160,184 @@ export function createDefaultModularServicesScope(): ModularServicesScope {
       deliverables: "Custom Technical Module Deliverables, Documentation & Handover Walkthrough",
       timeline: "2 to 3 Weeks",
       termsConditions: "Custom scope subject to client specification sign-off. Work outside defined scope will be evaluated under separate change request.",
+      quantity: 1,
+      unitPrice: 3500,
       cost: 3500
     }
   };
 }
 
+export function getModularDeliverableLineItems(servicesScope?: ModularServicesScope): ModularDeliverableLineItem[] {
+  if (!servicesScope || !servicesScope.selectedServices) return [];
+  const items: ModularDeliverableLineItem[] = [];
+  const { selectedServices, websiteAudit, hostingDomain, sslRenewal, amc, customService } = servicesScope;
+
+  // 1. Website Audit
+  if (selectedServices.includes('website_audit') && websiteAudit) {
+    const qty = websiteAudit.quantity || 1;
+    const total = Number(websiteAudit.cost) || 0;
+    const uPrice = websiteAudit.unitPrice || (qty > 0 ? total / qty : total);
+    items.push({
+      id: 'item_website_audit',
+      moduleKey: 'website_audit',
+      moduleTitle: 'Website Audit & Technical Review',
+      deliverableName: qty > 1 ? `Website Audit & Technical Review (${qty} Audits)` : 'Website Audit & Technical Review',
+      scopeDescription: websiteAudit.deliverablesSummary || websiteAudit.deliverables || 'Technical, SEO, Speed & Security Vulnerability Audit Report',
+      quantity: qty,
+      unitLabel: qty === 1 ? 'Audit' : 'Audits',
+      unitPrice: uPrice,
+      totalCost: total,
+    });
+  }
+
+  // 2. Hosting & Domain Renewal
+  if (selectedServices.includes('hosting_domain') && hostingDomain) {
+    const hostingYears = hostingDomain.hostingRenewalYears || 1;
+    const totalModuleCost = Number(hostingDomain.cost) || 0;
+    const domainsList = hostingDomain.domains || [];
+    const sumDomainCosts = domainsList.reduce((sum, d) => sum + (Number(d.renewalCost) || 0), 0);
+    
+    // Determine hosting portion
+    let hostingCost = hostingDomain.hostingCost ?? (
+      sumDomainCosts > 0 && sumDomainCosts < totalModuleCost 
+        ? totalModuleCost - sumDomainCosts 
+        : totalModuleCost
+    );
+    if (domainsList.length === 0 && !hostingDomain.includeDomainRenewal && !hostingDomain.domainName && !hostingDomain.domainQty) {
+      hostingCost = totalModuleCost;
+    }
+
+    const hostingUnitPrice = hostingDomain.hostingUnitPrice || (hostingYears > 0 ? hostingCost / hostingYears : hostingCost);
+
+    items.push({
+      id: 'item_hosting_server',
+      moduleKey: 'hosting_domain',
+      moduleTitle: 'Hosting & Domain Renewal',
+      deliverableName: `Cloud Server Hosting Renewal (${hostingYears} ${hostingYears === 1 ? 'Year' : 'Years'})`,
+      scopeDescription: hostingDomain.serverSpecs || hostingDomain.hostingSpecifications || 'High-performance SSD Cloud Server with daily automated backups & 99.9% uptime SLA',
+      quantity: hostingYears,
+      unitLabel: hostingYears === 1 ? 'Year' : 'Years',
+      unitPrice: hostingUnitPrice,
+      totalCost: hostingCost,
+    });
+
+    // Domain Renewals
+    if (hostingDomain.includeDomainRenewal || domainsList.length > 0 || (hostingDomain.domainQty && hostingDomain.domainQty > 0)) {
+      if (domainsList.length > 0) {
+        const domYears = hostingDomain.domainRenewalYears || 1;
+        const domCount = domainsList.length;
+        const totalDomainCost = sumDomainCosts || (hostingDomain.domainCost ?? 0);
+        const avgUnitPrice = domCount > 0 ? totalDomainCost / domCount : totalDomainCost;
+        const domainNamesStr = domainsList.map(d => d.domainName).filter(Boolean).join(', ');
+
+        items.push({
+          id: 'item_domains_grouped',
+          moduleKey: 'hosting_domain',
+          moduleTitle: 'Hosting & Domain Renewal',
+          deliverableName: `Domain Renewal – Annual Renewal (${domCount} ${domCount === 1 ? 'Domain' : 'Domains'})`,
+          scopeDescription: `Annual Registry Renewal for ${domainNamesStr || 'Managed Portfolio Domains'} (${domYears} ${domYears === 1 ? 'Yr' : 'Yrs'})`,
+          quantity: domCount,
+          unitLabel: domCount === 1 ? 'Domain' : 'Domains',
+          unitPrice: avgUnitPrice,
+          totalCost: totalDomainCost,
+        });
+      } else if (hostingDomain.domainQty && hostingDomain.domainQty > 0) {
+        const domCount = hostingDomain.domainQty;
+        const domYears = hostingDomain.domainRenewalYears || 1;
+        const totalDomainCost = hostingDomain.domainCost ?? (hostingDomain.domainUnitPrice ? domCount * hostingDomain.domainUnitPrice : 0);
+        const unitPrice = hostingDomain.domainUnitPrice ?? (domCount > 0 ? totalDomainCost / domCount : totalDomainCost);
+
+        items.push({
+          id: 'item_domains_qty',
+          moduleKey: 'hosting_domain',
+          moduleTitle: 'Hosting & Domain Renewal',
+          deliverableName: `Domain Renewal – Annual Renewal (${domCount} ${domCount === 1 ? 'Domain' : 'Domains'})`,
+          scopeDescription: `Annual Registry Renewal & DNS Management for ${hostingDomain.domainName || 'Target Domains'} (${domYears} Yr)`,
+          quantity: domCount,
+          unitLabel: domCount === 1 ? 'Domain' : 'Domains',
+          unitPrice: unitPrice,
+          totalCost: totalDomainCost,
+        });
+      } else if (hostingDomain.domainName) {
+        const domYears = hostingDomain.domainRenewalYears || 1;
+        const domTotal = hostingDomain.domainCost ?? (totalModuleCost - hostingCost);
+        const domUnitPrice = domYears > 0 ? domTotal / domYears : domTotal;
+        items.push({
+          id: 'item_domain_primary',
+          moduleKey: 'hosting_domain',
+          moduleTitle: 'Hosting & Domain Renewal',
+          deliverableName: `Domain Renewal – ${hostingDomain.domainName} (${domYears} ${domYears === 1 ? 'Year' : 'Years'})`,
+          scopeDescription: `Annual Registry Renewal & DNS Management`,
+          quantity: domYears,
+          unitLabel: domYears === 1 ? 'Domain' : 'Domains',
+          unitPrice: domUnitPrice,
+          totalCost: domTotal,
+        });
+      }
+    }
+  }
+
+  // 3. SSL Renewal
+  if (selectedServices.includes('ssl_renewal') && sslRenewal) {
+    const qty = sslRenewal.quantity || sslRenewal.sslYears || 1;
+    const total = Number(sslRenewal.cost) || 0;
+    const uPrice = sslRenewal.unitPrice || (qty > 0 ? total / qty : total);
+    items.push({
+      id: 'item_ssl_renewal',
+      moduleKey: 'ssl_renewal',
+      moduleTitle: 'SSL Certificate & Renewal',
+      deliverableName: `SSL Certificate & Security Installation (${sslRenewal.sslType || '2048-bit RSA Encryption'})`,
+      scopeDescription: `${sslRenewal.sslYears || 1} Year Certificate Coverage, CSR Key Generation & HTTPS Redirection Verification`,
+      quantity: qty,
+      unitLabel: qty === 1 ? 'Certificate' : 'Certificates',
+      unitPrice: uPrice,
+      totalCost: total,
+    });
+  }
+
+  // 4. Annual Maintenance Contract (AMC)
+  if (selectedServices.includes('amc') && amc) {
+    const qty = amc.quantity || 1;
+    const total = Number(amc.cost) || 0;
+    const uPrice = amc.unitPrice || (qty > 0 ? total / qty : total);
+    items.push({
+      id: 'item_amc',
+      moduleKey: 'amc',
+      moduleTitle: 'Annual Maintenance Contract (AMC)',
+      deliverableName: `Annual Maintenance Contract (AMC) – ${amc.contractPeriod || '12 Months Coverage'}`,
+      scopeDescription: `CMS & Plugin Updates, Health Checks, Backups, SLA (${amc.supportHoursMonthly || 'Up to 5 Hours / Month'})`,
+      quantity: qty,
+      unitLabel: 'Contract',
+      unitPrice: uPrice,
+      totalCost: total,
+    });
+  }
+
+  // 5. Custom Service
+  if (selectedServices.includes('custom_service') && customService) {
+    const qty = customService.quantity || 1;
+    const total = Number(customService.cost) || 0;
+    const uPrice = customService.unitPrice || (qty > 0 ? total / qty : total);
+    items.push({
+      id: 'item_custom_service',
+      moduleKey: 'custom_service',
+      moduleTitle: customService.title || 'Custom Tailored Technical Service',
+      deliverableName: customService.title || 'Custom Tailored Technical Service',
+      scopeDescription: customService.deliverables || customService.description || 'Custom deliverables and scope of work',
+      quantity: qty,
+      unitLabel: qty === 1 ? 'Unit' : 'Units',
+      unitPrice: uPrice,
+      totalCost: total,
+    });
+  }
+
+  return items;
+}
+
 export function calculateModularServicesTotal(servicesScope?: ModularServicesScope): number {
   if (!servicesScope || !servicesScope.selectedServices) return 0;
-  let total = 0;
-  const { selectedServices, websiteAudit, hostingDomain, sslRenewal, amc, customService } = servicesScope;
-  if (selectedServices.includes('website_audit') && websiteAudit) total += Number(websiteAudit.cost || 0);
-  if (selectedServices.includes('hosting_domain') && hostingDomain) total += Number(hostingDomain.cost || 0);
-  if (selectedServices.includes('ssl_renewal') && sslRenewal) total += Number(sslRenewal.cost || 0);
-  if (selectedServices.includes('amc') && amc) total += Number(amc.cost || 0);
-  if (selectedServices.includes('custom_service') && customService) total += Number(customService.cost || 0);
-  return total;
+  const items = getModularDeliverableLineItems(servicesScope);
+  return items.reduce((sum, item) => sum + (Number(item.totalCost) || 0), 0);
 }
 
 export function createDefaultProposal(type: ProposalType): Proposal {

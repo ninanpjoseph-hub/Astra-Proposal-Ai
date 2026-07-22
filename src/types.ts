@@ -23,6 +23,8 @@ export interface WebsiteAuditScope {
   estimatedTimeline: string;
   clientBenefits: string;
   termsConditions: string;
+  quantity?: number;
+  unitPrice?: number;
   cost: number;
   timeline?: string;
   deliverablesSummary?: string;
@@ -35,6 +37,8 @@ export interface DomainItem {
   renewalCost: number;
   status: 'Active' | 'Expired' | 'Pending';
   notes?: string;
+  qty?: number;
+  unitPrice?: number;
 }
 
 export interface HostingDomainScope {
@@ -49,6 +53,12 @@ export interface HostingDomainScope {
   renewalTerms: string;
   exclusions: string;
   supportInfo: string;
+  hostingCost?: number;
+  hostingQty?: number;
+  hostingUnitPrice?: number;
+  domainCost?: number;
+  domainQty?: number;
+  domainUnitPrice?: number;
   cost: number;
 }
 
@@ -60,6 +70,8 @@ export interface SslRenewalScope {
   validationTesting: boolean;
   securityBenefits: string;
   termsConditions: string;
+  quantity?: number;
+  unitPrice?: number;
   cost: number;
 }
 
@@ -78,6 +90,8 @@ export interface AmcScope {
   monthlyReports: boolean;
   slaResponseTime: string;
   termsConditions: string;
+  quantity?: number;
+  unitPrice?: number;
   cost: number;
   contractPeriod?: string;
   supportHoursMonthly?: string;
@@ -91,6 +105,8 @@ export interface CustomServiceScope {
   deliverables: string;
   timeline: string;
   termsConditions: string;
+  quantity?: number;
+  unitPrice?: number;
   cost: number;
 }
 

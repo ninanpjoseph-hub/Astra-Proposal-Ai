@@ -18,7 +18,7 @@ import {
   PageBreak
 } from 'docx';
 import { Proposal, ProposalType } from '../types';
-import { formatQAR } from '../proposalUtils';
+import { formatQAR, getModularDeliverableLineItems } from '../proposalUtils';
 
 // Color Palette Constants
 const COLOR_PRIMARY = '1A2744'; // Deep Navy
@@ -578,105 +578,83 @@ export async function exportProposalToDocx(proposal: Proposal) {
   children.push(createSectionHeader('4. Investment & Payment Terms'));
 
   // Financial Breakdown Table
-  const financeRows: TableRow[] = [
-    new TableRow({
-      children: [
-        createHeaderCell('Service Module / Fee Item'),
-        createHeaderCell('Investment Amount (QAR)'),
-      ],
-    }),
-  ];
+  const financeRows: TableRow[] = [];
 
-  if (isBranding) {
+  if (isServices && proposal.servicesScope) {
     financeRows.push(
       new TableRow({
         children: [
-          createTableCell('Brand Strategy, Visual Identity & Creative Assets', true),
-          createTableCell(formatQAR(proposal.totalCost), true, AlignmentType.RIGHT),
+          createHeaderCell('Service / Deliverable Item'),
+          createHeaderCell('Deliverable Scope & Terms'),
+          createHeaderCell('Qty', AlignmentType.CENTER),
+          createHeaderCell('Unit Price (QAR)', AlignmentType.RIGHT),
+          createHeaderCell('Total Amount (QAR)', AlignmentType.RIGHT),
         ],
       })
     );
-  } else if (isWebsite) {
+
+    const lineItems = getModularDeliverableLineItems(proposal.servicesScope);
+    lineItems.forEach((item) => {
+      financeRows.push(
+        new TableRow({
+          children: [
+            createTableCell(item.deliverableName, true),
+            createTableCell(item.scopeDescription, false),
+            createTableCell(`${item.quantity} ${item.unitLabel}`, false, AlignmentType.CENTER),
+            createTableCell(formatQAR(item.unitPrice), false, AlignmentType.RIGHT),
+            createTableCell(formatQAR(item.totalCost), true, AlignmentType.RIGHT),
+          ],
+        })
+      );
+    });
+  } else {
     financeRows.push(
       new TableRow({
         children: [
-          createTableCell('Website Design, Front-End & Back-End Development', true),
-          createTableCell(formatQAR(proposal.developmentCost || 0), false, AlignmentType.RIGHT),
+          createHeaderCell('Service Module / Fee Item'),
+          createHeaderCell('Investment Amount (QAR)'),
         ],
       })
     );
-    if (proposal.pluginCost) {
+
+    if (isBranding) {
       financeRows.push(
         new TableRow({
           children: [
-            createTableCell('Plugins, Modules & Third-Party Integrations', true),
-            createTableCell(formatQAR(proposal.pluginCost), false, AlignmentType.RIGHT),
+            createTableCell('Brand Strategy, Visual Identity & Creative Assets', true),
+            createTableCell(formatQAR(proposal.totalCost), true, AlignmentType.RIGHT),
           ],
         })
       );
-    }
-    if (proposal.maintenanceCost) {
+    } else if (isWebsite) {
       financeRows.push(
         new TableRow({
           children: [
-            createTableCell(`Maintenance & Support SLA (${proposal.websiteScope?.maintenancePeriod || 12} Months)`, true),
-            createTableCell(formatQAR(proposal.maintenanceCost), false, AlignmentType.RIGHT),
+            createTableCell('Website Design, Front-End & Back-End Development', true),
+            createTableCell(formatQAR(proposal.developmentCost || 0), false, AlignmentType.RIGHT),
           ],
         })
       );
-    }
-  } else if (isServices && proposal.servicesScope) {
-    const sScope = proposal.servicesScope;
-    const selected = sScope.selectedServices || [];
-    if (selected.includes('website_audit')) {
-      financeRows.push(
-        new TableRow({
-          children: [
-            createTableCell('Technical Website & Security Audit', true),
-            createTableCell(formatQAR(sScope.websiteAudit?.cost || 0), false, AlignmentType.RIGHT),
-          ],
-        })
-      );
-    }
-    if (selected.includes('hosting_domain')) {
-      financeRows.push(
-        new TableRow({
-          children: [
-            createTableCell('Cloud Hosting & Managed Domain Portfolio Registry', true),
-            createTableCell(formatQAR(sScope.hostingDomain?.cost || 0), false, AlignmentType.RIGHT),
-          ],
-        })
-      );
-    }
-    if (selected.includes('ssl_renewal')) {
-      financeRows.push(
-        new TableRow({
-          children: [
-            createTableCell('SSL Certificate Provisioning & Security Installation', true),
-            createTableCell(formatQAR(sScope.sslRenewal?.cost || 0), false, AlignmentType.RIGHT),
-          ],
-        })
-      );
-    }
-    if (selected.includes('amc')) {
-      financeRows.push(
-        new TableRow({
-          children: [
-            createTableCell('Annual Maintenance Contract (AMC)', true),
-            createTableCell(formatQAR(sScope.amc?.cost || 0), false, AlignmentType.RIGHT),
-          ],
-        })
-      );
-    }
-    if (selected.includes('custom_service') && sScope.customService) {
-      financeRows.push(
-        new TableRow({
-          children: [
-            createTableCell(sScope.customService.title || 'Custom Service Module', true),
-            createTableCell(formatQAR(sScope.customService.cost || 0), false, AlignmentType.RIGHT),
-          ],
-        })
-      );
+      if (proposal.pluginCost) {
+        financeRows.push(
+          new TableRow({
+            children: [
+              createTableCell('Plugins, Modules & Third-Party Integrations', true),
+              createTableCell(formatQAR(proposal.pluginCost), false, AlignmentType.RIGHT),
+            ],
+          })
+        );
+      }
+      if (proposal.maintenanceCost) {
+        financeRows.push(
+          new TableRow({
+            children: [
+              createTableCell(`Maintenance & Support SLA (${proposal.websiteScope?.maintenancePeriod || 12} Months)`, true),
+              createTableCell(formatQAR(proposal.maintenanceCost), false, AlignmentType.RIGHT),
+            ],
+          })
+        );
+      }
     }
   }
 

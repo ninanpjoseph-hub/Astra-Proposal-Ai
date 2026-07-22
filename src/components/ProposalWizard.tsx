@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Proposal, ProposalType, Milestone, ResourceCost, ProposalStatus, DomainItem, WebsiteAuditScope } from '../types';
-import { createDefaultProposal, generateId, formatQAR, createDefaultModularServicesScope, calculateModularServicesTotal } from '../proposalUtils';
+import { createDefaultProposal, generateId, formatQAR, createDefaultModularServicesScope, calculateModularServicesTotal, getModularDeliverableLineItems } from '../proposalUtils';
 import { DEFAULT_SCOPE_TEMPLATES } from '../staticTemplates';
 import SitemapGenerator from './SitemapGenerator';
 import ProposalDocumentView from './ProposalDocumentView';
@@ -2623,15 +2623,19 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
                 <div className="space-y-4">
                   <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-xs">
                     <div className="bg-slate-100 py-2.5 px-4 text-[10px] font-sans font-bold text-slate-500 uppercase tracking-wider grid grid-cols-12 gap-2">
-                      <span className="col-span-8">Service Module</span>
+                      <span className="col-span-6">Service / Deliverable Item</span>
+                      <span className="col-span-2 text-center">Qty</span>
                       <span className="col-span-4 text-right">Module Charge (QAR)</span>
                     </div>
                     <div className="divide-y divide-slate-150">
                       {(proposal.servicesScope?.selectedServices || []).includes('website_audit') && (
                         <div className="grid grid-cols-12 gap-2 py-3 px-4 items-center">
-                          <div className="col-span-8">
+                          <div className="col-span-6">
                             <span className="font-bold text-xs text-slate-800 block">Website Audit & Technical Review</span>
                             <span className="text-[11px] text-slate-500">Technical health, SEO, security vulnerabilities & UX/UI report</span>
+                          </div>
+                          <div className="col-span-2 text-center text-xs font-semibold text-slate-600">
+                            {proposal.servicesScope?.websiteAudit?.quantity || 1} Audit
                           </div>
                           <div className="col-span-4 flex justify-end">
                             <input
@@ -2646,9 +2650,14 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
 
                       {(proposal.servicesScope?.selectedServices || []).includes('hosting_domain') && (
                         <div className="grid grid-cols-12 gap-2 py-3 px-4 items-center">
-                          <div className="col-span-8">
+                          <div className="col-span-6">
                             <span className="font-bold text-xs text-slate-800 block">Hosting & Domain Renewal</span>
-                            <span className="text-[11px] text-slate-500">Cloud server hosting ({proposal.servicesScope?.hostingDomain?.hostingRenewalYears || 1} Yr) & Domain renewal</span>
+                            <span className="text-[11px] text-slate-500">
+                              Cloud server ({proposal.servicesScope?.hostingDomain?.hostingRenewalYears || 1} Yr) & Managed domains ({proposal.servicesScope?.hostingDomain?.domains?.length || proposal.servicesScope?.hostingDomain?.domainQty || 1} Domains)
+                            </span>
+                          </div>
+                          <div className="col-span-2 text-center text-xs font-semibold text-slate-600">
+                            {(proposal.servicesScope?.hostingDomain?.domains?.length || proposal.servicesScope?.hostingDomain?.domainQty || 1)} Items
                           </div>
                           <div className="col-span-4 flex justify-end">
                             <input
@@ -2663,9 +2672,12 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
 
                       {(proposal.servicesScope?.selectedServices || []).includes('ssl_renewal') && (
                         <div className="grid grid-cols-12 gap-2 py-3 px-4 items-center">
-                          <div className="col-span-8">
+                          <div className="col-span-6">
                             <span className="font-bold text-xs text-slate-800 block">SSL Certificate & Installation</span>
                             <span className="text-[11px] text-slate-500">2048-bit RSA Encryption SSL certificate ({proposal.servicesScope?.sslRenewal?.sslYears || 1} Yr)</span>
+                          </div>
+                          <div className="col-span-2 text-center text-xs font-semibold text-slate-600">
+                            {proposal.servicesScope?.sslRenewal?.quantity || proposal.servicesScope?.sslRenewal?.sslYears || 1} Cert
                           </div>
                           <div className="col-span-4 flex justify-end">
                             <input
@@ -2680,9 +2692,12 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
 
                       {(proposal.servicesScope?.selectedServices || []).includes('amc') && (
                         <div className="grid grid-cols-12 gap-2 py-3 px-4 items-center">
-                          <div className="col-span-8">
+                          <div className="col-span-6">
                             <span className="font-bold text-xs text-slate-800 block">Annual Maintenance Contract (AMC)</span>
                             <span className="text-[11px] text-slate-500">CMS/plugin updates, monitoring, security & priority support SLA</span>
+                          </div>
+                          <div className="col-span-2 text-center text-xs font-semibold text-slate-600">
+                            {proposal.servicesScope?.amc?.quantity || 1} Contract
                           </div>
                           <div className="col-span-4 flex justify-end">
                             <input
@@ -2697,9 +2712,12 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
 
                       {(proposal.servicesScope?.selectedServices || []).includes('custom_service') && (
                         <div className="grid grid-cols-12 gap-2 py-3 px-4 items-center">
-                          <div className="col-span-8">
+                          <div className="col-span-6">
                             <span className="font-bold text-xs text-slate-800 block">{proposal.servicesScope?.customService?.title || 'Custom Tailored Service'}</span>
                             <span className="text-[11px] text-slate-500">{proposal.servicesScope?.customService?.deliverables || 'Custom deliverables and scope of work'}</span>
+                          </div>
+                          <div className="col-span-2 text-center text-xs font-semibold text-slate-600">
+                            {proposal.servicesScope?.customService?.quantity || 1} Unit
                           </div>
                           <div className="col-span-4 flex justify-end">
                             <input
@@ -2711,6 +2729,27 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
                           </div>
                         </div>
                       )}
+                    </div>
+                  </div>
+
+                  {/* Itemized Deliverables Live Preview */}
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                    <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                      Itemized Financial Deliverables Preview:
+                    </h4>
+                    <div className="space-y-2">
+                      {getModularDeliverableLineItems(proposal.servicesScope).map((item) => (
+                        <div key={item.id} className="flex items-center justify-between bg-white p-2.5 rounded-lg border border-slate-200 text-xs">
+                          <div>
+                            <span className="font-bold text-slate-800 block">{item.deliverableName}</span>
+                            <span className="text-[11px] text-slate-500">{item.scopeDescription}</span>
+                          </div>
+                          <div className="text-right whitespace-nowrap pl-3">
+                            <span className="text-slate-500 text-[11px] block">{item.quantity} {item.unitLabel} × {formatQAR(item.unitPrice)}</span>
+                            <strong className="text-slate-900 font-bold">{formatQAR(item.totalCost)}</strong>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>
