@@ -7,6 +7,89 @@ const router = express.Router();
 // Auto run check to add payment_entries column on startup and create proposal_payments table
 (async () => {
   try {
+    await query(`
+      CREATE TABLE IF NOT EXISTS \`users\` (
+        \`id\` VARCHAR(50) NOT NULL,
+        \`name\` VARCHAR(255) NOT NULL,
+        \`email\` VARCHAR(255) NOT NULL,
+        \`role\` VARCHAR(50) DEFAULT 'Sales',
+        \`is_active\` TINYINT(1) DEFAULT 1,
+        \`password\` VARCHAR(255) NULL,
+        \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (\`id\`)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+    console.log("✔️ [Migration] Managed successfully: users table checked/created.");
+  } catch (err: any) {
+    console.error("Migration error creating users table:", err);
+  }
+
+  try {
+    await query(`
+      CREATE TABLE IF NOT EXISTS \`clients\` (
+        \`id\` VARCHAR(50) NOT NULL,
+        \`name\` VARCHAR(255) NULL,
+        \`company_name\` VARCHAR(255) NULL,
+        \`email\` VARCHAR(255) NULL,
+        \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (\`id\`)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+    console.log("✔️ [Migration] Managed successfully: clients table checked/created.");
+  } catch (err: any) {
+    console.error("Migration error creating clients table:", err);
+  }
+
+  try {
+    await query(`
+      CREATE TABLE IF NOT EXISTS \`proposals\` (
+        \`id\` VARCHAR(50) NOT NULL,
+        \`type\` VARCHAR(50) NOT NULL DEFAULT 'website',
+        \`status\` VARCHAR(50) NOT NULL DEFAULT 'Draft',
+        \`client_id\` VARCHAR(50) NULL,
+        \`client_name\` VARCHAR(255) NULL,
+        \`company_name\` VARCHAR(255) NULL,
+        \`proposal_date\` DATE NULL,
+        \`brief_description\` TEXT NULL,
+        \`branding_scope\` JSON NULL,
+        \`website_scope\` JSON NULL,
+        \`services_scope\` JSON NULL,
+        \`milestones\` JSON NULL,
+        \`resource_costs\` JSON NULL,
+        \`supplier_items\` JSON NULL,
+        \`payment_entries\` JSON NULL,
+        \`weeks\` INT DEFAULT 5,
+        \`development_cost\` DECIMAL(12,2) DEFAULT 0.00,
+        \`plugin_cost\` DECIMAL(12,2) DEFAULT 0.00,
+        \`maintenance_cost\` DECIMAL(12,2) DEFAULT 0.00,
+        \`additional_cost\` DECIMAL(12,2) DEFAULT 0.00,
+        \`total_cost\` DECIMAL(12,2) DEFAULT 0.00,
+        \`payment_terms\` TEXT NULL,
+        \`prepared_by_name\` VARCHAR(255) NULL,
+        \`prepared_by_company\` VARCHAR(255) NULL,
+        \`prepared_by_title\` VARCHAR(255) NULL,
+        \`prepared_by_user_id\` VARCHAR(50) NULL,
+        \`assigned_user_id\` VARCHAR(50) NULL,
+        \`assigned_user_name\` VARCHAR(255) NULL,
+        \`shared_user_ids\` JSON NULL,
+        \`custom_letterhead\` LONGTEXT NULL,
+        \`letterhead_height\` INT DEFAULT 100,
+        \`letterhead_mode\` VARCHAR(50) DEFAULT 'minimal',
+        \`letterhead_full_page\` TINYINT(1) DEFAULT 0,
+        \`show_watermark\` TINYINT(1) DEFAULT 0,
+        \`custom_watermark_text\` VARCHAR(255) NULL,
+        \`pdf_export_count\` INT DEFAULT 0,
+        \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        \`updated_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (\`id\`)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+    console.log("✔️ [Migration] Managed successfully: proposals table checked/created.");
+  } catch (err: any) {
+    console.error("Migration error creating proposals table:", err);
+  }
+
+  try {
     await query("ALTER TABLE proposals ADD COLUMN services_scope JSON NULL");
     console.log("✔️ [Migration] Managed successfully: services_scope JSON added to proposals.");
   } catch (err: any) {
