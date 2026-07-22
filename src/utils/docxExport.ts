@@ -410,7 +410,7 @@ export async function exportProposalToDocx(proposal: Proposal) {
               new TextRun({ text: 'Service Level Agreement (SLA): ', bold: true, color: COLOR_PRIMARY, size: 20 }),
               new TextRun({ text: `Guaranteed Response Time: ${amc.responseTimeSLA}`, size: 20, color: COLOR_SLATE_DARK }),
             ],
-            spacing: { top: 100, after: 150 },
+            spacing: { before: 100, after: 150 },
           })
         );
       }
@@ -768,7 +768,7 @@ export async function exportProposalToDocx(proposal: Proposal) {
               new Paragraph({ children: [new TextRun({ text: proposal.preparedByName || 'Project Strategy Director', bold: true, size: 20, color: COLOR_SLATE_DARK })], spacing: { after: 60 } }),
               new Paragraph({ children: [new TextRun({ text: proposal.preparedByCompany || 'Digital Solutions Agency', size: 18, color: COLOR_SLATE_MUTED })], spacing: { after: 200 } }),
               new Paragraph({ children: [new TextRun({ text: 'Signature: __________________________', size: 18, color: COLOR_SLATE_MUTED })] }),
-              new Paragraph({ children: [new TextRun({ text: `Date: ${proposal.proposalDate || new Date().toISOString().split('T')[0]}`, size: 18, color: COLOR_SLATE_MUTED })], spacing: { top: 60 } }),
+              new Paragraph({ children: [new TextRun({ text: `Date: ${proposal.proposalDate || new Date().toISOString().split('T')[0]}`, size: 18, color: COLOR_SLATE_MUTED })], spacing: { before: 60 } }),
             ],
           }),
           new TableCell({
@@ -778,7 +778,7 @@ export async function exportProposalToDocx(proposal: Proposal) {
               new Paragraph({ children: [new TextRun({ text: proposal.clientName || 'Client Representative Name', bold: true, size: 20, color: COLOR_SLATE_DARK })], spacing: { after: 60 } }),
               new Paragraph({ children: [new TextRun({ text: proposal.companyName || 'Client Organization', size: 18, color: COLOR_SLATE_MUTED })], spacing: { after: 200 } }),
               new Paragraph({ children: [new TextRun({ text: 'Signature: __________________________', size: 18, color: COLOR_SLATE_MUTED })] }),
-              new Paragraph({ children: [new TextRun({ text: 'Date: ________________________', size: 18, color: COLOR_SLATE_MUTED })], spacing: { top: 60 } }),
+              new Paragraph({ children: [new TextRun({ text: 'Date: ________________________', size: 18, color: COLOR_SLATE_MUTED })], spacing: { before: 60 } }),
             ],
           }),
         ],
@@ -871,7 +871,7 @@ function createSectionHeader(title: string) {
         color: COLOR_PRIMARY,
       }),
     ],
-    spacing: { top: 300, after: 150 },
+    spacing: { before: 300, after: 150 },
   });
 }
 
@@ -886,7 +886,7 @@ function createSubHeader(title: string) {
         color: COLOR_GOLD,
       }),
     ],
-    spacing: { top: 200, after: 100 },
+    spacing: { before: 200, after: 100 },
   });
 }
 
@@ -924,7 +924,7 @@ function createHeaderCell(text: string) {
   });
 }
 
-function createTableCell(text: string, isBold: boolean = false, align: AlignmentType = AlignmentType.LEFT) {
+function createTableCell(text: string, isBold: boolean = false, align: (typeof AlignmentType)[keyof typeof AlignmentType] = AlignmentType.LEFT) {
   return new TableCell({
     margins: { top: 100, bottom: 100, left: 150, right: 150 },
     children: [

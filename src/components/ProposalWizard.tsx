@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Proposal, ProposalType, Milestone, ResourceCost, ProposalStatus, DomainItem } from '../types';
+import { Proposal, ProposalType, Milestone, ResourceCost, ProposalStatus, DomainItem, WebsiteAuditScope } from '../types';
 import { createDefaultProposal, generateId, formatQAR, createDefaultModularServicesScope, calculateModularServicesTotal } from '../proposalUtils';
 import { DEFAULT_SCOPE_TEMPLATES } from '../staticTemplates';
 import SitemapGenerator from './SitemapGenerator';
@@ -26,10 +26,11 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
   const [step, setStep] = useState<number>(1);
   const [proposal, setProposal] = useState<Proposal>(() => {
     const rawP = initialProposal ? JSON.parse(JSON.stringify(initialProposal)) : createDefaultProposal('branding');
-    const defaults = createDefaultProposal(rawP.type);
+    const defaults = createDefaultProposal(rawP.type || 'branding');
     return {
       ...defaults,
       ...rawP,
+      type: rawP.type || defaults.type,
       brandingScope: {
         ...defaults.brandingScope,
         ...(rawP.brandingScope || {})
@@ -37,6 +38,10 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
       websiteScope: {
         ...defaults.websiteScope,
         ...(rawP.websiteScope || {})
+      },
+      servicesScope: {
+        ...defaults.servicesScope,
+        ...(rawP.servicesScope || {})
       },
       milestones: rawP.milestones || defaults.milestones || [],
       resourceCosts: rawP.resourceCosts || defaults.resourceCosts || [],

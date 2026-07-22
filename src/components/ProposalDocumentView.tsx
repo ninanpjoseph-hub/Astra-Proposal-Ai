@@ -280,10 +280,11 @@ export function AstraFooter({ pageNumber }: { pageNumber: string }) {
 
 export default function ProposalDocumentView({ proposal: incomingProposal, onBack, showBackBtn = true, onRevert, onUpdateProposal, currentUser, initialTab = 'document' }: ProposalDocumentViewProps) {
   const proposal = React.useMemo<Proposal>(() => {
-    const defaults = createDefaultProposal(incomingProposal.type);
+    const defaults = createDefaultProposal(incomingProposal.type || 'branding');
     return {
       ...defaults,
       ...incomingProposal,
+      type: incomingProposal.type || defaults.type,
       brandingScope: {
         ...defaults.brandingScope,
         ...(incomingProposal.brandingScope || {})
@@ -3368,7 +3369,7 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
               <p style={{ fontSize: '13px', color: '#4b5563', margin: '0', fontWeight: '500', fontFamily: 'sans-serif' }}>
                 <span style={{ color: '#B8962E', fontWeight: 'bold' }}>info@technoastra.com</span>
                 <span style={{ color: '#d1d5db', margin: '0 12px' }}>|</span>
-                <span style={{ color: '#1a2744', fontWeight: 'bold' }}>4440 0100</span>
+                <span style={{ color: '#1a2744', fontWeight: 'bold' }}>4480 4157</span>
               </p>
             </div>
 

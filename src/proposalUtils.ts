@@ -403,7 +403,7 @@ export function triggerAutomatedFollowUp(proposal: Proposal) {
       proposalClient: proposal.clientName || 'Client',
       title: `Follow-up: ${proposal.clientName || 'Client'} Proposal`,
       dueDate: formattedDueDate,
-      notes: `Automated 2-day professional outreach touchpoint regarding the finalized and downloaded ${proposal.type === 'branding' ? 'Branding & Identity' : 'Website Design & Development'} proposal (Value: QAR ${proposal.totalCost}).`,
+      notes: `Automated 2-day professional outreach touchpoint regarding the finalized and downloaded ${proposal.type === 'branding' ? 'Branding & Identity' : (proposal.type === 'services' ? 'Modular IT Services' : 'Website Design & Development')} proposal (Value: QAR ${proposal.totalCost}).`,
       isCompleted: false,
       createdAt: new Date().toISOString()
     };

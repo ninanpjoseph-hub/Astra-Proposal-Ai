@@ -2388,7 +2388,7 @@ export default function AdminPortal({
                           <strong className="font-serif text-slate-800 text-sm block leading-tight">{p.clientName}</strong>
                           <span className="text-[11px] text-slate-500 font-sans block mt-0.5">{p.companyName}</span>
                           <span className="text-[10px] text-slate-400 font-mono block mt-1.5 font-semibold">
-                            {isBranding ? 'Branding & Identity SOW' : 'Website Development SOW'}
+                            {p.type === 'branding' ? 'Branding & Identity SOW' : (p.type === 'services' ? 'Modular IT Services SOW' : 'Website Development SOW')}
                           </span>
                         </div>
 

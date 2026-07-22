@@ -160,6 +160,7 @@ export default function App() {
                 briefDescription: item.brief_description,
                 brandingScope: typeof item.branding_scope === 'string' ? JSON.parse(item.branding_scope) : (item.branding_scope || {}),
                 websiteScope: typeof item.website_scope === 'string' ? JSON.parse(item.website_scope) : (item.website_scope || {}),
+                servicesScope: typeof item.services_scope === 'string' ? JSON.parse(item.services_scope) : (item.services_scope || {}),
                 milestones: typeof item.milestones === 'string' ? JSON.parse(item.milestones) : (item.milestones || []),
                 resourceCosts: typeof item.resource_costs === 'string' ? JSON.parse(item.resource_costs) : (item.resource_costs || []),
                 weeks: item.weeks,
@@ -254,6 +255,7 @@ export default function App() {
                     briefDescription: item.brief_description,
                     brandingScope: typeof item.branding_scope === 'string' ? JSON.parse(item.branding_scope) : (item.branding_scope || {}),
                     websiteScope: typeof item.website_scope === 'string' ? JSON.parse(item.website_scope) : (item.website_scope || {}),
+                    servicesScope: typeof item.services_scope === 'string' ? JSON.parse(item.services_scope) : (item.services_scope || {}),
                     milestones: typeof item.milestones === 'string' ? JSON.parse(item.milestones) : (item.milestones || []),
                     resourceCosts: typeof item.resource_costs === 'string' ? JSON.parse(item.resource_costs) : (item.resource_costs || []),
                     weeks: item.weeks,
@@ -397,7 +399,7 @@ export default function App() {
           userName: currentUser?.name || 'System',
           userRole: currentUser?.role || UserRole.SALES,
           action: 'Modify Proposal',
-          details: `Synchronized ${savedProp.type === 'branding' ? 'branding' : 'website'} proposal ID "${savedProp.id}" for client "${savedProp.clientName}" successfully in Hostinger MySQL.`
+          details: `Synchronized ${savedProp.type === 'branding' ? 'branding' : (savedProp.type === 'services' ? 'modular IT services' : 'website')} proposal ID "${savedProp.id}" for client "${savedProp.clientName}" successfully in Hostinger MySQL.`
         };
         
         await fetch('/api/activity-logs', {
@@ -551,11 +553,12 @@ export default function App() {
       // Extract main nouns
       let isWeb = query.includes("website") || query.includes("web") || query.includes("development");
       let isBrand = query.includes("branding") || query.includes("identity") || query.includes("logo");
+      let isServices = query.includes("service") || query.includes("it") || query.includes("modular") || query.includes("amc") || query.includes("audit");
       
       return visibleProposals.filter(p => {
         // Match client name keyword
         const nameMatch = p.clientName.toLowerCase().split(' ').some(word => query.includes(word));
-        const typeMatch = (isWeb && p.type === 'website') || (isBrand && p.type === 'branding');
+        const typeMatch = (isWeb && p.type === 'website') || (isBrand && p.type === 'branding') || (isServices && p.type === 'services');
         
         if (nameMatch && typeMatch) return true;
         if (nameMatch) return true;
@@ -575,7 +578,7 @@ export default function App() {
     // 3. Fallback standard tokenized string search (matches client name, type, dates, value)
     const terms = query.split(/\s+/);
     return visibleProposals.filter(p => {
-      const typeText = p.type === 'branding' ? 'branding & identity' : 'website design & development';
+      const typeText = p.type === 'branding' ? 'branding & identity' : (p.type === 'services' ? 'modular it services' : 'website design & development');
       const formattedValue = formatQAR(p.totalCost).toLowerCase();
       
       return terms.every(term => 
@@ -953,7 +956,7 @@ export default function App() {
                 </p>
               </div>
 
-              <div className="flex gap-3 shrink-0">
+              <div className="flex gap-3 shrink-0 flex-wrap">
                 <button
                   onClick={() => startNewProposal('branding')}
                   id="create-branding-proposal-btn"
@@ -977,6 +980,18 @@ export default function App() {
                 >
                   <Plus className="h-4 w-4" />
                   + Website Development Proposal
+                </button>
+                <button
+                  onClick={() => startNewProposal('services')}
+                  id="create-services-proposal-btn"
+                  className={`px-4 py-2 font-semibold text-xs rounded-xl transition-all flex items-center gap-1.5 cursor-pointer ${
+                    isLuxury 
+                      ? 'bg-[#111C35] hover:bg-[#1E293B] text-emerald-400 border border-emerald-500/40 shadow-xs' 
+                      : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-md'
+                  }`}
+                >
+                  <Plus className="h-4 w-4" />
+                  + Modular IT Services Proposal
                 </button>
               </div>
             </div>
@@ -1132,11 +1147,13 @@ export default function App() {
                         {/* Type Tag indicator */}
                         <div className="absolute top-5 right-5 flex flex-col items-end gap-1.5">
                           <span className={`text-[9px] font-mono font-bold px-2.5 py-0.5 rounded-full uppercase leading-none ${
-                            isB 
+                            prop.type === 'branding' 
                               ? isLuxury ? 'bg-[#C5A059]/15 text-[#C5A059]' : 'bg-sky-50 text-sky-700'
+                              : prop.type === 'services'
+                              ? isLuxury ? 'bg-amber-500/15 text-amber-400' : 'bg-indigo-50 text-indigo-700'
                               : isLuxury ? 'bg-emerald-500/15 text-emerald-400' : 'bg-emerald-50 text-emerald-700'
                           }`}>
-                            {isB ? "Identity" : "Website"}
+                            {prop.type === 'branding' ? "Identity" : prop.type === 'services' ? "IT Services" : "Website"}
                           </span>
                           <span className={`text-[8.5px] font-sans font-bold px-2 py-0.5 border rounded-full leading-none uppercase ${
                             prop.status === 'Completed' ? 'bg-emerald-500/10 text-emerald-450 border-emerald-500/20' :
@@ -1175,7 +1192,7 @@ export default function App() {
                           <p className={`font-sans text-[11px] mt-1 lines-clamp-2 leading-relaxed ${
                             isLuxury ? 'text-slate-300' : 'text-slate-500'
                           }`}>
-                            {prop.companyName || (isB ? "Branding Strategy Suite" : "Custom Web Project")}
+                            {prop.companyName || (prop.type === 'branding' ? "Branding Strategy Suite" : prop.type === 'services' ? "Modular IT Services" : "Custom Web Project")}
                           </p>
                           
                           <p className={`text-[10px] italic font-sans mt-3 line-clamp-2 border-l-2 pl-2 ${

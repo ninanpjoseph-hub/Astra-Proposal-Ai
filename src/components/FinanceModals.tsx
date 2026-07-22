@@ -94,6 +94,65 @@ export function InvoiceModal({ proposal, onClose, currentUser }: InvoiceModalPro
           unitPrice: proposal.totalCost
         });
       }
+    } else if (proposal.type === 'services') {
+      let sl = 1;
+      const sScope = proposal.servicesScope;
+      if (sScope?.selectedServices?.length) {
+        if (sScope.selectedServices.includes('website_audit') && sScope.websiteAudit) {
+          items.push({
+            id: 'srv_audit',
+            sl: sl++,
+            description: 'Website Audit & Technical Health Benchmark Module',
+            qty: 1,
+            unitPrice: sScope.websiteAudit.cost || 0
+          });
+        }
+        if (sScope.selectedServices.includes('hosting_domain') && sScope.hostingDomain) {
+          items.push({
+            id: 'srv_hosting',
+            sl: sl++,
+            description: `Cloud Server Hosting & Managed Domain Renewal (${sScope.hostingDomain.domainName || 'Infrastructure'})`,
+            qty: 1,
+            unitPrice: sScope.hostingDomain.cost || 0
+          });
+        }
+        if (sScope.selectedServices.includes('ssl_renewal') && sScope.sslRenewal) {
+          items.push({
+            id: 'srv_ssl',
+            sl: sl++,
+            description: `2048-bit RSA Encryption SSL Security Certificate (${sScope.sslRenewal.sslYears || 1} Yr)`,
+            qty: 1,
+            unitPrice: sScope.sslRenewal.cost || 0
+          });
+        }
+        if (sScope.selectedServices.includes('amc') && sScope.amc) {
+          items.push({
+            id: 'srv_amc',
+            sl: sl++,
+            description: `Annual Maintenance Contract (AMC) SLA Coverage (${sScope.amc.contractPeriod || '12 Months'})`,
+            qty: 1,
+            unitPrice: sScope.amc.cost || 0
+          });
+        }
+        if (sScope.selectedServices.includes('custom_service') && sScope.customService) {
+          items.push({
+            id: 'srv_custom',
+            sl: sl++,
+            description: sScope.customService.title || 'Custom IT Service Module',
+            qty: 1,
+            unitPrice: sScope.customService.cost || 0
+          });
+        }
+      }
+      if (items.length === 0) {
+        items.push({
+          id: 'srv_fallback',
+          sl: 1,
+          description: 'Modular IT Services & Infrastructure Support Contract',
+          qty: 1,
+          unitPrice: proposal.totalCost
+        });
+      }
     } else {
       // Website SOW
       const scope = proposal.websiteScope;
