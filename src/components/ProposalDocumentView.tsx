@@ -1832,29 +1832,63 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
                     High-performance cloud hosting renewal and domain registry management to guarantee maximum uptime, high-speed data transmission, and active DNS resolution.
                   </p>
 
-                  <div className="p-4 bg-[#1a2744] text-white rounded-xl mb-5 flex items-center justify-between">
-                    <div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#B8962E] block">Target Domain</span>
-                      <strong className="text-base font-mono">{proposal.servicesScope?.hostingDomain?.domainName || 'Registered Domain'}</strong>
+                  {/* Multi-Entry Hosting & Domain Renewal Table */}
+                  <div className="border border-slate-200 rounded-xl overflow-hidden bg-white mb-4">
+                    <div className="bg-[#1a2744] px-3.5 py-2 text-white flex items-center justify-between">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#B8962E]">
+                        Hosting Infrastructure & Domain Renewal Schedule
+                      </span>
+                      <span className="text-[9px] text-slate-300 font-mono">
+                        {(proposal.servicesScope?.hostingDomain?.entries || []).length} Renewal Item(s)
+                      </span>
                     </div>
-                    <div className="text-right">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-300 block">Renewal Term</span>
-                      <strong className="text-sm">{proposal.servicesScope?.hostingDomain?.hostingRenewalYears || 1} Year Subscription</strong>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse text-[10px]">
+                        <thead>
+                          <tr className="bg-slate-100 border-b border-slate-200 text-slate-600 font-bold uppercase text-[9px]">
+                            <th className="py-1.5 px-3">Domain Name</th>
+                            <th className="py-1.5 px-2">Hosting Provider & Plan</th>
+                            <th className="py-1.5 px-2">Renewal Date & Term</th>
+                            <th className="py-1.5 px-2 text-right">Cost (QAR)</th>
+                            <th className="py-1.5 px-2">Notes</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 text-slate-700 font-sans">
+                          {(proposal.servicesScope?.hostingDomain?.entries || []).map((item, idx) => (
+                            <tr key={item.id || idx} className="hover:bg-slate-50/50">
+                              <td className="py-2 px-3 font-bold text-[#1a2744] font-mono">{item.domainName || '—'}</td>
+                              <td className="py-2 px-2 text-slate-700">
+                                <span className="font-semibold block">{item.hostingProvider || 'Standard Provider'}</span>
+                                {item.hostingPlan && <span className="text-[9px] text-slate-500 block">{item.hostingPlan}</span>}
+                              </td>
+                              <td className="py-2 px-2 font-mono text-slate-600">
+                                <span>{item.renewalDate || '—'}</span>
+                                {item.renewalDuration && <span className="text-[9px] text-slate-500 block">({item.renewalDuration})</span>}
+                              </td>
+                              <td className="py-2 px-2 text-right font-mono font-bold text-slate-900">
+                                {formatQAR(Number(item.renewalCost) || 0)}
+                              </td>
+                              <td className="py-2 px-2 text-slate-500 text-[9px] truncate max-w-[130px]">
+                                {item.notes || '—'}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <div className="bg-slate-50 border-t border-slate-200 px-3.5 py-2 flex items-center justify-between text-[10px] font-bold text-slate-800">
+                      <span>Total Module Renewal Schedule</span>
+                      <span className="font-mono text-[#1a2744] text-xs font-extrabold">
+                        {formatQAR((proposal.servicesScope?.hostingDomain?.entries || []).reduce((sum, e) => sum + (Number(e.renewalCost) || 0), 0))}
+                      </span>
                     </div>
                   </div>
 
-                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-4">
-                    <h4 className="text-[11px] font-bold text-[#1a2744] uppercase tracking-wider mb-2">
-                      Server & Infrastructure Specifications:
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5">
+                    <h4 className="text-[10px] font-bold text-[#1a2744] uppercase tracking-wider mb-2">
+                      Included Managed Services & Infrastructure Guarantees:
                     </h4>
-                    <p className="text-xs text-slate-600 leading-relaxed mb-3">
-                      {proposal.servicesScope?.hostingDomain?.serverSpecs || 'High-speed SSD Cloud Hosting with daily automated snapshots and redundant DNS routing.'}
-                    </p>
-
-                    <h4 className="text-[11px] font-bold text-[#1a2744] uppercase tracking-wider mb-2">
-                      Included Infrastructure Services:
-                    </h4>
-                    <div className="grid grid-cols-2 gap-1.5 text-xs text-slate-700 mb-2">
+                    <div className="grid grid-cols-2 gap-1.5 text-xs text-slate-700">
                       {[
                         'DNS Record Management & Zone File Maintenance',
                         '99.9% Uptime Guarantee with Cloud SLA',
@@ -1868,58 +1902,6 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
                       ))}
                     </div>
                   </div>
-
-                  {/* Managed Domain Portfolio Section in PDF */}
-                  {(proposal.servicesScope?.hostingDomain?.domains || []).length > 0 && (
-                    <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
-                      <div className="bg-[#1a2744] px-3 py-2 text-white flex items-center justify-between">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-[#B8962E]">
-                          Domain Portfolio Registry & Renewal Schedule
-                        </span>
-                        <span className="text-[9px] text-slate-300 font-mono">
-                          {(proposal.servicesScope?.hostingDomain?.domains || []).length} Domains Managed
-                        </span>
-                      </div>
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse text-[10px]">
-                          <thead>
-                            <tr className="bg-slate-100 border-b border-slate-200 text-slate-600 font-bold uppercase text-[9px]">
-                              <th className="py-1.5 px-3">Domain Name</th>
-                              <th className="py-1.5 px-2">Renewal Date</th>
-                              <th className="py-1.5 px-2">Status</th>
-                              <th className="py-1.5 px-2 text-right">Cost (QAR)</th>
-                              <th className="py-1.5 px-2">Notes</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-100 text-slate-700 font-sans">
-                            {(proposal.servicesScope?.hostingDomain?.domains || []).map((dom) => (
-                              <tr key={dom.id} className="hover:bg-slate-50/50">
-                                <td className="py-1.5 px-3 font-bold text-[#1a2744] font-mono">{dom.domainName || '—'}</td>
-                                <td className="py-1.5 px-2 font-mono text-slate-600">{dom.renewalDate || '—'}</td>
-                                <td className="py-1.5 px-2">
-                                  <span className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-bold ${
-                                    dom.status === 'Active'
-                                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                      : dom.status === 'Expired'
-                                      ? 'bg-red-50 text-red-700 border border-red-200'
-                                      : 'bg-amber-50 text-amber-700 border border-amber-200'
-                                  }`}>
-                                    {dom.status}
-                                  </span>
-                                </td>
-                                <td className="py-1.5 px-2 text-right font-mono font-bold text-slate-800">
-                                  {formatQAR(Number(dom.renewalCost) || 0)}
-                                </td>
-                                <td className="py-1.5 px-2 text-slate-500 text-[9px] truncate max-w-[120px]">
-                                  {dom.notes || '—'}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  )}
                 </div>
 
                 <ProposalPageFooter proposal={proposal} pageNumber={getPageNumberById("service_hosting_domain")} />

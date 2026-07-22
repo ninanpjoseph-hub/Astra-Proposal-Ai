@@ -303,64 +303,44 @@ export async function exportProposalToDocx(proposal: Proposal) {
       children.push(createSpacer(150));
     }
 
-    // Hosting & Domain Renewal Scope + Domain Portfolio Table
+    // Hosting & Domain Renewal Scope Table
     if (selectedServices.includes('hosting_domain')) {
       children.push(createSubHeader('Hosting & Domain Infrastructure Scope'));
       const hd = proposal.servicesScope.hostingDomain;
 
-      children.push(
-        new Paragraph({
-          children: [
-            new TextRun({ text: `Primary Target Domain: `, bold: true, color: COLOR_PRIMARY, size: 20 }),
-            new TextRun({ text: `${hd?.domainName || 'clientdomain.com'} (${hd?.hostingRenewalYears || 1} Year Cloud Hosting)`, size: 20, color: COLOR_SLATE_DARK }),
-          ],
-          spacing: { after: 80 },
-        })
-      );
-
-      if (hd?.serverSpecs) {
+      const entries = hd?.entries || [];
+      if (entries.length > 0) {
         children.push(
           new Paragraph({
-            children: [
-              new TextRun({ text: `Server Specifications: `, bold: true, color: COLOR_PRIMARY, size: 20 }),
-              new TextRun({ text: hd.serverSpecs, size: 20, color: COLOR_SLATE_DARK }),
-            ],
-            spacing: { after: 120 },
-          })
-        );
-      }
-
-      // DOMAINS PORTFOLIO TABLE IN DOCX
-      const domainsList = hd?.domains || [];
-      if (domainsList.length > 0) {
-        children.push(
-          new Paragraph({
-            children: [new TextRun({ text: 'Managed Domain Portfolio & Registry Schedule:', bold: true, color: COLOR_PRIMARY, size: 20 })],
+            children: [new TextRun({ text: 'Hosting Server & Domain Registry Renewal Items:', bold: true, color: COLOR_PRIMARY, size: 20 })],
             spacing: { after: 100 },
           })
         );
 
-        const domainRows: TableRow[] = [
+        const hostingRows: TableRow[] = [
           new TableRow({
             children: [
               createHeaderCell('Domain Name'),
-              createHeaderCell('Renewal Date'),
-              createHeaderCell('Status'),
-              createHeaderCell('Renewal Cost (QAR)'),
+              createHeaderCell('Hosting Provider & Plan'),
+              createHeaderCell('Renewal Date & Duration'),
+              createHeaderCell('Renewal Cost (QAR)', AlignmentType.RIGHT),
               createHeaderCell('Notes'),
             ],
           }),
         ];
 
-        domainsList.forEach(d => {
-          domainRows.push(
+        entries.forEach(item => {
+          const providerPlan = [item.hostingProvider, item.hostingPlan].filter(Boolean).join(' - ') || '—';
+          const dateDuration = [item.renewalDate, item.renewalDuration].filter(Boolean).join(' • ') || '—';
+
+          hostingRows.push(
             new TableRow({
               children: [
-                createTableCell(d.domainName || '—', true),
-                createTableCell(d.renewalDate || '—'),
-                createTableCell(d.status || 'Active'),
-                createTableCell(formatQAR(Number(d.renewalCost) || 0), false, AlignmentType.RIGHT),
-                createTableCell(d.notes || '—'),
+                createTableCell(item.domainName || '—', true),
+                createTableCell(providerPlan),
+                createTableCell(dateDuration),
+                createTableCell(formatQAR(Number(item.renewalCost) || 0), false, AlignmentType.RIGHT),
+                createTableCell(item.notes || '—'),
               ],
             })
           );
@@ -370,9 +350,31 @@ export async function exportProposalToDocx(proposal: Proposal) {
           new Table({
             width: { size: 100, type: WidthType.PERCENTAGE },
             borders: createTableBorders(),
-            rows: domainRows,
+            rows: hostingRows,
           })
         );
+      } else {
+        children.push(
+          new Paragraph({
+            children: [
+              new TextRun({ text: `Target Domain: `, bold: true, color: COLOR_PRIMARY, size: 20 }),
+              new TextRun({ text: `${hd?.domainName || 'clientdomain.com'} (${hd?.hostingRenewalYears || 1} Year Cloud Hosting)`, size: 20, color: COLOR_SLATE_DARK }),
+            ],
+            spacing: { after: 80 },
+          })
+        );
+
+        if (hd?.serverSpecs) {
+          children.push(
+            new Paragraph({
+              children: [
+                new TextRun({ text: `Server Specifications: `, bold: true, color: COLOR_PRIMARY, size: 20 }),
+                new TextRun({ text: hd.serverSpecs, size: 20, color: COLOR_SLATE_DARK }),
+              ],
+              spacing: { after: 120 },
+            })
+          );
+        }
       }
 
       children.push(createSpacer(200));

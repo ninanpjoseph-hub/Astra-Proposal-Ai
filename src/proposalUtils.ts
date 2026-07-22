@@ -84,6 +84,28 @@ export function createDefaultModularServicesScope(): ModularServicesScope {
       cost: 2500
     },
     hostingDomain: {
+      entries: [
+        {
+          id: "hd-1",
+          domainName: "clientdomain.com",
+          hostingProvider: "AWS / Cloud Infrastructure",
+          hostingPlan: "High-Performance Cloud Server (NVMe SSD)",
+          renewalDate: "2026-11-15",
+          renewalDuration: "1 Year",
+          renewalCost: 1400,
+          notes: "Primary Production Domain & Cloud Server Infrastructure"
+        },
+        {
+          id: "hd-2",
+          domainName: "clientdomain.qa",
+          hostingProvider: "Ooredoo Cloud Registry",
+          hostingPlan: "DNS Routing & Regional Registry",
+          renewalDate: "2026-12-01",
+          renewalDuration: "1 Year",
+          renewalCost: 400,
+          notes: "Local Qatar Registry Domain (.qa)"
+        }
+      ],
       hostingRenewalYears: 1,
       hostingQty: 1,
       hostingUnitPrice: 1400,
@@ -97,24 +119,6 @@ export function createDefaultModularServicesScope(): ModularServicesScope {
       domainQty: 2,
       domainUnitPrice: 200,
       domainCost: 400,
-      domains: [
-        {
-          id: "dom-1",
-          domainName: "clientdomain.com",
-          renewalDate: "2026-11-15",
-          renewalCost: 150,
-          status: "Active",
-          notes: "Primary Brand Domain (.com)"
-        },
-        {
-          id: "dom-2",
-          domainName: "clientdomain.qa",
-          renewalDate: "2026-12-01",
-          renewalCost: 250,
-          status: "Active",
-          notes: "Local Qatar Registry Domain (.qa)"
-        }
-      ],
       renewalTerms: "1-Year License Renewal for Hosting Server Infrastructure and Domain Name Registration. Renewal invoices are issued 30 days prior to expiration.",
       exclusions: "Third-party paid API subscriptions, premium external software licenses, and major server migrations.",
       supportInfo: "24/7 Server Infrastructure Monitoring with automated failover and ticket-based technical support.",
@@ -192,87 +196,100 @@ export function getModularDeliverableLineItems(servicesScope?: ModularServicesSc
 
   // 2. Hosting & Domain Renewal
   if (selectedServices.includes('hosting_domain') && hostingDomain) {
-    const hostingYears = hostingDomain.hostingRenewalYears || 1;
-    const totalModuleCost = Number(hostingDomain.cost) || 0;
-    const domainsList = hostingDomain.domains || [];
-    const sumDomainCosts = domainsList.reduce((sum, d) => sum + (Number(d.renewalCost) || 0), 0);
-    
-    // Determine hosting portion
-    let hostingCost = hostingDomain.hostingCost ?? (
-      sumDomainCosts > 0 && sumDomainCosts < totalModuleCost 
-        ? totalModuleCost - sumDomainCosts 
-        : totalModuleCost
-    );
-    if (domainsList.length === 0 && !hostingDomain.includeDomainRenewal && !hostingDomain.domainName && !hostingDomain.domainQty) {
-      hostingCost = totalModuleCost;
-    }
+    if (hostingDomain.entries && hostingDomain.entries.length > 0) {
+      hostingDomain.entries.forEach((entry, idx) => {
+        const cost = Number(entry.renewalCost) || 0;
+        const name = entry.domainName 
+          ? `Hosting & Domain Renewal – ${entry.domainName}`
+          : `Hosting & Domain Renewal Item #${idx + 1}`;
+        
+        const descParts: string[] = [];
+        if (entry.hostingProvider) descParts.push(`Provider: ${entry.hostingProvider}`);
+        if (entry.hostingPlan) descParts.push(`Plan: ${entry.hostingPlan}`);
+        if (entry.renewalDate) descParts.push(`Renews: ${entry.renewalDate}`);
+        if (entry.notes) descParts.push(`Notes: ${entry.notes}`);
 
-    const hostingUnitPrice = hostingDomain.hostingUnitPrice || (hostingYears > 0 ? hostingCost / hostingYears : hostingCost);
-
-    items.push({
-      id: 'item_hosting_server',
-      moduleKey: 'hosting_domain',
-      moduleTitle: 'Hosting & Domain Renewal',
-      deliverableName: `Cloud Server Hosting Renewal (${hostingYears} ${hostingYears === 1 ? 'Year' : 'Years'})`,
-      scopeDescription: hostingDomain.serverSpecs || hostingDomain.hostingSpecifications || 'High-performance SSD Cloud Server with daily automated backups & 99.9% uptime SLA',
-      quantity: hostingYears,
-      unitLabel: hostingYears === 1 ? 'Year' : 'Years',
-      unitPrice: hostingUnitPrice,
-      totalCost: hostingCost,
-    });
-
-    // Domain Renewals
-    if (hostingDomain.includeDomainRenewal || domainsList.length > 0 || (hostingDomain.domainQty && hostingDomain.domainQty > 0)) {
-      if (domainsList.length > 0) {
-        const domYears = hostingDomain.domainRenewalYears || 1;
-        const domCount = domainsList.length;
-        const totalDomainCost = sumDomainCosts || (hostingDomain.domainCost ?? 0);
-        const avgUnitPrice = domCount > 0 ? totalDomainCost / domCount : totalDomainCost;
-        const domainNamesStr = domainsList.map(d => d.domainName).filter(Boolean).join(', ');
+        const scopeDesc = descParts.length > 0 
+          ? descParts.join(' • ') 
+          : 'Cloud Hosting Server Infrastructure & Domain Registry Renewal';
 
         items.push({
-          id: 'item_domains_grouped',
+          id: `item_hd_${entry.id || idx}`,
           moduleKey: 'hosting_domain',
           moduleTitle: 'Hosting & Domain Renewal',
-          deliverableName: `Domain Renewal – Annual Renewal (${domCount} ${domCount === 1 ? 'Domain' : 'Domains'})`,
-          scopeDescription: `Annual Registry Renewal for ${domainNamesStr || 'Managed Portfolio Domains'} (${domYears} ${domYears === 1 ? 'Yr' : 'Yrs'})`,
-          quantity: domCount,
-          unitLabel: domCount === 1 ? 'Domain' : 'Domains',
-          unitPrice: avgUnitPrice,
-          totalCost: totalDomainCost,
+          deliverableName: name,
+          scopeDescription: scopeDesc,
+          quantity: 1,
+          unitLabel: entry.renewalDuration || '1 Year',
+          unitPrice: cost,
+          totalCost: cost,
         });
-      } else if (hostingDomain.domainQty && hostingDomain.domainQty > 0) {
-        const domCount = hostingDomain.domainQty;
-        const domYears = hostingDomain.domainRenewalYears || 1;
-        const totalDomainCost = hostingDomain.domainCost ?? (hostingDomain.domainUnitPrice ? domCount * hostingDomain.domainUnitPrice : 0);
-        const unitPrice = hostingDomain.domainUnitPrice ?? (domCount > 0 ? totalDomainCost / domCount : totalDomainCost);
+      });
+    } else {
+      // Fallback for legacy proposals
+      const hostingYears = hostingDomain.hostingRenewalYears || 1;
+      const totalModuleCost = Number(hostingDomain.cost) || 0;
+      const domainsList = hostingDomain.domains || [];
+      const sumDomainCosts = domainsList.reduce((sum, d) => sum + (Number(d.renewalCost) || 0), 0);
+      
+      let hostingCost = hostingDomain.hostingCost ?? (
+        sumDomainCosts > 0 && sumDomainCosts < totalModuleCost 
+          ? totalModuleCost - sumDomainCosts 
+          : totalModuleCost
+      );
+      if (domainsList.length === 0 && !hostingDomain.includeDomainRenewal && !hostingDomain.domainName && !hostingDomain.domainQty) {
+        hostingCost = totalModuleCost;
+      }
 
-        items.push({
-          id: 'item_domains_qty',
-          moduleKey: 'hosting_domain',
-          moduleTitle: 'Hosting & Domain Renewal',
-          deliverableName: `Domain Renewal – Annual Renewal (${domCount} ${domCount === 1 ? 'Domain' : 'Domains'})`,
-          scopeDescription: `Annual Registry Renewal & DNS Management for ${hostingDomain.domainName || 'Target Domains'} (${domYears} Yr)`,
-          quantity: domCount,
-          unitLabel: domCount === 1 ? 'Domain' : 'Domains',
-          unitPrice: unitPrice,
-          totalCost: totalDomainCost,
-        });
-      } else if (hostingDomain.domainName) {
-        const domYears = hostingDomain.domainRenewalYears || 1;
-        const domTotal = hostingDomain.domainCost ?? (totalModuleCost - hostingCost);
-        const domUnitPrice = domYears > 0 ? domTotal / domYears : domTotal;
-        items.push({
-          id: 'item_domain_primary',
-          moduleKey: 'hosting_domain',
-          moduleTitle: 'Hosting & Domain Renewal',
-          deliverableName: `Domain Renewal – ${hostingDomain.domainName} (${domYears} ${domYears === 1 ? 'Year' : 'Years'})`,
-          scopeDescription: `Annual Registry Renewal & DNS Management`,
-          quantity: domYears,
-          unitLabel: domYears === 1 ? 'Domain' : 'Domains',
-          unitPrice: domUnitPrice,
-          totalCost: domTotal,
-        });
+      const hostingUnitPrice = hostingDomain.hostingUnitPrice || (hostingYears > 0 ? hostingCost / hostingYears : hostingCost);
+
+      items.push({
+        id: 'item_hosting_server',
+        moduleKey: 'hosting_domain',
+        moduleTitle: 'Hosting & Domain Renewal',
+        deliverableName: `Cloud Server Hosting Renewal (${hostingYears} ${hostingYears === 1 ? 'Year' : 'Years'})`,
+        scopeDescription: hostingDomain.serverSpecs || hostingDomain.hostingSpecifications || 'High-performance SSD Cloud Server with daily automated backups & 99.9% uptime SLA',
+        quantity: hostingYears,
+        unitLabel: hostingYears === 1 ? 'Year' : 'Years',
+        unitPrice: hostingUnitPrice,
+        totalCost: hostingCost,
+      });
+
+      if (hostingDomain.includeDomainRenewal || domainsList.length > 0 || (hostingDomain.domainQty && hostingDomain.domainQty > 0)) {
+        if (domainsList.length > 0) {
+          const domYears = hostingDomain.domainRenewalYears || 1;
+          const domCount = domainsList.length;
+          const totalDomainCost = sumDomainCosts || (hostingDomain.domainCost ?? 0);
+          const avgUnitPrice = domCount > 0 ? totalDomainCost / domCount : totalDomainCost;
+          const domainNamesStr = domainsList.map(d => d.domainName).filter(Boolean).join(', ');
+
+          items.push({
+            id: 'item_domains_grouped',
+            moduleKey: 'hosting_domain',
+            moduleTitle: 'Hosting & Domain Renewal',
+            deliverableName: `Domain Renewal – Annual Renewal (${domCount} ${domCount === 1 ? 'Domain' : 'Domains'})`,
+            scopeDescription: `Annual Registry Renewal for ${domainNamesStr || 'Managed Portfolio Domains'} (${domYears} ${domYears === 1 ? 'Yr' : 'Yrs'})`,
+            quantity: domCount,
+            unitLabel: domCount === 1 ? 'Domain' : 'Domains',
+            unitPrice: avgUnitPrice,
+            totalCost: totalDomainCost,
+          });
+        } else if (hostingDomain.domainName) {
+          const domYears = hostingDomain.domainRenewalYears || 1;
+          const domTotal = hostingDomain.domainCost ?? (totalModuleCost - hostingCost);
+          const domUnitPrice = domYears > 0 ? domTotal / domYears : domTotal;
+          items.push({
+            id: 'item_domain_primary',
+            moduleKey: 'hosting_domain',
+            moduleTitle: 'Hosting & Domain Renewal',
+            deliverableName: `Domain Renewal – ${hostingDomain.domainName} (${domYears} ${domYears === 1 ? 'Year' : 'Years'})`,
+            scopeDescription: `Annual Registry Renewal & DNS Management`,
+            quantity: domYears,
+            unitLabel: domYears === 1 ? 'Domain' : 'Domains',
+            unitPrice: domUnitPrice,
+            totalCost: domTotal,
+          });
+        }
       }
     }
   }

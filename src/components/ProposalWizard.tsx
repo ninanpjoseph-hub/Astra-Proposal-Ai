@@ -298,115 +298,87 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
     });
   };
 
-  // Domain Management state & handlers
-  const [showBulkDomainInput, setShowBulkDomainInput] = useState(false);
-  const [bulkDomainsText, setBulkDomainsText] = useState('');
-  const [bulkDefaultCost, setBulkDefaultCost] = useState(150);
-  const [bulkDefaultDate, setBulkDefaultDate] = useState('2026-12-31');
-  const [bulkDefaultStatus, setBulkDefaultStatus] = useState<'Active' | 'Expired' | 'Pending'>('Active');
-
-  const addIndividualDomain = () => {
+  // Hosting & Domain Entry Handlers
+  const addHostingDomainEntry = () => {
     setProposal(prev => {
       const currentScope = prev.servicesScope || createDefaultModularServicesScope();
       const currentHosting = currentScope.hostingDomain || {} as any;
-      const currentDomains: DomainItem[] = currentHosting.domains || [];
-      const newDomain: DomainItem = {
-        id: `dom-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      const currentEntries: HostingDomainEntry[] = currentHosting.entries || [];
+      const newEntry: HostingDomainEntry = {
+        id: `hd-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
         domainName: '',
-        renewalDate: '2026-12-31',
-        renewalCost: 150,
-        status: 'Active',
+        hostingProvider: '',
+        hostingPlan: '',
+        renewalDate: new Date().toISOString().split('T')[0],
+        renewalDuration: '1 Year',
+        renewalCost: 0,
         notes: ''
       };
-      const updatedDomains = [...currentDomains, newDomain];
+      const updatedEntries = [...currentEntries, newEntry];
+      const newModuleCost = updatedEntries.reduce((sum, item) => sum + (Number(item.renewalCost) || 0), 0);
+      const updatedScope = {
+        ...currentScope,
+        hostingDomain: {
+          ...currentHosting,
+          entries: updatedEntries,
+          cost: newModuleCost
+        }
+      };
+      const newTotal = calculateModularServicesTotal(updatedScope);
       return {
         ...prev,
-        servicesScope: {
-          ...currentScope,
-          hostingDomain: {
-            ...currentHosting,
-            domains: updatedDomains
-          }
-        }
+        servicesScope: updatedScope,
+        totalCost: newTotal
       };
     });
   };
 
-  const updateIndividualDomain = (id: string, field: keyof DomainItem, value: any) => {
+  const updateHostingDomainEntry = (id: string, field: keyof HostingDomainEntry, value: any) => {
     setProposal(prev => {
       const currentScope = prev.servicesScope || createDefaultModularServicesScope();
       const currentHosting = currentScope.hostingDomain || {} as any;
-      const currentDomains: DomainItem[] = currentHosting.domains || [];
-      const updatedDomains = currentDomains.map(d => d.id === id ? { ...d, [field]: value } : d);
+      const currentEntries: HostingDomainEntry[] = currentHosting.entries || [];
+      const updatedEntries = currentEntries.map(e => e.id === id ? { ...e, [field]: value } : e);
+      const newModuleCost = updatedEntries.reduce((sum, item) => sum + (Number(item.renewalCost) || 0), 0);
+      const updatedScope = {
+        ...currentScope,
+        hostingDomain: {
+          ...currentHosting,
+          entries: updatedEntries,
+          cost: newModuleCost
+        }
+      };
+      const newTotal = calculateModularServicesTotal(updatedScope);
       return {
         ...prev,
-        servicesScope: {
-          ...currentScope,
-          hostingDomain: {
-            ...currentHosting,
-            domains: updatedDomains
-          }
-        }
+        servicesScope: updatedScope,
+        totalCost: newTotal
       };
     });
   };
 
-  const removeIndividualDomain = (id: string) => {
+  const removeHostingDomainEntry = (id: string) => {
     setProposal(prev => {
       const currentScope = prev.servicesScope || createDefaultModularServicesScope();
       const currentHosting = currentScope.hostingDomain || {} as any;
-      const currentDomains: DomainItem[] = currentHosting.domains || [];
-      const updatedDomains = currentDomains.filter(d => d.id !== id);
-      return {
-        ...prev,
-        servicesScope: {
-          ...currentScope,
-          hostingDomain: {
-            ...currentHosting,
-            domains: updatedDomains
-          }
+      const currentEntries: HostingDomainEntry[] = currentHosting.entries || [];
+      const updatedEntries = currentEntries.filter(e => e.id !== id);
+      const newModuleCost = updatedEntries.reduce((sum, item) => sum + (Number(item.renewalCost) || 0), 0);
+      const updatedScope = {
+        ...currentScope,
+        hostingDomain: {
+          ...currentHosting,
+          entries: updatedEntries,
+          cost: newModuleCost
         }
       };
-    });
-  };
-
-  const handleBulkImportDomains = () => {
-    if (!bulkDomainsText.trim()) return;
-    const rawNames = bulkDomainsText
-      .split(/[\n,;]+/)
-      .map(name => name.trim())
-      .filter(Boolean);
-
-    if (rawNames.length === 0) return;
-
-    setProposal(prev => {
-      const currentScope = prev.servicesScope || createDefaultModularServicesScope();
-      const currentHosting = currentScope.hostingDomain || {} as any;
-      const currentDomains: DomainItem[] = currentHosting.domains || [];
-
-      const newDomains: DomainItem[] = rawNames.map((name, idx) => ({
-        id: `dom-${Date.now()}-${idx}-${Math.random().toString(36).substring(2, 5)}`,
-        domainName: name,
-        renewalDate: bulkDefaultDate || '2026-12-31',
-        renewalCost: Number(bulkDefaultCost) || 150,
-        status: bulkDefaultStatus,
-        notes: 'Bulk Imported'
-      }));
-
+      const newTotal = calculateModularServicesTotal(updatedScope);
       return {
         ...prev,
-        servicesScope: {
-          ...currentScope,
-          hostingDomain: {
-            ...currentHosting,
-            domains: [...currentDomains, ...newDomains]
-          }
-        }
+        servicesScope: updatedScope,
+        totalCost: newTotal
       };
     });
-
-    setBulkDomainsText('');
-    setShowBulkDomainInput(false);
   };
 
   const handleNext = () => {
@@ -1019,258 +991,157 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
                     </div>
 
                     {(proposal.servicesScope?.selectedServices || []).includes('hosting_domain') && (
-                      <div className="mt-4 pt-4 border-t border-slate-200 space-y-5">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div className="mt-4 pt-4 border-t border-slate-200 space-y-4">
+                        <div className="flex flex-wrap items-center justify-between gap-2 bg-slate-50 border border-slate-200 p-3.5 rounded-xl">
                           <div>
-                            <label className="text-xs font-semibold text-slate-700 block mb-1">Primary Target Domain</label>
-                            <input
-                              type="text"
-                              value={proposal.servicesScope?.hostingDomain?.domainName || ''}
-                              placeholder="e.g. clientdomain.qa"
-                              onChange={(e) => updateServiceDetail('hostingDomain', 'domainName', e.target.value)}
-                              className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-sans font-bold"
-                            />
+                            <h4 className="text-xs font-bold text-slate-800 flex items-center gap-2">
+                              <Landmark className="h-4 w-4 text-blue-600" />
+                              Hosting & Domain Renewal Items
+                            </h4>
+                            <p className="text-[11px] text-slate-500">
+                              Add and manage individual hosting server and domain renewal entries for this proposal.
+                            </p>
                           </div>
-                          <div>
-                            <label className="text-xs font-semibold text-slate-700 block mb-1">Hosting Renewal Period (Years)</label>
-                            <input
-                              type="number"
-                              min={1}
-                              max={10}
-                              value={proposal.servicesScope?.hostingDomain?.hostingRenewalYears || 1}
-                              onChange={(e) => updateServiceDetail('hostingDomain', 'hostingRenewalYears', Number(e.target.value))}
-                              className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-sans"
-                            />
-                          </div>
-                          <div className="flex items-center pt-5">
-                            <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">
-                              <input
-                                type="checkbox"
-                                checked={proposal.servicesScope?.hostingDomain?.includeDomainRenewal ?? true}
-                                onChange={(e) => updateServiceDetail('hostingDomain', 'includeDomainRenewal', e.target.checked)}
-                                className="h-4 w-4 text-blue-600 rounded border-slate-300"
-                              />
-                              <span>Include Domain Registry Renewal</span>
-                            </label>
-                          </div>
+                          <button
+                            type="button"
+                            onClick={addHostingDomainEntry}
+                            className="px-3.5 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 transition-all flex items-center gap-1.5 shadow-xs"
+                          >
+                            <Plus className="h-3.5 w-3.5" />
+                            Add Hosting / Domain Entry
+                          </button>
                         </div>
 
-                        <div>
-                          <label className="text-xs font-semibold text-slate-700 block mb-1">Hosting Server Specifications</label>
-                          <textarea
-                            rows={2}
-                            value={proposal.servicesScope?.hostingDomain?.serverSpecs || ''}
-                            onChange={(e) => updateServiceDetail('hostingDomain', 'serverSpecs', e.target.value)}
-                            className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-sans"
-                            placeholder="e.g. NVMe High-Speed SSD Cloud Server, Daily Automated Backups, 99.9% Uptime Guarantee"
-                          />
-                        </div>
-
-                        {/* DOMAIN PORTFOLIO MANAGEMENT SECTION */}
-                        <div className="bg-slate-50/80 border border-slate-200 rounded-xl p-4 space-y-3">
-                          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-3">
-                            <div>
-                              <h4 className="text-xs font-bold text-slate-800 flex items-center gap-2">
-                                <Landmark className="h-4 w-4 text-blue-600" />
-                                Managed Domain Portfolio & Multi-Domain Registry
-                              </h4>
-                              <p className="text-[11px] text-slate-500">
-                                Manage multiple client domains, registration dates, renewal costs, statuses, and notes.
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <button
-                                type="button"
-                                onClick={() => setShowBulkDomainInput(!showBulkDomainInput)}
-                                className="px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg text-xs font-bold hover:bg-blue-100 transition-all flex items-center gap-1.5"
-                              >
-                                <Sparkles className="h-3.5 w-3.5 text-blue-600" />
-                                {showBulkDomainInput ? 'Hide Bulk Entry' : 'Bulk Add Domains'}
-                              </button>
-                              <button
-                                type="button"
-                                onClick={addIndividualDomain}
-                                className="px-3 py-1.5 bg-slate-800 text-white rounded-lg text-xs font-bold hover:bg-slate-900 transition-all flex items-center gap-1.5"
-                              >
-                                <Plus className="h-3.5 w-3.5" />
-                                Add Domain
-                              </button>
-                            </div>
+                        {/* ENTRIES LIST */}
+                        {(!proposal.servicesScope?.hostingDomain?.entries || proposal.servicesScope.hostingDomain.entries.length === 0) ? (
+                          <div className="text-center py-8 border border-dashed border-slate-300 rounded-xl bg-white space-y-2">
+                            <p className="text-xs text-slate-500 font-medium">No hosting or domain renewal items added yet.</p>
+                            <button
+                              type="button"
+                              onClick={addHostingDomainEntry}
+                              className="px-4 py-2 bg-blue-50 text-blue-700 border border-blue-200 text-xs font-bold rounded-lg hover:bg-blue-100 transition-all inline-flex items-center gap-1.5"
+                            >
+                              <Plus className="h-3.5 w-3.5" />
+                              Add First Renewal Item
+                            </button>
                           </div>
+                        ) : (
+                          <div className="space-y-3">
+                            {(proposal.servicesScope?.hostingDomain?.entries || []).map((entry, idx) => (
+                              <div key={entry.id || idx} className="bg-white border border-slate-200 rounded-xl p-4 space-y-3 shadow-2xs hover:border-blue-200 transition-all relative">
+                                <div className="flex items-center justify-between border-b border-slate-150 pb-2.5">
+                                  <span className="text-xs font-bold text-slate-800 flex items-center gap-2">
+                                    <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-700 text-[10px] font-mono flex items-center justify-center font-bold">
+                                      {idx + 1}
+                                    </span>
+                                    {entry.domainName ? entry.domainName : `Renewal Record #${idx + 1}`}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => removeHostingDomainEntry(entry.id)}
+                                    className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                                    title="Remove Entry"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </button>
+                                </div>
 
-                          {/* BULK DOMAIN IMPORT PANEL */}
-                          {showBulkDomainInput && (
-                            <div className="p-3.5 bg-blue-50/70 border border-blue-200 rounded-xl space-y-3">
-                              <div className="flex items-center justify-between">
-                                <span className="text-xs font-bold text-blue-900">Bulk Domain Import Option</span>
-                                <span className="text-[10px] text-blue-700">Paste multiple domains separated by commas, new lines, or spaces</span>
-                              </div>
-                              <textarea
-                                rows={3}
-                                value={bulkDomainsText}
-                                onChange={(e) => setBulkDomainsText(e.target.value)}
-                                placeholder="e.g. clientbrand.com, clientbrand.qa, clientstore.org, clientportal.io"
-                                className="w-full px-3 py-2 border border-blue-300 rounded-lg text-xs font-mono bg-white focus:ring-2 focus:ring-blue-500/20"
-                              />
-                              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                  <div>
+                                    <label className="text-[11px] font-bold text-slate-700 block mb-1">Domain Name</label>
+                                    <input
+                                      type="text"
+                                      value={entry.domainName || ''}
+                                      placeholder="e.g. clientdomain.com"
+                                      onChange={(e) => updateHostingDomainEntry(entry.id, 'domainName', e.target.value)}
+                                      className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-mono font-bold text-slate-900 focus:ring-2 focus:ring-blue-500/20"
+                                    />
+                                  </div>
+
+                                  <div>
+                                    <label className="text-[11px] font-bold text-slate-700 block mb-1">Hosting Provider</label>
+                                    <input
+                                      type="text"
+                                      value={entry.hostingProvider || ''}
+                                      placeholder="e.g. AWS Cloud / Godaddy / Ooredoo"
+                                      onChange={(e) => updateHostingDomainEntry(entry.id, 'hostingProvider', e.target.value)}
+                                      className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs text-slate-800"
+                                    />
+                                  </div>
+
+                                  <div>
+                                    <label className="text-[11px] font-bold text-slate-700 block mb-1">Hosting Plan / Package</label>
+                                    <input
+                                      type="text"
+                                      value={entry.hostingPlan || ''}
+                                      placeholder="e.g. NVMe High-Speed SSD Server"
+                                      onChange={(e) => updateHostingDomainEntry(entry.id, 'hostingPlan', e.target.value)}
+                                      className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs text-slate-800"
+                                    />
+                                  </div>
+
+                                  <div>
+                                    <label className="text-[11px] font-bold text-slate-700 block mb-1">Renewal Date</label>
+                                    <input
+                                      type="text"
+                                      value={entry.renewalDate || ''}
+                                      placeholder="YYYY-MM-DD"
+                                      onChange={(e) => updateHostingDomainEntry(entry.id, 'renewalDate', e.target.value)}
+                                      className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-mono text-slate-800"
+                                    />
+                                  </div>
+
+                                  <div>
+                                    <label className="text-[11px] font-bold text-slate-700 block mb-1">Renewal Duration</label>
+                                    <input
+                                      type="text"
+                                      value={entry.renewalDuration || '1 Year'}
+                                      placeholder="e.g. 1 Year, 2 Years"
+                                      onChange={(e) => updateHostingDomainEntry(entry.id, 'renewalDuration', e.target.value)}
+                                      className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs text-slate-800"
+                                    />
+                                  </div>
+
+                                  <div>
+                                    <label className="text-[11px] font-bold text-slate-700 block mb-1">Renewal Cost (QAR)</label>
+                                    <input
+                                      type="number"
+                                      value={entry.renewalCost || 0}
+                                      onChange={(e) => updateHostingDomainEntry(entry.id, 'renewalCost', Number(e.target.value))}
+                                      className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-mono font-bold text-right text-slate-900 focus:ring-2 focus:ring-blue-500/20"
+                                    />
+                                  </div>
+                                </div>
+
                                 <div>
-                                  <label className="text-[10px] font-bold text-slate-600 block mb-0.5">Default Renewal Date</label>
+                                  <label className="text-[11px] font-bold text-slate-700 block mb-1">Additional Notes / Specs (Optional)</label>
                                   <input
                                     type="text"
-                                    value={bulkDefaultDate}
-                                    onChange={(e) => setBulkDefaultDate(e.target.value)}
-                                    placeholder="YYYY-MM-DD"
-                                    className="w-full px-2.5 py-1 border border-slate-300 rounded text-xs bg-white"
+                                    value={entry.notes || ''}
+                                    placeholder="e.g. Primary production server, SSL included, 99.9% Uptime SLA"
+                                    onChange={(e) => updateHostingDomainEntry(entry.id, 'notes', e.target.value)}
+                                    className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs text-slate-600"
                                   />
                                 </div>
-                                <div>
-                                  <label className="text-[10px] font-bold text-slate-600 block mb-0.5">Default Renewal Cost (QAR)</label>
-                                  <input
-                                    type="number"
-                                    value={bulkDefaultCost}
-                                    onChange={(e) => setBulkDefaultCost(Number(e.target.value))}
-                                    className="w-full px-2.5 py-1 border border-slate-300 rounded text-xs bg-white font-bold"
-                                  />
-                                </div>
-                                <div>
-                                  <label className="text-[10px] font-bold text-slate-600 block mb-0.5">Default Status</label>
-                                  <select
-                                    value={bulkDefaultStatus}
-                                    onChange={(e) => setBulkDefaultStatus(e.target.value as any)}
-                                    className="w-full px-2.5 py-1 border border-slate-300 rounded text-xs bg-white font-medium"
-                                  >
-                                    <option value="Active">Active</option>
-                                    <option value="Pending">Pending Renewal</option>
-                                    <option value="Expired">Expired</option>
-                                  </select>
-                                </div>
                               </div>
-                              <div className="flex justify-end gap-2 pt-1">
-                                <button
-                                  type="button"
-                                  onClick={() => setShowBulkDomainInput(false)}
-                                  className="px-3 py-1 bg-white border border-slate-300 text-slate-600 text-xs font-semibold rounded-md"
-                                >
-                                  Cancel
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={handleBulkImportDomains}
-                                  className="px-4 py-1 bg-blue-600 text-white text-xs font-bold rounded-md hover:bg-blue-700 shadow-sm"
-                                >
-                                  Import All Domains
-                                </button>
-                              </div>
-                            </div>
-                          )}
+                            ))}
 
-                          {/* DOMAIN LIST TABLE */}
-                          {(!proposal.servicesScope?.hostingDomain?.domains || proposal.servicesScope.hostingDomain.domains.length === 0) ? (
-                            <div className="text-center py-6 border border-dashed border-slate-300 rounded-lg bg-white">
-                              <p className="text-xs text-slate-500 mb-2">No custom domains added yet.</p>
+                            <div className="flex items-center justify-between bg-slate-100 p-3 rounded-xl border border-slate-200">
                               <button
                                 type="button"
-                                onClick={addIndividualDomain}
-                                className="text-xs text-blue-600 font-bold hover:underline"
+                                onClick={addHostingDomainEntry}
+                                className="px-3.5 py-1.5 bg-white border border-slate-300 text-slate-800 text-xs font-bold rounded-lg hover:bg-slate-50 transition-all flex items-center gap-1.5 shadow-2xs"
                               >
-                                + Add First Domain
+                                <Plus className="h-3.5 w-3.5 text-blue-600" />
+                                Add More
                               </button>
-                            </div>
-                          ) : (
-                            <div className="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-xs">
-                              <div className="overflow-x-auto">
-                                <table className="w-full text-left border-collapse">
-                                  <thead>
-                                    <tr className="bg-slate-100/80 border-b border-slate-200 text-[10px] uppercase font-bold text-slate-600">
-                                      <th className="py-2 px-3">Domain Name</th>
-                                      <th className="py-2 px-3">Renewal Date</th>
-                                      <th className="py-2 px-3">Status</th>
-                                      <th className="py-2 px-3 text-right">Cost (QAR)</th>
-                                      <th className="py-2 px-3">Notes</th>
-                                      <th className="py-2 px-2 text-center w-10"></th>
-                                    </tr>
-                                  </thead>
-                                  <tbody className="divide-y divide-slate-200 text-xs">
-                                    {(proposal.servicesScope?.hostingDomain?.domains || []).map((dom) => (
-                                      <tr key={dom.id} className="hover:bg-slate-50/60">
-                                        <td className="py-2 px-3">
-                                          <input
-                                            type="text"
-                                            value={dom.domainName}
-                                            placeholder="domain.com"
-                                            onChange={(e) => updateIndividualDomain(dom.id, 'domainName', e.target.value)}
-                                            className="w-full px-2 py-1 border border-slate-300 rounded text-xs font-bold text-slate-800"
-                                          />
-                                        </td>
-                                        <td className="py-2 px-3">
-                                          <input
-                                            type="text"
-                                            value={dom.renewalDate}
-                                            placeholder="YYYY-MM-DD"
-                                            onChange={(e) => updateIndividualDomain(dom.id, 'renewalDate', e.target.value)}
-                                            className="w-full px-2 py-1 border border-slate-300 rounded text-xs font-mono"
-                                          />
-                                        </td>
-                                        <td className="py-2 px-3">
-                                          <select
-                                            value={dom.status}
-                                            onChange={(e) => updateIndividualDomain(dom.id, 'status', e.target.value as any)}
-                                            className={`px-2 py-1 border rounded text-xs font-bold ${
-                                              dom.status === 'Active'
-                                                ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
-                                                : dom.status === 'Expired'
-                                                ? 'bg-red-50 text-red-700 border-red-300'
-                                                : 'bg-amber-50 text-amber-700 border-amber-300'
-                                            }`}
-                                          >
-                                            <option value="Active">Active</option>
-                                            <option value="Pending">Pending</option>
-                                            <option value="Expired">Expired</option>
-                                          </select>
-                                        </td>
-                                        <td className="py-2 px-3 text-right">
-                                          <input
-                                            type="number"
-                                            value={dom.renewalCost}
-                                            onChange={(e) => updateIndividualDomain(dom.id, 'renewalCost', Number(e.target.value))}
-                                            className="w-20 px-2 py-1 border border-slate-300 rounded text-xs font-mono font-bold text-right"
-                                          />
-                                        </td>
-                                        <td className="py-2 px-3">
-                                          <input
-                                            type="text"
-                                            value={dom.notes || ''}
-                                            placeholder="Optional notes..."
-                                            onChange={(e) => updateIndividualDomain(dom.id, 'notes', e.target.value)}
-                                            className="w-full px-2 py-1 border border-slate-300 rounded text-xs text-slate-600"
-                                          />
-                                        </td>
-                                        <td className="py-2 px-2 text-center">
-                                          <button
-                                            type="button"
-                                            onClick={() => removeIndividualDomain(dom.id)}
-                                            className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-all"
-                                            title="Delete Domain"
-                                          >
-                                            <Trash2 className="h-3.5 w-3.5" />
-                                          </button>
-                                        </td>
-                                      </tr>
-                                    ))}
-                                  </tbody>
-                                </table>
-                              </div>
-
-                              {/* Domain Summary Footer */}
-                              <div className="bg-slate-50 border-t border-slate-200 p-2.5 flex items-center justify-between text-xs font-semibold text-slate-700">
-                                <span>Total Managed Domains: <strong>{(proposal.servicesScope?.hostingDomain?.domains || []).length}</strong></span>
-                                <span>
-                                  Domain Subtotal: <strong className="text-slate-900 font-bold font-mono">{formatQAR((proposal.servicesScope?.hostingDomain?.domains || []).reduce((sum, d) => sum + (Number(d.renewalCost) || 0), 0))}</strong>
-                                </span>
+                              <div className="text-right text-xs font-bold text-slate-800">
+                                Total Module Renewal Items: <span className="font-mono text-blue-700 font-extrabold mr-3">{(proposal.servicesScope?.hostingDomain?.entries || []).length}</span>
+                                Combined Subtotal: <span className="font-mono text-emerald-700 font-extrabold">{formatQAR((proposal.servicesScope?.hostingDomain?.entries || []).reduce((sum, e) => sum + (Number(e.renewalCost) || 0), 0))}</span>
                               </div>
                             </div>
-                          )}
-                        </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

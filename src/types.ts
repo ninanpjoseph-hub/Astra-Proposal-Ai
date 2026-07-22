@@ -30,6 +30,17 @@ export interface WebsiteAuditScope {
   deliverablesSummary?: string;
 }
 
+export interface HostingDomainEntry {
+  id: string;
+  domainName: string;
+  hostingProvider?: string;
+  hostingPlan?: string;
+  renewalDate?: string;
+  renewalDuration?: string;
+  renewalCost: number;
+  notes?: string;
+}
+
 export interface DomainItem {
   id: string;
   domainName: string;
@@ -42,13 +53,14 @@ export interface DomainItem {
 }
 
 export interface HostingDomainScope {
-  hostingRenewalYears: number;
-  domainRenewalYears: number;
-  includeDomain: boolean;
+  entries?: HostingDomainEntry[];
+  hostingRenewalYears?: number;
+  domainRenewalYears?: number;
+  includeDomain?: boolean;
   includeDomainRenewal?: boolean;
   serverSpecs?: string;
-  hostingSpecifications: string;
-  domainName: string;
+  hostingSpecifications?: string;
+  domainName?: string;
   domains?: DomainItem[];
   renewalTerms: string;
   exclusions: string;
