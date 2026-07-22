@@ -12,6 +12,7 @@ import SitemapGenerator from './SitemapGenerator';
 import { groupScopeIntoPages } from '../utils/scopeClassifier';
 import { Check, Bookmark, DollarSign, Calendar, Landmark, BookOpen, Signature, Award, ChevronRight, FileText, Printer, Download, History, RotateCcw, Clock, Sliders, Upload, Trash2, Plus, AlertCircle, Coins, CreditCard, Shield, Users } from 'lucide-react';
 import { Proposal, ProposalHistoryEntry, ProposalStatus, PaymentEntry, UserRole } from '../types';
+import { exportProposalToDocx } from '../utils/docxExport';
 
 interface ProposalDocumentViewProps {
   proposal: Proposal;
@@ -291,6 +292,10 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
         ...defaults.websiteScope,
         ...(incomingProposal.websiteScope || {})
       },
+      servicesScope: {
+        ...defaults.servicesScope,
+        ...(incomingProposal.servicesScope || {})
+      },
       milestones: incomingProposal.milestones || defaults.milestones || [],
       resourceCosts: incomingProposal.resourceCosts || defaults.resourceCosts || [],
       history: incomingProposal.history || defaults.history || [],
@@ -298,6 +303,7 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
   }, [incomingProposal]);
 
   const isBranding = proposal.type === 'branding';
+  const isServices = proposal.type === 'services';
   const templates = isBranding ? BRANDING_TEMPLATES : WEBSITE_TEMPLATES;
   
   const [allUsers, setAllUsers] = React.useState<any[]>([]);
@@ -461,8 +467,21 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
   };
 
   const [isGenerating, setIsGenerating] = React.useState(false);
+  const [isGeneratingDocx, setIsGeneratingDocx] = React.useState(false);
   const [progressText, setProgressText] = React.useState('');
   const [activeTab, setActiveTab] = React.useState<'document' | 'history' | 'payment'>('document');
+
+  const handleDownloadDocx = async () => {
+    try {
+      setIsGeneratingDocx(true);
+      await exportProposalToDocx(proposal);
+    } catch (error) {
+      console.error('Error generating Word document:', error);
+      alert('An error occurred while generating the Word (.docx) document.');
+    } finally {
+      setIsGeneratingDocx(false);
+    }
+  };
 
   React.useEffect(() => {
     if (initialTab) {
@@ -765,7 +784,31 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
 
     let currentNum = 6;
 
-    if (isBranding) {
+    if (isServices) {
+      const selected = proposal.servicesScope?.selectedServices || ['website_audit', 'hosting_domain', 'ssl_renewal', 'amc'];
+      if (selected.includes('website_audit')) {
+        list.push({ id: "service_website_audit", title: "Website Audit & Health Report", pageNumStr: String(currentNum).padStart(2, '0') });
+        currentNum++;
+      }
+      if (selected.includes('hosting_domain')) {
+        list.push({ id: "service_hosting_domain", title: "Hosting & Domain Infrastructure", pageNumStr: String(currentNum).padStart(2, '0') });
+        currentNum++;
+      }
+      if (selected.includes('ssl_renewal')) {
+        list.push({ id: "service_ssl_renewal", title: "SSL Security & Certificate Renewal", pageNumStr: String(currentNum).padStart(2, '0') });
+        currentNum++;
+      }
+      if (selected.includes('amc')) {
+        list.push({ id: "service_amc", title: "Annual Maintenance Contract (AMC)", pageNumStr: String(currentNum).padStart(2, '0') });
+        currentNum++;
+        list.push({ id: "service_amc_exclusions", title: "AMC Scope Exclusions & Policies", pageNumStr: String(currentNum).padStart(2, '0') });
+        currentNum++;
+      }
+      if (selected.includes('custom_service')) {
+        list.push({ id: "service_custom_service", title: proposal.servicesScope?.customService?.title || "Custom Service Scope", pageNumStr: String(currentNum).padStart(2, '0') });
+        currentNum++;
+      }
+    } else if (isBranding) {
       list.push({ id: "scope_branding", title: "Detailed Scope of Work", pageNumStr: String(currentNum).padStart(2, '0') });
       currentNum++;
     } else {
@@ -921,6 +964,25 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
               <>
                 <Download className="h-4 w-4" />
                 Download PDF Direct
+              </>
+            )}
+          </button>
+
+          <button
+            onClick={handleDownloadDocx}
+            disabled={isGeneratingDocx}
+            id="download-docx-btn"
+            className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 disabled:bg-emerald-400 text-white text-xs font-bold rounded-lg shadow-sm flex items-center gap-2 transition-all cursor-pointer"
+          >
+            {isGeneratingDocx ? (
+              <>
+                <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                <span>Generating DOCX...</span>
+              </>
+            ) : (
+              <>
+                <FileText className="h-4 w-4" />
+                Download Word (.docx)
               </>
             )}
           </button>
@@ -1658,7 +1720,515 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
           <ProposalPageFooter proposal={proposal} pageNumber="05" />
         </div>
 
-        {isBranding ? (
+        {isServices ? (
+          /* MODULAR SERVICES PAGES */
+          <>
+            {/* 1. WEBSITE AUDIT PAGE */}
+            {(proposal.servicesScope?.selectedServices || []).includes('website_audit') && (
+              <div id={`page-${getPageNumberById("service_website_audit")}-service-website-audit`} className="proposal-page relative flex flex-col justify-between overflow-hidden">
+                <ProposalWatermark proposal={proposal} />
+                <ProposalCustomLetterheadBackground proposal={proposal} />
+                <ProposalPageHeader proposal={proposal} pageNumber={getPageNumberById("service_website_audit")} />
+
+                <div className="my-auto w-full relative z-10 max-w-xl mx-auto font-sans">
+                  <span className="text-xs tracking-widest text-[#B8962E] font-bold uppercase mb-1 block">
+                    SERVICE MODULE 01 — TECHNICAL AUDIT
+                  </span>
+                  <h2 className="font-serif text-3xl font-bold text-[#1a2744] mb-3">
+                    Website Audit & Health Review
+                  </h2>
+                  <p className="text-xs text-slate-600 mb-5 leading-relaxed">
+                    A multi-layered technical, security, SEO, and user experience evaluation designed to isolate system bottlenecks, compliance gaps, and growth opportunities.
+                  </p>
+
+                  {/* Audit Checklist Items */}
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-5">
+                    <h4 className="text-[11px] font-bold text-[#1a2744] uppercase tracking-wider mb-3">
+                      Audit Scope Coverage:
+                    </h4>
+                    {(() => {
+                      const audit = proposal.servicesScope?.websiteAudit;
+                      const items: string[] = [];
+                      if (audit?.technicalAudit ?? true) items.push('Technical Architecture & Code Standards');
+                      if (audit?.seoAudit ?? true) items.push('SEO Meta, Schema & Search Indexing');
+                      if (audit?.performanceSpeed ?? true) items.push('Core Web Vitals & Load Speed Benchmarks');
+                      if (audit?.securityAssessment ?? true) items.push('Security Vulnerabilities & SSL Inspection');
+                      if (audit?.mobileResponsiveness ?? true) items.push('Mobile Viewport & Responsiveness');
+                      if (audit?.uxUiReview ?? true) items.push('UX/UI Conversion & Journey Mapping');
+                      if (audit?.accessibilityReview ?? true) items.push('WCAG Accessibility & Compliance');
+                      if (audit?.brokenLinksError ?? true) items.push('Broken Links & Script Error Diagnostics');
+                      if (audit?.cmsPluginCheck ?? true) items.push('CMS Core & Extension Compatibility');
+                      if (audit?.detailedAuditReport ?? true) items.push('Executive Action Plan & Priority Matrix');
+
+                      const customLines = (audit?.customScopeOfWork || '')
+                        .split('\n')
+                        .map(line => line.trim())
+                        .filter(Boolean);
+
+                      const totalItems = [...items, ...customLines];
+
+                      if (totalItems.length === 0) {
+                        return (
+                          <p className="text-xs text-slate-500 italic py-1">
+                            Full comprehensive technical, security, and performance audit.
+                          </p>
+                        );
+                      }
+
+                      return (
+                        <div className="grid grid-cols-2 gap-2 text-xs text-slate-700">
+                          {totalItems.map((item, idx) => (
+                            <div key={idx} className="flex items-start gap-2">
+                              <span className="h-1.5 w-1.5 rounded-full bg-[#B8962E] shrink-0 mt-1.5"></span>
+                              <span className="text-[11px] font-medium leading-snug">{item}</span>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })()}
+                  </div>
+
+                  {/* Key Parameters Box */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-3.5 bg-white border border-slate-200 rounded-xl">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                        Delivery Timeline
+                      </span>
+                      <strong className="text-xs text-[#1a2744] font-bold block">
+                        {proposal.servicesScope?.websiteAudit?.timeline || '5 to 7 Business Days'}
+                      </strong>
+                    </div>
+                    <div className="p-3.5 bg-white border border-slate-200 rounded-xl">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                        Report Format
+                      </span>
+                      <strong className="text-xs text-[#1a2744] font-bold block">
+                        {proposal.servicesScope?.websiteAudit?.deliverablesSummary || 'PDF Audit Report & Priority Matrix'}
+                      </strong>
+                    </div>
+                  </div>
+                </div>
+
+                <ProposalPageFooter proposal={proposal} pageNumber={getPageNumberById("service_website_audit")} />
+              </div>
+            )}
+
+            {/* 2. HOSTING & DOMAIN RENEWAL PAGE */}
+            {(proposal.servicesScope?.selectedServices || []).includes('hosting_domain') && (
+              <div id={`page-${getPageNumberById("service_hosting_domain")}-service-hosting-domain`} className="proposal-page relative flex flex-col justify-between overflow-hidden">
+                <ProposalWatermark proposal={proposal} />
+                <ProposalCustomLetterheadBackground proposal={proposal} />
+                <ProposalPageHeader proposal={proposal} pageNumber={getPageNumberById("service_hosting_domain")} />
+
+                <div className="my-auto w-full relative z-10 max-w-xl mx-auto font-sans">
+                  <span className="text-xs tracking-widest text-[#B8962E] font-bold uppercase mb-1 block">
+                    SERVICE MODULE 02 — CLOUD INFRASTRUCTURE
+                  </span>
+                  <h2 className="font-serif text-3xl font-bold text-[#1a2744] mb-3">
+                    Hosting & Domain Renewal
+                  </h2>
+                  <p className="text-xs text-slate-600 mb-5 leading-relaxed">
+                    High-performance cloud hosting renewal and domain registry management to guarantee maximum uptime, high-speed data transmission, and active DNS resolution.
+                  </p>
+
+                  <div className="p-4 bg-[#1a2744] text-white rounded-xl mb-5 flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#B8962E] block">Target Domain</span>
+                      <strong className="text-base font-mono">{proposal.servicesScope?.hostingDomain?.domainName || 'Registered Domain'}</strong>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-300 block">Renewal Term</span>
+                      <strong className="text-sm">{proposal.servicesScope?.hostingDomain?.hostingRenewalYears || 1} Year Subscription</strong>
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-4">
+                    <h4 className="text-[11px] font-bold text-[#1a2744] uppercase tracking-wider mb-2">
+                      Server & Infrastructure Specifications:
+                    </h4>
+                    <p className="text-xs text-slate-600 leading-relaxed mb-3">
+                      {proposal.servicesScope?.hostingDomain?.serverSpecs || 'High-speed SSD Cloud Hosting with daily automated snapshots and redundant DNS routing.'}
+                    </p>
+
+                    <h4 className="text-[11px] font-bold text-[#1a2744] uppercase tracking-wider mb-2">
+                      Included Infrastructure Services:
+                    </h4>
+                    <div className="grid grid-cols-2 gap-1.5 text-xs text-slate-700 mb-2">
+                      {[
+                        'DNS Record Management & Zone File Maintenance',
+                        '99.9% Uptime Guarantee with Cloud SLA',
+                        'Daily & Weekly Automated Off-Site Backups',
+                        'Domain Name Registry Renewal & WHOIS Privacy'
+                      ].map((item, idx) => (
+                        <div key={idx} className="flex items-center gap-1.5">
+                          <Check className="h-3 w-3 text-emerald-600 shrink-0" />
+                          <span className="text-[10px] font-medium">{item}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Managed Domain Portfolio Section in PDF */}
+                  {(proposal.servicesScope?.hostingDomain?.domains || []).length > 0 && (
+                    <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
+                      <div className="bg-[#1a2744] px-3 py-2 text-white flex items-center justify-between">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-[#B8962E]">
+                          Domain Portfolio Registry & Renewal Schedule
+                        </span>
+                        <span className="text-[9px] text-slate-300 font-mono">
+                          {(proposal.servicesScope?.hostingDomain?.domains || []).length} Domains Managed
+                        </span>
+                      </div>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse text-[10px]">
+                          <thead>
+                            <tr className="bg-slate-100 border-b border-slate-200 text-slate-600 font-bold uppercase text-[9px]">
+                              <th className="py-1.5 px-3">Domain Name</th>
+                              <th className="py-1.5 px-2">Renewal Date</th>
+                              <th className="py-1.5 px-2">Status</th>
+                              <th className="py-1.5 px-2 text-right">Cost (QAR)</th>
+                              <th className="py-1.5 px-2">Notes</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 text-slate-700 font-sans">
+                            {(proposal.servicesScope?.hostingDomain?.domains || []).map((dom) => (
+                              <tr key={dom.id} className="hover:bg-slate-50/50">
+                                <td className="py-1.5 px-3 font-bold text-[#1a2744] font-mono">{dom.domainName || '—'}</td>
+                                <td className="py-1.5 px-2 font-mono text-slate-600">{dom.renewalDate || '—'}</td>
+                                <td className="py-1.5 px-2">
+                                  <span className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-bold ${
+                                    dom.status === 'Active'
+                                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                      : dom.status === 'Expired'
+                                      ? 'bg-red-50 text-red-700 border border-red-200'
+                                      : 'bg-amber-50 text-amber-700 border border-amber-200'
+                                  }`}>
+                                    {dom.status}
+                                  </span>
+                                </td>
+                                <td className="py-1.5 px-2 text-right font-mono font-bold text-slate-800">
+                                  {formatQAR(Number(dom.renewalCost) || 0)}
+                                </td>
+                                <td className="py-1.5 px-2 text-slate-500 text-[9px] truncate max-w-[120px]">
+                                  {dom.notes || '—'}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <ProposalPageFooter proposal={proposal} pageNumber={getPageNumberById("service_hosting_domain")} />
+              </div>
+            )}
+
+            {/* 3. SSL RENEWAL PAGE */}
+            {(proposal.servicesScope?.selectedServices || []).includes('ssl_renewal') && (
+              <div id={`page-${getPageNumberById("service_ssl_renewal")}-service-ssl-renewal`} className="proposal-page relative flex flex-col justify-between overflow-hidden">
+                <ProposalWatermark proposal={proposal} />
+                <ProposalCustomLetterheadBackground proposal={proposal} />
+                <ProposalPageHeader proposal={proposal} pageNumber={getPageNumberById("service_ssl_renewal")} />
+
+                <div className="my-auto w-full relative z-10 max-w-xl mx-auto font-sans">
+                  <span className="text-xs tracking-widest text-[#B8962E] font-bold uppercase mb-1 block">
+                    SERVICE MODULE 03 — SECURITY ENCRYPTION
+                  </span>
+                  <h2 className="font-serif text-3xl font-bold text-[#1a2744] mb-3">
+                    SSL Security Certificate Renewal
+                  </h2>
+                  <p className="text-xs text-slate-600 mb-5 leading-relaxed">
+                    Deployment of enterprise RSA security encryption certificates to establish HTTPS trust, prevent browser warning banners, and protect user data transmissions.
+                  </p>
+
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 mb-5 space-y-4">
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+                      <span className="text-xs font-bold text-slate-600">Certificate Standard:</span>
+                      <span className="text-xs font-bold text-[#1a2744] font-mono">{proposal.servicesScope?.sslRenewal?.sslType || '2048-bit RSA Encryption SSL'}</span>
+                    </div>
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+                      <span className="text-xs font-bold text-slate-600">Validity Period:</span>
+                      <span className="text-xs font-bold text-[#1a2744]">{proposal.servicesScope?.sslRenewal?.sslYears || 1} Year Certificate Coverage</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-600">Installation & Configuration:</span>
+                      <span className="text-xs font-bold text-emerald-600">Full Server CSR Key Setup & Binding Included</span>
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-emerald-50/60 border border-emerald-200 rounded-xl">
+                    <h4 className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider mb-1">
+                      Security & SEO Benefits
+                    </h4>
+                    <p className="text-xs text-emerald-700 leading-relaxed">
+                      Ensures padlock browser validation, encrypts contact form transmissions, fulfills PCI compliance baselines, and maintains Google search engine ranking signals.
+                    </p>
+                  </div>
+                </div>
+
+                <ProposalPageFooter proposal={proposal} pageNumber={getPageNumberById("service_ssl_renewal")} />
+              </div>
+            )}
+
+            {/* 4. AMC PAGE */}
+            {(proposal.servicesScope?.selectedServices || []).includes('amc') && (
+              <div id={`page-${getPageNumberById("service_amc")}-service-amc`} className="proposal-page relative flex flex-col justify-between overflow-hidden">
+                <ProposalWatermark proposal={proposal} />
+                <ProposalCustomLetterheadBackground proposal={proposal} />
+                <ProposalPageHeader proposal={proposal} pageNumber={getPageNumberById("service_amc")} />
+
+                <div className="my-auto w-full relative z-10 max-w-xl mx-auto font-sans">
+                  <span className="text-xs tracking-widest text-[#B8962E] font-bold uppercase mb-1 block">
+                    SERVICE MODULE 04 — MAINTENANCE SLA
+                  </span>
+                  <h2 className="font-serif text-3xl font-bold text-[#1a2744] mb-3">
+                    Annual Maintenance Contract (AMC)
+                  </h2>
+                  <p className="text-xs text-slate-600 mb-5 leading-relaxed">
+                    Comprehensive technical support and preventive maintenance to keep your web assets updated, secure, optimized, and fully operational throughout the year.
+                  </p>
+
+                  <div className="grid grid-cols-2 gap-3 mb-4">
+                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Contract Term</span>
+                      <strong className="text-xs text-[#1a2744]">{proposal.servicesScope?.amc?.contractPeriod || '12 Months Annual Contract'}</strong>
+                    </div>
+                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Monthly Tech Support</span>
+                      <strong className="text-xs text-[#1a2744]">{proposal.servicesScope?.amc?.supportHoursMonthly || 'Up to 5 Hours / Month'}</strong>
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-4">
+                    <h4 className="text-[11px] font-bold text-[#1a2744] uppercase tracking-wider mb-2">
+                      Routine AMC Service Checklist:
+                    </h4>
+                    <div className="grid grid-cols-2 gap-2 text-xs text-slate-700">
+                      {[
+                        'CMS Core & Framework Updates',
+                        'Plugin & Extension Version Upgrades',
+                        'Active Malware & Security Scanning',
+                        'Website Health & Speed Checkups',
+                        'Rapid Bug Fixes & Technical Troubleshooting',
+                        'Content Updates & Minor Layout Edits',
+                        'Automated Offsite Database Backups',
+                        'SLA Priority Ticket Escalation'
+                      ].map((item, idx) => (
+                        <div key={idx} className="flex items-center gap-2">
+                          <Check className="h-3.5 w-3.5 text-blue-600 shrink-0" />
+                          <span className="text-[11px] font-medium">{item}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="p-3 bg-[#1a2744] text-white rounded-xl text-xs flex items-center justify-between">
+                    <span>Target Response Time SLA:</span>
+                    <strong className="text-[#B8962E] font-mono">{proposal.servicesScope?.amc?.responseTimeSLA || 'Within 24 Hours'}</strong>
+                  </div>
+                </div>
+
+                <ProposalPageFooter proposal={proposal} pageNumber={getPageNumberById("service_amc")} />
+              </div>
+            )}
+
+            {/* 4b. AMC SCOPE EXCLUSIONS PAGE */}
+            {(proposal.servicesScope?.selectedServices || []).includes('amc') && (
+              <div id={`page-${getPageNumberById("service_amc_exclusions")}-service-amc-exclusions`} className="proposal-page relative flex flex-col justify-between overflow-hidden">
+                <ProposalWatermark proposal={proposal} />
+                <ProposalCustomLetterheadBackground proposal={proposal} />
+                <ProposalPageHeader proposal={proposal} pageNumber={getPageNumberById("service_amc_exclusions")} />
+
+                <div className="my-auto w-full relative z-10 max-w-xl mx-auto font-sans">
+                  <span className="text-xs tracking-widest text-[#B8962E] font-bold uppercase mb-1 block">
+                    AMC BOUNDARIES & POLICIES
+                  </span>
+                  <h2 className="font-serif text-2xl font-bold text-[#1a2744] mb-2">
+                    AMC Scope Exclusions (Not Included)
+                  </h2>
+                  <p className="text-[11px] text-slate-600 mb-3 leading-relaxed">
+                    The Annual Maintenance Contract (AMC) covers regular website maintenance, updates, security checks, backups, and minor technical fixes. The following services are not included under the AMC scope and will be considered as separate projects with additional quotations:
+                  </p>
+
+                  {/* Exclusions Grid */}
+                  <div className="grid grid-cols-2 gap-2 text-[10px] text-slate-700 mb-3">
+                    <div className="p-2 bg-slate-50 border border-slate-200 rounded-lg">
+                      <span className="font-bold text-slate-800 block mb-0.5 text-[11px] flex items-center gap-1">
+                        <span className="text-red-500 font-bold">✕</span> Major Website Restructuring
+                      </span>
+                      <p className="text-slate-500 text-[10px] leading-tight">
+                        Complete restructuring of website pages, navigation, user flow, or overall website architecture & layout redesign.
+                      </p>
+                    </div>
+
+                    <div className="p-2 bg-slate-50 border border-slate-200 rounded-lg">
+                      <span className="font-bold text-slate-800 block mb-0.5 text-[11px] flex items-center gap-1">
+                        <span className="text-red-500 font-bold">✕</span> Website Redesign & UI/UX
+                      </span>
+                      <p className="text-slate-500 text-[10px] leading-tight">
+                        Complete redesign, theme changes, design framework, branding elements, visual identity, or major UI/UX changes.
+                      </p>
+                    </div>
+
+                    <div className="p-2 bg-slate-50 border border-slate-200 rounded-lg">
+                      <span className="font-bold text-slate-800 block mb-0.5 text-[11px] flex items-center gap-1">
+                        <span className="text-red-500 font-bold">✕</span> New Feature Development
+                      </span>
+                      <p className="text-slate-500 text-[10px] leading-tight">
+                        Development of new modules, advanced functionalities, custom plugins, integrations, or complex coding.
+                      </p>
+                    </div>
+
+                    <div className="p-2 bg-slate-50 border border-slate-200 rounded-lg">
+                      <span className="font-bold text-slate-800 block mb-0.5 text-[11px] flex items-center gap-1">
+                        <span className="text-red-500 font-bold">✕</span> Content Creation & Updates
+                      </span>
+                      <p className="text-slate-500 text-[10px] leading-tight">
+                        New website content, articles, SEO copy, large-scale content migration, photography, or media production.
+                      </p>
+                    </div>
+
+                    <div className="p-2 bg-slate-50 border border-slate-200 rounded-lg">
+                      <span className="font-bold text-slate-800 block mb-0.5 text-[11px] flex items-center gap-1">
+                        <span className="text-red-500 font-bold">✕</span> New Page Development
+                      </span>
+                      <p className="text-slate-500 text-[10px] leading-tight">
+                        Creation of additional website pages, landing pages, campaign pages, or new service sections.
+                      </p>
+                    </div>
+
+                    <div className="p-2 bg-slate-50 border border-slate-200 rounded-lg">
+                      <span className="font-bold text-slate-800 block mb-0.5 text-[11px] flex items-center gap-1">
+                        <span className="text-red-500 font-bold">✕</span> E-Commerce Modifications
+                      </span>
+                      <p className="text-slate-500 text-[10px] leading-tight">
+                        Adding products in bulk, changes to payment gateways, checkout, shipping integrations, or store restructuring.
+                      </p>
+                    </div>
+
+                    <div className="p-2 bg-slate-50 border border-slate-200 rounded-lg">
+                      <span className="font-bold text-slate-800 block mb-0.5 text-[11px] flex items-center gap-1">
+                        <span className="text-red-500 font-bold">✕</span> Third-Party & Server Issues
+                      </span>
+                      <p className="text-slate-500 text-[10px] leading-tight">
+                        Issues caused by external APIs, hosting limitations, server-side configs beyond control, or server migrations.
+                      </p>
+                    </div>
+
+                    <div className="p-2 bg-slate-50 border border-slate-200 rounded-lg">
+                      <span className="font-bold text-slate-800 block mb-0.5 text-[11px] flex items-center gap-1">
+                        <span className="text-red-500 font-bold">✕</span> Security & Malware Recovery
+                      </span>
+                      <p className="text-slate-500 text-[10px] leading-tight">
+                        Complete website recovery after major hacking incidents or malware infections (treated as a separate project).
+                      </p>
+                    </div>
+
+                    <div className="p-2 bg-slate-50 border border-slate-200 rounded-lg">
+                      <span className="font-bold text-slate-800 block mb-0.5 text-[11px] flex items-center gap-1">
+                        <span className="text-red-500 font-bold">✕</span> SEO & Digital Marketing
+                      </span>
+                      <p className="text-slate-500 text-[10px] leading-tight">
+                        SEO campaigns, keyword optimization, backlink building, Google Ads, and social media marketing activities.
+                      </p>
+                    </div>
+
+                    <div className="p-2 bg-slate-50 border border-slate-200 rounded-lg">
+                      <span className="font-bold text-slate-800 block mb-0.5 text-[11px] flex items-center gap-1">
+                        <span className="text-red-500 font-bold">✕</span> Additional Development Hours
+                      </span>
+                      <p className="text-slate-500 text-[10px] leading-tight">
+                        Any development work exceeding the agreed AMC scope or monthly allocated hours will be quoted separately.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Additional Work Requests Callout */}
+                  <div className="p-3 bg-amber-50/80 border border-amber-200/80 rounded-xl text-xs text-amber-900">
+                    <strong className="font-bold text-amber-950 block mb-1 uppercase tracking-wider text-[10px]">
+                      Additional Work Requests
+                    </strong>
+                    <p className="text-[11px] text-amber-800 leading-snug">
+                      Any requirement outside the defined AMC scope, including website redesign, structural changes, new functionalities, integrations, or major improvements, will be assessed separately and provided as an independent quotation.
+                    </p>
+                  </div>
+                </div>
+
+                <ProposalPageFooter proposal={proposal} pageNumber={getPageNumberById("service_amc_exclusions")} />
+              </div>
+            )}
+
+            {/* 5. CUSTOM SERVICE PAGE */}
+            {(proposal.servicesScope?.selectedServices || []).includes('custom_service') && (
+              <div id={`page-${getPageNumberById("service_custom_service")}-service-custom-service`} className="proposal-page relative flex flex-col justify-between overflow-hidden">
+                <ProposalWatermark proposal={proposal} />
+                <ProposalCustomLetterheadBackground proposal={proposal} />
+                <ProposalPageHeader proposal={proposal} pageNumber={getPageNumberById("service_custom_service")} />
+
+                <div className="my-auto w-full relative z-10 max-w-xl mx-auto font-sans">
+                  <span className="text-xs tracking-widest text-[#B8962E] font-bold uppercase mb-1 block">
+                    SERVICE MODULE — TAILORED TECHNICAL SCOPE
+                  </span>
+                  <h2 className="font-serif text-3xl font-bold text-[#1a2744] mb-3">
+                    {proposal.servicesScope?.customService?.title || 'Custom Tailored Service'}
+                  </h2>
+                  <p className="text-xs text-slate-600 mb-5 leading-relaxed">
+                    {proposal.servicesScope?.customService?.description || 'Customized technical solutions and dedicated deliverables tailored specifically to client requirements.'}
+                  </p>
+
+                  {/* Scope of Work Box */}
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-5">
+                    <h4 className="text-[11px] font-bold text-[#1a2744] uppercase tracking-wider mb-3">
+                      Detailed Scope of Work:
+                    </h4>
+                    <div className="space-y-2 text-xs text-slate-700">
+                      {(proposal.servicesScope?.customService?.scopeOfWork || '1. Custom service implementation and technical setup.')
+                        .split('\n')
+                        .filter(Boolean)
+                        .map((item, idx) => (
+                          <div key={idx} className="flex items-start gap-2.5">
+                            <span className="h-1.5 w-1.5 rounded-full bg-[#B8962E] shrink-0 mt-1.5"></span>
+                            <span className="text-xs text-slate-700 leading-relaxed font-medium">{item}</span>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+
+                  {/* Key Deliverables & Timeline Box */}
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div className="p-3.5 bg-white border border-slate-200 rounded-xl">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                        Delivery Timeline
+                      </span>
+                      <strong className="text-xs text-[#1a2744] font-bold block">
+                        {proposal.servicesScope?.customService?.timeline || '2 to 3 Weeks'}
+                      </strong>
+                    </div>
+                    <div className="p-3.5 bg-white border border-slate-200 rounded-xl">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                        Primary Deliverables
+                      </span>
+                      <strong className="text-xs text-[#1a2744] font-bold block">
+                        {proposal.servicesScope?.customService?.deliverables || 'Configured Technical Module & Documentation'}
+                      </strong>
+                    </div>
+                  </div>
+
+                  {proposal.servicesScope?.customService?.termsConditions && (
+                    <div className="p-3 bg-slate-100/70 border border-slate-200 rounded-xl text-[11px] text-slate-600">
+                      <strong className="text-slate-800 font-bold block mb-0.5">Special Terms & Notes:</strong>
+                      {proposal.servicesScope.customService.termsConditions}
+                    </div>
+                  )}
+                </div>
+
+                <ProposalPageFooter proposal={proposal} pageNumber={getPageNumberById("service_custom_service")} />
+              </div>
+            )}
+          </>
+        ) : isBranding ? (
           /* BRANDING SCOPE SHEET - SINGLE COVER-TO-COVER A4 SHEET */
           <div id={`page-${getPageNumberById("scope_branding")}-scope-branding`} className="proposal-page relative flex flex-col justify-between overflow-hidden">
             {/* Background Watermark */}
@@ -2465,7 +3035,57 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
               Proposal Financials
             </h2>
 
-            {isBranding ? (
+            {isServices ? (
+              /* Modular IT Services Financials Table */
+              <div className="border border-slate-200 rounded-xl overflow-hidden mb-6 bg-white">
+                <table className="min-w-full text-xs font-sans">
+                  <thead>
+                    <tr className="bg-slate-100 border-b border-slate-200 text-slate-700">
+                      <th className="py-2.5 px-4 text-left font-semibold">Service Module</th>
+                      <th className="py-2.5 px-4 text-left font-semibold">Deliverable Scope & Terms</th>
+                      <th className="py-2.5 px-4 text-right font-semibold">Module Cost</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-150 text-slate-600">
+                    {(proposal.servicesScope?.selectedServices || []).includes('website_audit') && (
+                      <tr className="hover:bg-slate-50/40">
+                        <td className="py-2.5 px-4 font-bold text-slate-800">Website Audit & Technical Review</td>
+                        <td className="py-2.5 px-4 text-slate-500">Technical, SEO, Speed & Security Vulnerability Report</td>
+                        <td className="py-2.5 px-4 text-right font-bold text-slate-900">{formatQAR(proposal.servicesScope?.websiteAudit?.cost || 0)}</td>
+                      </tr>
+                    )}
+                    {(proposal.servicesScope?.selectedServices || []).includes('hosting_domain') && (
+                      <tr className="hover:bg-slate-50/40">
+                        <td className="py-2.5 px-4 font-bold text-slate-800">Hosting & Domain Renewal</td>
+                        <td className="py-2.5 px-4 text-slate-500">Cloud Hosting ({proposal.servicesScope?.hostingDomain?.hostingRenewalYears || 1} Yr) & Domain Registry ({proposal.servicesScope?.hostingDomain?.domainName || ''})</td>
+                        <td className="py-2.5 px-4 text-right font-bold text-slate-900">{formatQAR(proposal.servicesScope?.hostingDomain?.cost || 0)}</td>
+                      </tr>
+                    )}
+                    {(proposal.servicesScope?.selectedServices || []).includes('ssl_renewal') && (
+                      <tr className="hover:bg-slate-50/40">
+                        <td className="py-2.5 px-4 font-bold text-slate-800">SSL Certificate & Renewal</td>
+                        <td className="py-2.5 px-4 text-slate-500">2048-bit RSA Encryption SSL Certificate ({proposal.servicesScope?.sslRenewal?.sslYears || 1} Yr)</td>
+                        <td className="py-2.5 px-4 text-right font-bold text-slate-900">{formatQAR(proposal.servicesScope?.sslRenewal?.cost || 0)}</td>
+                      </tr>
+                    )}
+                    {(proposal.servicesScope?.selectedServices || []).includes('amc') && (
+                      <tr className="hover:bg-slate-50/40">
+                        <td className="py-2.5 px-4 font-bold text-slate-800">Annual Maintenance Contract (AMC)</td>
+                        <td className="py-2.5 px-4 text-slate-500">CMS updates, Health Monitoring, Backups & SLA ({proposal.servicesScope?.amc?.contractPeriod || '12 Months'})</td>
+                        <td className="py-2.5 px-4 text-right font-bold text-slate-900">{formatQAR(proposal.servicesScope?.amc?.cost || 0)}</td>
+                      </tr>
+                    )}
+                    {(proposal.servicesScope?.selectedServices || []).includes('custom_service') && (
+                      <tr className="hover:bg-slate-50/40">
+                        <td className="py-2.5 px-4 font-bold text-slate-800">{proposal.servicesScope?.customService?.title || 'Custom Service Scope'}</td>
+                        <td className="py-2.5 px-4 text-slate-500">{proposal.servicesScope?.customService?.deliverables || 'Custom deliverables and scope of work'}</td>
+                        <td className="py-2.5 px-4 text-right font-bold text-slate-900">{formatQAR(proposal.servicesScope?.customService?.cost || 0)}</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            ) : isBranding ? (
               /* Branding Table */
               <div className="border border-slate-200 rounded-xl overflow-hidden mb-6 bg-white">
                 <table className="min-w-full text-xs font-sans">

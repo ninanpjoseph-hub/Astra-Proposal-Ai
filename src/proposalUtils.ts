@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Proposal, ProposalType, Milestone, ResourceCost, ProposalStatus, Reminder } from './types';
+import { Proposal, ProposalType, Milestone, ResourceCost, ProposalStatus, Reminder, ModularServicesScope } from './types';
 import { DEFAULT_SCOPE_TEMPLATES } from './staticTemplates';
 
 // Simple unique ID generator
@@ -36,17 +36,124 @@ export const DEFAULT_WEBSITE_MILESTONES: Omit<Milestone, 'id'>[] = [
   { week: "Week 8", title: "Quality Assurance, Optimizations, & Launch", description: "Cross-platform speed checks, DNS cutover, staging migration, and direct search engine indexing hooks." }
 ];
 
+export const DEFAULT_SERVICES_MILESTONES: Omit<Milestone, 'id'>[] = [
+  { week: "Week 1", title: "Service Onboarding & Technical Discovery", description: "Audit initiation, domain/SSL authorization verification, and server access setup." },
+  { week: "Week 2", title: "Audit Execution & Infrastructure Configuration", description: "Deep security/SEO scanning, hosting renewal processing, and SSL handshake testing." },
+  { week: "Week 3", title: "Deliverables Handover & Maintenance Activation", description: "Presentation of comprehensive audit report, activation of 24/7 SLA monitoring, and AMC support onboarding." }
+];
+
 export const DEFAULT_RESOURCE_COSTS: Omit<ResourceCost, 'id'>[] = [
   { role: "Brand Lead / Creative Director", hours: 25, rate: 250 },
   { role: "Senior Identity Designer", hours: 40, rate: 180 },
   { role: "Copywriter & Brand Consultant", hours: 15, rate: 120 }
 ];
 
+export function createDefaultModularServicesScope(): ModularServicesScope {
+  return {
+    selectedServices: ['website_audit', 'hosting_domain', 'ssl_renewal', 'amc'],
+    websiteAudit: {
+      technicalAudit: true,
+      seoAudit: true,
+      performanceSpeed: true,
+      securityAssessment: true,
+      mobileResponsiveness: true,
+      uxUiReview: true,
+      accessibilityReview: true,
+      brokenLinksError: true,
+      cmsPluginCheck: true,
+      detailedAuditReport: true,
+      deliverables: "Comprehensive PDF Audit Report, Executive Summary, Prioritized Action Items, SEO & Speed Optimization Roadmap, Security Vulnerability Matrix",
+      estimatedTimeline: "1 - 2 Weeks",
+      clientBenefits: "Identify critical bottlenecks, enhance Google ranking potential, reduce security risks, and improve conversion rate and user experience.",
+      termsConditions: "Audit findings are based on current site architecture. Implementation of recommended fixes is subject to separate deployment agreement or AMC.",
+      cost: 2500
+    },
+    hostingDomain: {
+      hostingRenewalYears: 1,
+      domainRenewalYears: 1,
+      includeDomain: true,
+      hostingSpecifications: "High-Performance Cloud Server / NVMe SSD Storage / 99.9% Uptime SLA / Automated Daily Backups / Free SSL Certificate / Unlimited Bandwidth",
+      domainName: "clientdomain.com",
+      domains: [
+        {
+          id: "dom-1",
+          domainName: "clientdomain.com",
+          renewalDate: "2026-11-15",
+          renewalCost: 150,
+          status: "Active",
+          notes: "Primary Brand Domain (.com)"
+        },
+        {
+          id: "dom-2",
+          domainName: "clientdomain.qa",
+          renewalDate: "2026-12-01",
+          renewalCost: 250,
+          status: "Active",
+          notes: "Local Qatar Registry Domain (.qa)"
+        }
+      ],
+      renewalTerms: "1-Year License Renewal for Hosting Server Infrastructure and Domain Name Registration. Renewal invoices are issued 30 days prior to expiration.",
+      exclusions: "Third-party paid API subscriptions, premium external software licenses, and major server migrations.",
+      supportInfo: "24/7 Server Infrastructure Monitoring with automated failover and ticket-based technical support.",
+      cost: 1800
+    },
+    sslRenewal: {
+      sslYears: 1,
+      certificateType: "2048-bit RSA High-Assurance SSL Certificate (HTTPS)",
+      installationConfig: true,
+      validationTesting: true,
+      securityBenefits: "Encrypts user data transmission, builds customer trust badge, prevents browser 'Not Secure' warnings, and satisfies search engine HTTPS ranking requirements.",
+      termsConditions: "Includes domain validation, server CSR generation, CRT installation, HTTP to HTTPS 301 redirection, and cross-browser handshake verification.",
+      cost: 600
+    },
+    amc: {
+      cmsUpdates: true,
+      pluginUpdates: true,
+      themeUpdates: true,
+      securityMonitoring: true,
+      websiteHealthChecks: true,
+      bugFixes: true,
+      minorContentUpdates: true,
+      websiteBackups: true,
+      performanceOptimization: true,
+      uptimeMonitoring: true,
+      technicalSupportHours: "Up to 5 Hours / Month Dedicated Tech Support",
+      monthlyReports: true,
+      slaResponseTime: "24 Hours Response Time for Standard Tickets / 4 Hours for Critical Outages",
+      termsConditions: "AMC covers routine updates, minor content adjustments, and bug fixes. Major functional redesigns or custom feature additions are quoted separately.",
+      cost: 4500
+    },
+    customService: {
+      title: "Custom Tailored Technical Service",
+      description: "Bespoke technical solutions, specialized integrations, custom feature development, or expert consultation tailored specifically to client requirements.",
+      scopeOfWork: "1. Tailored architectural discovery and specification design\n2. Implementation of custom endpoints and module integrations\n3. Quality assurance testing, performance tuning, and technical handover",
+      deliverables: "Custom Technical Module Deliverables, Documentation & Handover Walkthrough",
+      timeline: "2 to 3 Weeks",
+      termsConditions: "Custom scope subject to client specification sign-off. Work outside defined scope will be evaluated under separate change request.",
+      cost: 3500
+    }
+  };
+}
+
+export function calculateModularServicesTotal(servicesScope?: ModularServicesScope): number {
+  if (!servicesScope || !servicesScope.selectedServices) return 0;
+  let total = 0;
+  const { selectedServices, websiteAudit, hostingDomain, sslRenewal, amc, customService } = servicesScope;
+  if (selectedServices.includes('website_audit') && websiteAudit) total += Number(websiteAudit.cost || 0);
+  if (selectedServices.includes('hosting_domain') && hostingDomain) total += Number(hostingDomain.cost || 0);
+  if (selectedServices.includes('ssl_renewal') && sslRenewal) total += Number(sslRenewal.cost || 0);
+  if (selectedServices.includes('amc') && amc) total += Number(amc.cost || 0);
+  if (selectedServices.includes('custom_service') && customService) total += Number(customService.cost || 0);
+  return total;
+}
+
 export function createDefaultProposal(type: ProposalType): Proposal {
   const fileDate = new Date();
   const dateFormatted = fileDate.toISOString().split('T')[0]; // YYYY-MM-DD
   
   const id = generateId();
+  const defaultServicesScope = createDefaultModularServicesScope();
+  const servicesTotal = calculateModularServicesTotal(defaultServicesScope);
 
   return {
     id,
@@ -115,12 +222,18 @@ export function createDefaultProposal(type: ProposalType): Proposal {
         hosting: "AWS / Cloud Infrastructure"
       }
     },
+
+    // Modular Services scope
+    servicesScope: defaultServicesScope,
     
     // Timeline
-    weeks: type === 'branding' ? 5 : 8,
+    weeks: type === 'branding' ? 5 : (type === 'services' ? 3 : 8),
     milestones: type === 'branding' 
       ? DEFAULT_BRANDING_MILESTONES.map((m, i) => ({ ...m, id: `${id}_m_${i}` }))
-      : DEFAULT_WEBSITE_MILESTONES.map((m, i) => ({ ...m, id: `${id}_m_${i}` })),
+      : (type === 'services'
+          ? DEFAULT_SERVICES_MILESTONES.map((m, i) => ({ ...m, id: `${id}_m_${i}` }))
+          : DEFAULT_WEBSITE_MILESTONES.map((m, i) => ({ ...m, id: `${id}_m_${i}` }))
+        ),
     
     // Financials
     resourceCosts: type === 'branding'
@@ -133,7 +246,7 @@ export function createDefaultProposal(type: ProposalType): Proposal {
     
     totalCost: type === 'branding'
       ? DEFAULT_RESOURCE_COSTS.reduce((acc, curr) => acc + (curr.hours * curr.rate), 0)
-      : 16200, // 12000 + 1200 + 1500 + 1500 = 16200
+      : (type === 'services' ? servicesTotal : 16200),
       
     paymentTerms: "50% Advanced Payment upon Agreement sign-off, 25% upon Design Approval, and 25% upon final assets delivery and Launch.",
     preparedByName: "Ninan P Joseph",

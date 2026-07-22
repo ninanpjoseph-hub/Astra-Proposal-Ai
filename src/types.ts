@@ -3,7 +3,105 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export type ProposalType = 'branding' | 'website';
+export type ProposalType = 'branding' | 'website' | 'services';
+
+export type ModularServiceId = 'website_audit' | 'hosting_domain' | 'ssl_renewal' | 'amc' | 'custom_service';
+
+export interface WebsiteAuditScope {
+  technicalAudit: boolean;
+  seoAudit: boolean;
+  performanceSpeed: boolean;
+  securityAssessment: boolean;
+  mobileResponsiveness: boolean;
+  uxUiReview: boolean;
+  accessibilityReview: boolean;
+  brokenLinksError: boolean;
+  cmsPluginCheck: boolean;
+  detailedAuditReport: boolean;
+  customScopeOfWork?: string;
+  deliverables: string;
+  estimatedTimeline: string;
+  clientBenefits: string;
+  termsConditions: string;
+  cost: number;
+  timeline?: string;
+  deliverablesSummary?: string;
+}
+
+export interface DomainItem {
+  id: string;
+  domainName: string;
+  renewalDate: string;
+  renewalCost: number;
+  status: 'Active' | 'Expired' | 'Pending';
+  notes?: string;
+}
+
+export interface HostingDomainScope {
+  hostingRenewalYears: number;
+  domainRenewalYears: number;
+  includeDomain: boolean;
+  includeDomainRenewal?: boolean;
+  serverSpecs?: string;
+  hostingSpecifications: string;
+  domainName: string;
+  domains?: DomainItem[];
+  renewalTerms: string;
+  exclusions: string;
+  supportInfo: string;
+  cost: number;
+}
+
+export interface SslRenewalScope {
+  sslYears: number;
+  sslType?: string;
+  certificateType: string;
+  installationConfig: boolean;
+  validationTesting: boolean;
+  securityBenefits: string;
+  termsConditions: string;
+  cost: number;
+}
+
+export interface AmcScope {
+  cmsUpdates: boolean;
+  pluginUpdates: boolean;
+  themeUpdates: boolean;
+  securityMonitoring: boolean;
+  websiteHealthChecks: boolean;
+  bugFixes: boolean;
+  minorContentUpdates: boolean;
+  websiteBackups: boolean;
+  performanceOptimization: boolean;
+  uptimeMonitoring: boolean;
+  technicalSupportHours: string;
+  monthlyReports: boolean;
+  slaResponseTime: string;
+  termsConditions: string;
+  cost: number;
+  contractPeriod?: string;
+  supportHoursMonthly?: string;
+  responseTimeSLA?: string;
+}
+
+export interface CustomServiceScope {
+  title: string;
+  description: string;
+  scopeOfWork: string;
+  deliverables: string;
+  timeline: string;
+  termsConditions: string;
+  cost: number;
+}
+
+export interface ModularServicesScope {
+  selectedServices: ModularServiceId[];
+  websiteAudit: WebsiteAuditScope;
+  hostingDomain: HostingDomainScope;
+  sslRenewal: SslRenewalScope;
+  amc: AmcScope;
+  customService?: CustomServiceScope;
+}
 
 export interface BrandingScope {
   logoDesign: boolean;
@@ -114,6 +212,7 @@ export interface Proposal {
   // Custom scope for the specific type
   brandingScope: BrandingScope;
   websiteScope: WebsiteScope;
+  servicesScope?: ModularServicesScope;
   
   // Timeline
   weeks: number;

@@ -4,8 +4,8 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Proposal, ProposalType, Milestone, ResourceCost, ProposalStatus } from '../types';
-import { createDefaultProposal, generateId, formatQAR } from '../proposalUtils';
+import { Proposal, ProposalType, Milestone, ResourceCost, ProposalStatus, DomainItem } from '../types';
+import { createDefaultProposal, generateId, formatQAR, createDefaultModularServicesScope, calculateModularServicesTotal } from '../proposalUtils';
 import { DEFAULT_SCOPE_TEMPLATES } from '../staticTemplates';
 import SitemapGenerator from './SitemapGenerator';
 import ProposalDocumentView from './ProposalDocumentView';
@@ -244,6 +244,166 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
     });
   };
 
+  // Modular Services scope handlers
+  const toggleModularService = (serviceId: 'website_audit' | 'hosting_domain' | 'ssl_renewal' | 'amc' | 'custom_service') => {
+    setProposal(prev => {
+      const currentScope = prev.servicesScope || createDefaultModularServicesScope();
+      const currentSelected = currentScope.selectedServices || [];
+      let updatedSelected: string[];
+      if (currentSelected.includes(serviceId)) {
+        updatedSelected = currentSelected.filter(s => s !== serviceId);
+      } else {
+        updatedSelected = [...currentSelected, serviceId];
+      }
+      const updatedScope = {
+        ...currentScope,
+        selectedServices: updatedSelected as any
+      };
+      const newTotal = calculateModularServicesTotal(updatedScope);
+      return {
+        ...prev,
+        servicesScope: updatedScope,
+        totalCost: newTotal
+      };
+    });
+  };
+
+  const updateServiceDetail = (
+    serviceKey: 'websiteAudit' | 'hostingDomain' | 'sslRenewal' | 'amc' | 'customService',
+    field: string,
+    value: any
+  ) => {
+    setProposal(prev => {
+      const currentScope = prev.servicesScope || createDefaultModularServicesScope();
+      const currentService = (currentScope as any)[serviceKey] || {};
+      const updatedService = {
+        ...currentService,
+        [field]: value
+      };
+      const updatedScope = {
+        ...currentScope,
+        [serviceKey]: updatedService
+      };
+      const newTotal = calculateModularServicesTotal(updatedScope);
+      return {
+        ...prev,
+        servicesScope: updatedScope,
+        totalCost: newTotal
+      };
+    });
+  };
+
+  // Domain Management state & handlers
+  const [showBulkDomainInput, setShowBulkDomainInput] = useState(false);
+  const [bulkDomainsText, setBulkDomainsText] = useState('');
+  const [bulkDefaultCost, setBulkDefaultCost] = useState(150);
+  const [bulkDefaultDate, setBulkDefaultDate] = useState('2026-12-31');
+  const [bulkDefaultStatus, setBulkDefaultStatus] = useState<'Active' | 'Expired' | 'Pending'>('Active');
+
+  const addIndividualDomain = () => {
+    setProposal(prev => {
+      const currentScope = prev.servicesScope || createDefaultModularServicesScope();
+      const currentHosting = currentScope.hostingDomain || {} as any;
+      const currentDomains: DomainItem[] = currentHosting.domains || [];
+      const newDomain: DomainItem = {
+        id: `dom-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        domainName: '',
+        renewalDate: '2026-12-31',
+        renewalCost: 150,
+        status: 'Active',
+        notes: ''
+      };
+      const updatedDomains = [...currentDomains, newDomain];
+      return {
+        ...prev,
+        servicesScope: {
+          ...currentScope,
+          hostingDomain: {
+            ...currentHosting,
+            domains: updatedDomains
+          }
+        }
+      };
+    });
+  };
+
+  const updateIndividualDomain = (id: string, field: keyof DomainItem, value: any) => {
+    setProposal(prev => {
+      const currentScope = prev.servicesScope || createDefaultModularServicesScope();
+      const currentHosting = currentScope.hostingDomain || {} as any;
+      const currentDomains: DomainItem[] = currentHosting.domains || [];
+      const updatedDomains = currentDomains.map(d => d.id === id ? { ...d, [field]: value } : d);
+      return {
+        ...prev,
+        servicesScope: {
+          ...currentScope,
+          hostingDomain: {
+            ...currentHosting,
+            domains: updatedDomains
+          }
+        }
+      };
+    });
+  };
+
+  const removeIndividualDomain = (id: string) => {
+    setProposal(prev => {
+      const currentScope = prev.servicesScope || createDefaultModularServicesScope();
+      const currentHosting = currentScope.hostingDomain || {} as any;
+      const currentDomains: DomainItem[] = currentHosting.domains || [];
+      const updatedDomains = currentDomains.filter(d => d.id !== id);
+      return {
+        ...prev,
+        servicesScope: {
+          ...currentScope,
+          hostingDomain: {
+            ...currentHosting,
+            domains: updatedDomains
+          }
+        }
+      };
+    });
+  };
+
+  const handleBulkImportDomains = () => {
+    if (!bulkDomainsText.trim()) return;
+    const rawNames = bulkDomainsText
+      .split(/[\n,;]+/)
+      .map(name => name.trim())
+      .filter(Boolean);
+
+    if (rawNames.length === 0) return;
+
+    setProposal(prev => {
+      const currentScope = prev.servicesScope || createDefaultModularServicesScope();
+      const currentHosting = currentScope.hostingDomain || {} as any;
+      const currentDomains: DomainItem[] = currentHosting.domains || [];
+
+      const newDomains: DomainItem[] = rawNames.map((name, idx) => ({
+        id: `dom-${Date.now()}-${idx}-${Math.random().toString(36).substring(2, 5)}`,
+        domainName: name,
+        renewalDate: bulkDefaultDate || '2026-12-31',
+        renewalCost: Number(bulkDefaultCost) || 150,
+        status: bulkDefaultStatus,
+        notes: 'Bulk Imported'
+      }));
+
+      return {
+        ...prev,
+        servicesScope: {
+          ...currentScope,
+          hostingDomain: {
+            ...currentHosting,
+            domains: [...currentDomains, ...newDomains]
+          }
+        }
+      };
+    });
+
+    setBulkDomainsText('');
+    setShowBulkDomainInput(false);
+  };
+
   const handleNext = () => {
     if (step < 7) {
       setStep(prev => prev + 1);
@@ -360,45 +520,66 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
                 <h4 className="text-xs font-sans font-bold text-slate-400 tracking-wider uppercase mb-3">
                   A. Select Proposal Target Type
                 </h4>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <button
                     onClick={() => handleTypeSelect('branding')}
-                    className={`p-4 border rounded-xl text-left transition-all flex flex-col justify-between h-[120px] shadow-sm cursor-pointer ${
-                      isBranding 
+                    className={`p-4 border rounded-xl text-left transition-all flex flex-col justify-between h-[125px] shadow-sm cursor-pointer ${
+                      proposal.type === 'branding' 
                         ? 'bg-white border-blue-500 ring-2 ring-blue-50 text-slate-800' 
                         : 'bg-white border-slate-200 hover:border-slate-300 text-slate-600'
                     }`}
                   >
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase leading-none font-mono ${
-                      isBranding ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-500'
+                      proposal.type === 'branding' ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-500'
                     }`}>
                       Brand Identity
                     </span>
                     <div>
                       <h4 className="font-sans font-bold text-sm tracking-tight">Branding Proposal</h4>
                       <p className="text-[11px] text-slate-500 mt-1 leading-snug">
-                        Focuses on Logos, Brand Guidelines, stationery sets, and identity assets.
+                        Logos, Brand Guidelines, stationery sets, and identity assets.
                       </p>
                     </div>
                   </button>
 
                   <button
                     onClick={() => handleTypeSelect('website')}
-                    className={`p-4 border rounded-xl text-left transition-all flex flex-col justify-between h-[120px] shadow-sm cursor-pointer ${
-                      !isBranding 
+                    className={`p-4 border rounded-xl text-left transition-all flex flex-col justify-between h-[125px] shadow-sm cursor-pointer ${
+                      proposal.type === 'website' 
                         ? 'bg-white border-blue-500 ring-2 ring-blue-50 text-slate-800' 
                         : 'bg-white border-slate-200 hover:border-slate-300 text-slate-650'
                     }`}
                   >
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase leading-none font-mono ${
-                      !isBranding ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-500'
+                      proposal.type === 'website' ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-500'
                     }`}>
                       Full Web Platform
                     </span>
                     <div>
                       <h4 className="font-sans font-bold text-sm tracking-tight">Website Proposal</h4>
                       <p className="text-[11px] text-slate-500 mt-1 leading-snug">
-                        Focuses on custom pages, languages, CMS engines, plugins, and caching setups.
+                        Custom pages, languages, CMS engines, plugins, and caching setups.
+                      </p>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => handleTypeSelect('services')}
+                    className={`p-4 border rounded-xl text-left transition-all flex flex-col justify-between h-[125px] shadow-sm cursor-pointer ${
+                      proposal.type === 'services' 
+                        ? 'bg-white border-blue-500 ring-2 ring-blue-50 text-slate-800' 
+                        : 'bg-white border-slate-200 hover:border-slate-300 text-slate-650'
+                    }`}
+                  >
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase leading-none font-mono ${
+                      proposal.type === 'services' ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-500'
+                    }`}>
+                      Modular IT Services
+                    </span>
+                    <div>
+                      <h4 className="font-sans font-bold text-sm tracking-tight">Services & Maintenance</h4>
+                      <p className="text-[11px] text-slate-500 mt-1 leading-snug">
+                        Website Audit, Hosting & Domain, SSL Renewal, and AMC in one document.
                       </p>
                     </div>
                   </button>
@@ -632,7 +813,706 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
           {step === 3 && (
             <div id="step-3-form" className="space-y-6">
               
-              {isBranding ? (
+              {proposal.type === 'services' ? (
+                /* MODULAR SERVICES CONFIGURATOR FORM */
+                <div className="space-y-6">
+                  <div className="bg-blue-50/60 border border-blue-200/80 p-4 rounded-xl flex items-start gap-3">
+                    <Sparkles className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="font-sans font-bold text-slate-800 text-xs uppercase tracking-wider">
+                        Multi-Select Service Modules
+                      </h4>
+                      <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                        Select one or more service modules below to include in this proposal. The proposal document will dynamically generate individual sections and financial calculations based on your selections.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Service 1: Website Audit */}
+                  <div className={`p-5 border rounded-2xl transition-all ${
+                    (proposal.servicesScope?.selectedServices || []).includes('website_audit')
+                      ? 'bg-white border-blue-500 shadow-sm ring-1 ring-blue-100'
+                      : 'bg-slate-50/60 border-slate-200'
+                  }`}>
+                    <div className="flex items-center justify-between gap-4 mb-3">
+                      <label className="flex items-center gap-3 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={(proposal.servicesScope?.selectedServices || []).includes('website_audit')}
+                          onChange={() => toggleModularService('website_audit')}
+                          className="h-5 w-5 text-blue-600 border-slate-300 rounded focus:ring-blue-500/50"
+                        />
+                        <div>
+                          <span className="font-sans font-bold text-sm text-slate-800 block">Website Audit Module</span>
+                          <span className="text-[11px] text-slate-500">Technical health, SEO performance, security vulnerabilities, Core Web Vitals & UX/UI</span>
+                        </div>
+                      </label>
+                      {(proposal.servicesScope?.selectedServices || []).includes('website_audit') && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-semibold text-slate-600">Module Cost:</span>
+                          <div className="relative">
+                            <input
+                              type="number"
+                              value={proposal.servicesScope?.websiteAudit?.cost || 0}
+                              onChange={(e) => updateServiceDetail('websiteAudit', 'cost', Number(e.target.value))}
+                              className="w-28 px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-bold text-right pr-11 focus:ring-2 focus:ring-blue-500/20"
+                            />
+                            <span className="absolute right-3 top-2 text-[10px] font-bold text-slate-400">QAR</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {(proposal.servicesScope?.selectedServices || []).includes('website_audit') && (
+                      <div className="mt-4 pt-4 border-t border-slate-200 space-y-4">
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <label className="text-xs font-bold text-slate-700 block">Standard Scope Audit Checklist</label>
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  [
+                                    'technicalAudit', 'seoAudit', 'performanceSpeed', 'securityAssessment',
+                                    'mobileResponsiveness', 'uxUiReview', 'accessibilityReview',
+                                    'brokenLinksError', 'cmsPluginCheck', 'detailedAuditReport'
+                                  ].forEach(key => updateServiceDetail('websiteAudit', key, true));
+                                }}
+                                className="text-[10px] font-bold text-blue-600 hover:underline"
+                              >
+                                Select All
+                              </button>
+                              <span className="text-slate-300">|</span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  [
+                                    'technicalAudit', 'seoAudit', 'performanceSpeed', 'securityAssessment',
+                                    'mobileResponsiveness', 'uxUiReview', 'accessibilityReview',
+                                    'brokenLinksError', 'cmsPluginCheck', 'detailedAuditReport'
+                                  ].forEach(key => updateServiceDetail('websiteAudit', key, false));
+                                }}
+                                className="text-[10px] font-bold text-slate-500 hover:underline"
+                              >
+                                Clear All
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+                            {[
+                              { key: 'technicalAudit', label: 'Technical Architecture & Code Standards Audit' },
+                              { key: 'seoAudit', label: 'SEO Meta, Schema & Indexability Audit' },
+                              { key: 'performanceSpeed', label: 'Core Web Vitals & Page Load Speed Benchmark' },
+                              { key: 'securityAssessment', label: 'Security Vulnerabilities & SSL Inspection' },
+                              { key: 'mobileResponsiveness', label: 'Mobile Responsiveness & Viewport Review' },
+                              { key: 'uxUiReview', label: 'UX/UI Conversion & Journey Analysis' },
+                              { key: 'accessibilityReview', label: 'WCAG Accessibility & Compliance Audit' },
+                              { key: 'brokenLinksError', label: 'Broken Links & Console Script Error Check' },
+                              { key: 'cmsPluginCheck', label: 'CMS Core & Plugin Compatibility Check' },
+                              { key: 'detailedAuditReport', label: 'Executive Recommendations & Audit Report' },
+                            ].map(({ key, label }) => {
+                              const isChecked = proposal.servicesScope?.websiteAudit?.[key as keyof WebsiteAuditScope] ?? true;
+                              return (
+                                <label
+                                  key={key}
+                                  className={`flex items-center gap-2.5 p-2 rounded-lg border cursor-pointer select-none transition-all ${
+                                    isChecked
+                                      ? 'bg-blue-50/60 border-blue-200 text-slate-800'
+                                      : 'bg-slate-50 border-slate-200 text-slate-400'
+                                  }`}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={!!isChecked}
+                                    onChange={(e) => updateServiceDetail('websiteAudit', key, e.target.checked)}
+                                    className="h-4 w-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500/50"
+                                  />
+                                  <span className={`text-[11px] font-medium ${isChecked ? 'text-slate-800 font-semibold' : 'text-slate-400 line-through'}`}>
+                                    {label}
+                                  </span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* Custom Scope of Work Field */}
+                        <div>
+                          <label className="text-xs font-semibold text-slate-700 block mb-1">
+                            Custom Scope of Work & Additional Audit Points (One requirement per line)
+                          </label>
+                          <textarea
+                            rows={3}
+                            value={proposal.servicesScope?.websiteAudit?.customScopeOfWork || ''}
+                            placeholder="e.g. Third-party API integration & CRM sync audit&#10;Multilingual translation database performance check&#10;Custom payment gateway checkout flow security audit"
+                            onChange={(e) => updateServiceDetail('websiteAudit', 'customScopeOfWork', e.target.value)}
+                            className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-sans font-mono placeholder:font-sans"
+                          />
+                          <span className="text-[10px] text-slate-500 mt-0.5 block">
+                            Custom items entered here will be appended seamlessly to the selected checklist points on the proposal document.
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-xs font-semibold text-slate-700 block mb-1">Estimated Delivery Timeline</label>
+                            <input
+                              type="text"
+                              value={proposal.servicesScope?.websiteAudit?.timeline || '5 to 7 Business Days'}
+                              onChange={(e) => updateServiceDetail('websiteAudit', 'timeline', e.target.value)}
+                              className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-sans"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs font-semibold text-slate-700 block mb-1">Deliverables & Report Format</label>
+                            <input
+                              type="text"
+                              value={proposal.servicesScope?.websiteAudit?.deliverablesSummary || 'Comprehensive PDF Technical Audit Report & Priority Action Matrix'}
+                              onChange={(e) => updateServiceDetail('websiteAudit', 'deliverablesSummary', e.target.value)}
+                              className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-sans"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Service 2: Hosting & Domain Renewal */}
+                  <div className={`p-5 border rounded-2xl transition-all ${
+                    (proposal.servicesScope?.selectedServices || []).includes('hosting_domain')
+                      ? 'bg-white border-blue-500 shadow-sm ring-1 ring-blue-100'
+                      : 'bg-slate-50/60 border-slate-200'
+                  }`}>
+                    <div className="flex items-center justify-between gap-4 mb-3">
+                      <label className="flex items-center gap-3 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={(proposal.servicesScope?.selectedServices || []).includes('hosting_domain')}
+                          onChange={() => toggleModularService('hosting_domain')}
+                          className="h-5 w-5 text-blue-600 border-slate-300 rounded focus:ring-blue-500/50"
+                        />
+                        <div>
+                          <span className="font-sans font-bold text-sm text-slate-800 block">Hosting & Domain Renewal Module</span>
+                          <span className="text-[11px] text-slate-500">Cloud web hosting server renewal, domain registry renewal, DNS management & backups</span>
+                        </div>
+                      </label>
+                      {(proposal.servicesScope?.selectedServices || []).includes('hosting_domain') && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-semibold text-slate-600">Module Cost:</span>
+                          <div className="relative">
+                            <input
+                              type="number"
+                              value={proposal.servicesScope?.hostingDomain?.cost || 0}
+                              onChange={(e) => updateServiceDetail('hostingDomain', 'cost', Number(e.target.value))}
+                              className="w-28 px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-bold text-right pr-11 focus:ring-2 focus:ring-blue-500/20"
+                            />
+                            <span className="absolute right-3 top-2 text-[10px] font-bold text-slate-400">QAR</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {(proposal.servicesScope?.selectedServices || []).includes('hosting_domain') && (
+                      <div className="mt-4 pt-4 border-t border-slate-200 space-y-5">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                          <div>
+                            <label className="text-xs font-semibold text-slate-700 block mb-1">Primary Target Domain</label>
+                            <input
+                              type="text"
+                              value={proposal.servicesScope?.hostingDomain?.domainName || ''}
+                              placeholder="e.g. clientdomain.qa"
+                              onChange={(e) => updateServiceDetail('hostingDomain', 'domainName', e.target.value)}
+                              className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-sans font-bold"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs font-semibold text-slate-700 block mb-1">Hosting Renewal Period (Years)</label>
+                            <input
+                              type="number"
+                              min={1}
+                              max={10}
+                              value={proposal.servicesScope?.hostingDomain?.hostingRenewalYears || 1}
+                              onChange={(e) => updateServiceDetail('hostingDomain', 'hostingRenewalYears', Number(e.target.value))}
+                              className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-sans"
+                            />
+                          </div>
+                          <div className="flex items-center pt-5">
+                            <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={proposal.servicesScope?.hostingDomain?.includeDomainRenewal ?? true}
+                                onChange={(e) => updateServiceDetail('hostingDomain', 'includeDomainRenewal', e.target.checked)}
+                                className="h-4 w-4 text-blue-600 rounded border-slate-300"
+                              />
+                              <span>Include Domain Registry Renewal</span>
+                            </label>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="text-xs font-semibold text-slate-700 block mb-1">Hosting Server Specifications</label>
+                          <textarea
+                            rows={2}
+                            value={proposal.servicesScope?.hostingDomain?.serverSpecs || ''}
+                            onChange={(e) => updateServiceDetail('hostingDomain', 'serverSpecs', e.target.value)}
+                            className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-sans"
+                            placeholder="e.g. NVMe High-Speed SSD Cloud Server, Daily Automated Backups, 99.9% Uptime Guarantee"
+                          />
+                        </div>
+
+                        {/* DOMAIN PORTFOLIO MANAGEMENT SECTION */}
+                        <div className="bg-slate-50/80 border border-slate-200 rounded-xl p-4 space-y-3">
+                          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-3">
+                            <div>
+                              <h4 className="text-xs font-bold text-slate-800 flex items-center gap-2">
+                                <Landmark className="h-4 w-4 text-blue-600" />
+                                Managed Domain Portfolio & Multi-Domain Registry
+                              </h4>
+                              <p className="text-[11px] text-slate-500">
+                                Manage multiple client domains, registration dates, renewal costs, statuses, and notes.
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setShowBulkDomainInput(!showBulkDomainInput)}
+                                className="px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg text-xs font-bold hover:bg-blue-100 transition-all flex items-center gap-1.5"
+                              >
+                                <Sparkles className="h-3.5 w-3.5 text-blue-600" />
+                                {showBulkDomainInput ? 'Hide Bulk Entry' : 'Bulk Add Domains'}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={addIndividualDomain}
+                                className="px-3 py-1.5 bg-slate-800 text-white rounded-lg text-xs font-bold hover:bg-slate-900 transition-all flex items-center gap-1.5"
+                              >
+                                <Plus className="h-3.5 w-3.5" />
+                                Add Domain
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* BULK DOMAIN IMPORT PANEL */}
+                          {showBulkDomainInput && (
+                            <div className="p-3.5 bg-blue-50/70 border border-blue-200 rounded-xl space-y-3">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-bold text-blue-900">Bulk Domain Import Option</span>
+                                <span className="text-[10px] text-blue-700">Paste multiple domains separated by commas, new lines, or spaces</span>
+                              </div>
+                              <textarea
+                                rows={3}
+                                value={bulkDomainsText}
+                                onChange={(e) => setBulkDomainsText(e.target.value)}
+                                placeholder="e.g. clientbrand.com, clientbrand.qa, clientstore.org, clientportal.io"
+                                className="w-full px-3 py-2 border border-blue-300 rounded-lg text-xs font-mono bg-white focus:ring-2 focus:ring-blue-500/20"
+                              />
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                                <div>
+                                  <label className="text-[10px] font-bold text-slate-600 block mb-0.5">Default Renewal Date</label>
+                                  <input
+                                    type="text"
+                                    value={bulkDefaultDate}
+                                    onChange={(e) => setBulkDefaultDate(e.target.value)}
+                                    placeholder="YYYY-MM-DD"
+                                    className="w-full px-2.5 py-1 border border-slate-300 rounded text-xs bg-white"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-[10px] font-bold text-slate-600 block mb-0.5">Default Renewal Cost (QAR)</label>
+                                  <input
+                                    type="number"
+                                    value={bulkDefaultCost}
+                                    onChange={(e) => setBulkDefaultCost(Number(e.target.value))}
+                                    className="w-full px-2.5 py-1 border border-slate-300 rounded text-xs bg-white font-bold"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-[10px] font-bold text-slate-600 block mb-0.5">Default Status</label>
+                                  <select
+                                    value={bulkDefaultStatus}
+                                    onChange={(e) => setBulkDefaultStatus(e.target.value as any)}
+                                    className="w-full px-2.5 py-1 border border-slate-300 rounded text-xs bg-white font-medium"
+                                  >
+                                    <option value="Active">Active</option>
+                                    <option value="Pending">Pending Renewal</option>
+                                    <option value="Expired">Expired</option>
+                                  </select>
+                                </div>
+                              </div>
+                              <div className="flex justify-end gap-2 pt-1">
+                                <button
+                                  type="button"
+                                  onClick={() => setShowBulkDomainInput(false)}
+                                  className="px-3 py-1 bg-white border border-slate-300 text-slate-600 text-xs font-semibold rounded-md"
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={handleBulkImportDomains}
+                                  className="px-4 py-1 bg-blue-600 text-white text-xs font-bold rounded-md hover:bg-blue-700 shadow-sm"
+                                >
+                                  Import All Domains
+                                </button>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* DOMAIN LIST TABLE */}
+                          {(!proposal.servicesScope?.hostingDomain?.domains || proposal.servicesScope.hostingDomain.domains.length === 0) ? (
+                            <div className="text-center py-6 border border-dashed border-slate-300 rounded-lg bg-white">
+                              <p className="text-xs text-slate-500 mb-2">No custom domains added yet.</p>
+                              <button
+                                type="button"
+                                onClick={addIndividualDomain}
+                                className="text-xs text-blue-600 font-bold hover:underline"
+                              >
+                                + Add First Domain
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-xs">
+                              <div className="overflow-x-auto">
+                                <table className="w-full text-left border-collapse">
+                                  <thead>
+                                    <tr className="bg-slate-100/80 border-b border-slate-200 text-[10px] uppercase font-bold text-slate-600">
+                                      <th className="py-2 px-3">Domain Name</th>
+                                      <th className="py-2 px-3">Renewal Date</th>
+                                      <th className="py-2 px-3">Status</th>
+                                      <th className="py-2 px-3 text-right">Cost (QAR)</th>
+                                      <th className="py-2 px-3">Notes</th>
+                                      <th className="py-2 px-2 text-center w-10"></th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-slate-200 text-xs">
+                                    {(proposal.servicesScope?.hostingDomain?.domains || []).map((dom) => (
+                                      <tr key={dom.id} className="hover:bg-slate-50/60">
+                                        <td className="py-2 px-3">
+                                          <input
+                                            type="text"
+                                            value={dom.domainName}
+                                            placeholder="domain.com"
+                                            onChange={(e) => updateIndividualDomain(dom.id, 'domainName', e.target.value)}
+                                            className="w-full px-2 py-1 border border-slate-300 rounded text-xs font-bold text-slate-800"
+                                          />
+                                        </td>
+                                        <td className="py-2 px-3">
+                                          <input
+                                            type="text"
+                                            value={dom.renewalDate}
+                                            placeholder="YYYY-MM-DD"
+                                            onChange={(e) => updateIndividualDomain(dom.id, 'renewalDate', e.target.value)}
+                                            className="w-full px-2 py-1 border border-slate-300 rounded text-xs font-mono"
+                                          />
+                                        </td>
+                                        <td className="py-2 px-3">
+                                          <select
+                                            value={dom.status}
+                                            onChange={(e) => updateIndividualDomain(dom.id, 'status', e.target.value as any)}
+                                            className={`px-2 py-1 border rounded text-xs font-bold ${
+                                              dom.status === 'Active'
+                                                ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                                                : dom.status === 'Expired'
+                                                ? 'bg-red-50 text-red-700 border-red-300'
+                                                : 'bg-amber-50 text-amber-700 border-amber-300'
+                                            }`}
+                                          >
+                                            <option value="Active">Active</option>
+                                            <option value="Pending">Pending</option>
+                                            <option value="Expired">Expired</option>
+                                          </select>
+                                        </td>
+                                        <td className="py-2 px-3 text-right">
+                                          <input
+                                            type="number"
+                                            value={dom.renewalCost}
+                                            onChange={(e) => updateIndividualDomain(dom.id, 'renewalCost', Number(e.target.value))}
+                                            className="w-20 px-2 py-1 border border-slate-300 rounded text-xs font-mono font-bold text-right"
+                                          />
+                                        </td>
+                                        <td className="py-2 px-3">
+                                          <input
+                                            type="text"
+                                            value={dom.notes || ''}
+                                            placeholder="Optional notes..."
+                                            onChange={(e) => updateIndividualDomain(dom.id, 'notes', e.target.value)}
+                                            className="w-full px-2 py-1 border border-slate-300 rounded text-xs text-slate-600"
+                                          />
+                                        </td>
+                                        <td className="py-2 px-2 text-center">
+                                          <button
+                                            type="button"
+                                            onClick={() => removeIndividualDomain(dom.id)}
+                                            className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-all"
+                                            title="Delete Domain"
+                                          >
+                                            <Trash2 className="h-3.5 w-3.5" />
+                                          </button>
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+
+                              {/* Domain Summary Footer */}
+                              <div className="bg-slate-50 border-t border-slate-200 p-2.5 flex items-center justify-between text-xs font-semibold text-slate-700">
+                                <span>Total Managed Domains: <strong>{(proposal.servicesScope?.hostingDomain?.domains || []).length}</strong></span>
+                                <span>
+                                  Domain Subtotal: <strong className="text-slate-900 font-bold font-mono">{formatQAR((proposal.servicesScope?.hostingDomain?.domains || []).reduce((sum, d) => sum + (Number(d.renewalCost) || 0), 0))}</strong>
+                                </span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Service 3: SSL Renewal */}
+                  <div className={`p-5 border rounded-2xl transition-all ${
+                    (proposal.servicesScope?.selectedServices || []).includes('ssl_renewal')
+                      ? 'bg-white border-blue-500 shadow-sm ring-1 ring-blue-100'
+                      : 'bg-slate-50/60 border-slate-200'
+                  }`}>
+                    <div className="flex items-center justify-between gap-4 mb-3">
+                      <label className="flex items-center gap-3 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={(proposal.servicesScope?.selectedServices || []).includes('ssl_renewal')}
+                          onChange={() => toggleModularService('ssl_renewal')}
+                          className="h-5 w-5 text-blue-600 border-slate-300 rounded focus:ring-blue-500/50"
+                        />
+                        <div>
+                          <span className="font-sans font-bold text-sm text-slate-800 block">SSL Renewal & Security Certificate</span>
+                          <span className="text-[11px] text-slate-500">2048-bit RSA Encryption SSL installation, server CSR key generation & HTTPS binding</span>
+                        </div>
+                      </label>
+                      {(proposal.servicesScope?.selectedServices || []).includes('ssl_renewal') && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-semibold text-slate-600">Module Cost:</span>
+                          <div className="relative">
+                            <input
+                              type="number"
+                              value={proposal.servicesScope?.sslRenewal?.cost || 0}
+                              onChange={(e) => updateServiceDetail('sslRenewal', 'cost', Number(e.target.value))}
+                              className="w-28 px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-bold text-right pr-11 focus:ring-2 focus:ring-blue-500/20"
+                            />
+                            <span className="absolute right-3 top-2 text-[10px] font-bold text-slate-400">QAR</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {(proposal.servicesScope?.selectedServices || []).includes('ssl_renewal') && (
+                      <div className="mt-4 pt-4 border-t border-slate-200 space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-xs font-semibold text-slate-700 block mb-1">SSL Certificate Type</label>
+                            <input
+                              type="text"
+                              value={proposal.servicesScope?.sslRenewal?.sslType || '2048-bit RSA High-Assurance SSL Certificate'}
+                              onChange={(e) => updateServiceDetail('sslRenewal', 'sslType', e.target.value)}
+                              className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-sans"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs font-semibold text-slate-700 block mb-1">SSL Validity Term (Years)</label>
+                            <input
+                              type="number"
+                              min={1}
+                              max={5}
+                              value={proposal.servicesScope?.sslRenewal?.sslYears || 1}
+                              onChange={(e) => updateServiceDetail('sslRenewal', 'sslYears', Number(e.target.value))}
+                              className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-sans"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Service 4: AMC */}
+                  <div className={`p-5 border rounded-2xl transition-all ${
+                    (proposal.servicesScope?.selectedServices || []).includes('amc')
+                      ? 'bg-white border-blue-500 shadow-sm ring-1 ring-blue-100'
+                      : 'bg-slate-50/60 border-slate-200'
+                  }`}>
+                    <div className="flex items-center justify-between gap-4 mb-3">
+                      <label className="flex items-center gap-3 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={(proposal.servicesScope?.selectedServices || []).includes('amc')}
+                          onChange={() => toggleModularService('amc')}
+                          className="h-5 w-5 text-blue-600 border-slate-300 rounded focus:ring-blue-500/50"
+                        />
+                        <div>
+                          <span className="font-sans font-bold text-sm text-slate-800 block">Annual Maintenance Contract (AMC)</span>
+                          <span className="text-[11px] text-slate-500">Ongoing technical maintenance, core/plugin updates, backups, security & priority support SLA</span>
+                        </div>
+                      </label>
+                      {(proposal.servicesScope?.selectedServices || []).includes('amc') && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-semibold text-slate-600">Module Cost:</span>
+                          <div className="relative">
+                            <input
+                              type="number"
+                              value={proposal.servicesScope?.amc?.cost || 0}
+                              onChange={(e) => updateServiceDetail('amc', 'cost', Number(e.target.value))}
+                              className="w-28 px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-bold text-right pr-11 focus:ring-2 focus:ring-blue-500/20"
+                            />
+                            <span className="absolute right-3 top-2 text-[10px] font-bold text-slate-400">QAR</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {(proposal.servicesScope?.selectedServices || []).includes('amc') && (
+                      <div className="mt-4 pt-4 border-t border-slate-200 space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-xs font-semibold text-slate-700 block mb-1">Contract Duration</label>
+                            <input
+                              type="text"
+                              value={proposal.servicesScope?.amc?.contractPeriod || '12 Months Annual Contract'}
+                              onChange={(e) => updateServiceDetail('amc', 'contractPeriod', e.target.value)}
+                              className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-sans"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs font-semibold text-slate-700 block mb-1">Dedicated Support Hours / Month</label>
+                            <input
+                              type="text"
+                              value={proposal.servicesScope?.amc?.supportHoursMonthly || 'Up to 5 Hours / Month'}
+                              onChange={(e) => updateServiceDetail('amc', 'supportHoursMonthly', e.target.value)}
+                              className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-sans"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="text-xs font-semibold text-slate-700 block mb-1">SLA Ticket Response Time</label>
+                          <input
+                            type="text"
+                            value={proposal.servicesScope?.amc?.responseTimeSLA || 'Within 24 Hours Standard / 4 Hours Critical Outages'}
+                            onChange={(e) => updateServiceDetail('amc', 'responseTimeSLA', e.target.value)}
+                            className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-sans"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Service 5: Custom Service */}
+                  <div className={`p-5 border rounded-2xl transition-all ${
+                    (proposal.servicesScope?.selectedServices || []).includes('custom_service')
+                      ? 'bg-white border-blue-500 shadow-sm ring-1 ring-blue-100'
+                      : 'bg-slate-50/60 border-slate-200'
+                  }`}>
+                    <div className="flex items-center justify-between gap-4 mb-3">
+                      <label className="flex items-center gap-3 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={(proposal.servicesScope?.selectedServices || []).includes('custom_service')}
+                          onChange={() => toggleModularService('custom_service')}
+                          className="h-5 w-5 text-blue-600 border-slate-300 rounded focus:ring-blue-500/50"
+                        />
+                        <div>
+                          <span className="font-sans font-bold text-sm text-slate-800 block">Custom Service Module</span>
+                          <span className="text-[11px] text-slate-500">Manually define a custom title, scope of work, deliverables, timeline, and pricing</span>
+                        </div>
+                      </label>
+                      {(proposal.servicesScope?.selectedServices || []).includes('custom_service') && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-semibold text-slate-600">Module Cost:</span>
+                          <div className="relative">
+                            <input
+                              type="number"
+                              value={proposal.servicesScope?.customService?.cost || 0}
+                              onChange={(e) => updateServiceDetail('customService', 'cost', Number(e.target.value))}
+                              className="w-28 px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-bold text-right pr-11 focus:ring-2 focus:ring-blue-500/20"
+                            />
+                            <span className="absolute right-3 top-2 text-[10px] font-bold text-slate-400">QAR</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {(proposal.servicesScope?.selectedServices || []).includes('custom_service') && (
+                      <div className="mt-4 pt-4 border-t border-slate-200 space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-xs font-semibold text-slate-700 block mb-1">Service Title</label>
+                            <input
+                              type="text"
+                              value={proposal.servicesScope?.customService?.title || ''}
+                              placeholder="e.g. Custom API & CRM Integration"
+                              onChange={(e) => updateServiceDetail('customService', 'title', e.target.value)}
+                              className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-sans font-bold"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs font-semibold text-slate-700 block mb-1">Estimated Delivery Timeline</label>
+                            <input
+                              type="text"
+                              value={proposal.servicesScope?.customService?.timeline || ''}
+                              placeholder="e.g. 2 to 3 Weeks"
+                              onChange={(e) => updateServiceDetail('customService', 'timeline', e.target.value)}
+                              className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-sans"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="text-xs font-semibold text-slate-700 block mb-1">Service Description & Summary</label>
+                          <textarea
+                            rows={2}
+                            value={proposal.servicesScope?.customService?.description || ''}
+                            placeholder="Briefly describe the overview and purpose of this custom service module..."
+                            onChange={(e) => updateServiceDetail('customService', 'description', e.target.value)}
+                            className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-sans"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-xs font-semibold text-slate-700 block mb-1">Detailed Scope of Work (One item per line)</label>
+                          <textarea
+                            rows={4}
+                            value={proposal.servicesScope?.customService?.scopeOfWork || ''}
+                            placeholder="1. Third-party payment gateway integration&#10;2. Multi-language database translation setup&#10;3. Custom analytics tracking setup"
+                            onChange={(e) => updateServiceDetail('customService', 'scopeOfWork', e.target.value)}
+                            className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-sans font-mono"
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-xs font-semibold text-slate-700 block mb-1">Deliverables & Report Format</label>
+                            <input
+                              type="text"
+                              value={proposal.servicesScope?.customService?.deliverables || ''}
+                              placeholder="e.g. Configured Module, API Documentation & Admin Guide"
+                              onChange={(e) => updateServiceDetail('customService', 'deliverables', e.target.value)}
+                              className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-sans"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs font-semibold text-slate-700 block mb-1">Terms & Conditions / Special Notes</label>
+                            <input
+                              type="text"
+                              value={proposal.servicesScope?.customService?.termsConditions || ''}
+                              placeholder="e.g. Subject to client API credential provisioning."
+                              onChange={(e) => updateServiceDetail('customService', 'termsConditions', e.target.value)}
+                              className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-sans"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : isBranding ? (
                 /* BRANDING SCOPE FORM */
                 <div className="space-y-4">
                   <div>
@@ -1733,7 +2613,103 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
                 </p>
               </div>
 
-              {isBranding ? (
+              {proposal.type === 'services' ? (
+                /* Modular Services Financials Form */
+                <div className="space-y-4">
+                  <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-xs">
+                    <div className="bg-slate-100 py-2.5 px-4 text-[10px] font-sans font-bold text-slate-500 uppercase tracking-wider grid grid-cols-12 gap-2">
+                      <span className="col-span-8">Service Module</span>
+                      <span className="col-span-4 text-right">Module Charge (QAR)</span>
+                    </div>
+                    <div className="divide-y divide-slate-150">
+                      {(proposal.servicesScope?.selectedServices || []).includes('website_audit') && (
+                        <div className="grid grid-cols-12 gap-2 py-3 px-4 items-center">
+                          <div className="col-span-8">
+                            <span className="font-bold text-xs text-slate-800 block">Website Audit & Technical Review</span>
+                            <span className="text-[11px] text-slate-500">Technical health, SEO, security vulnerabilities & UX/UI report</span>
+                          </div>
+                          <div className="col-span-4 flex justify-end">
+                            <input
+                              type="number"
+                              value={proposal.servicesScope?.websiteAudit?.cost || 0}
+                              onChange={(e) => updateServiceDetail('websiteAudit', 'cost', Number(e.target.value))}
+                              className="w-32 px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-mono font-bold text-right"
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {(proposal.servicesScope?.selectedServices || []).includes('hosting_domain') && (
+                        <div className="grid grid-cols-12 gap-2 py-3 px-4 items-center">
+                          <div className="col-span-8">
+                            <span className="font-bold text-xs text-slate-800 block">Hosting & Domain Renewal</span>
+                            <span className="text-[11px] text-slate-500">Cloud server hosting ({proposal.servicesScope?.hostingDomain?.hostingRenewalYears || 1} Yr) & Domain renewal</span>
+                          </div>
+                          <div className="col-span-4 flex justify-end">
+                            <input
+                              type="number"
+                              value={proposal.servicesScope?.hostingDomain?.cost || 0}
+                              onChange={(e) => updateServiceDetail('hostingDomain', 'cost', Number(e.target.value))}
+                              className="w-32 px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-mono font-bold text-right"
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {(proposal.servicesScope?.selectedServices || []).includes('ssl_renewal') && (
+                        <div className="grid grid-cols-12 gap-2 py-3 px-4 items-center">
+                          <div className="col-span-8">
+                            <span className="font-bold text-xs text-slate-800 block">SSL Certificate & Installation</span>
+                            <span className="text-[11px] text-slate-500">2048-bit RSA Encryption SSL certificate ({proposal.servicesScope?.sslRenewal?.sslYears || 1} Yr)</span>
+                          </div>
+                          <div className="col-span-4 flex justify-end">
+                            <input
+                              type="number"
+                              value={proposal.servicesScope?.sslRenewal?.cost || 0}
+                              onChange={(e) => updateServiceDetail('sslRenewal', 'cost', Number(e.target.value))}
+                              className="w-32 px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-mono font-bold text-right"
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {(proposal.servicesScope?.selectedServices || []).includes('amc') && (
+                        <div className="grid grid-cols-12 gap-2 py-3 px-4 items-center">
+                          <div className="col-span-8">
+                            <span className="font-bold text-xs text-slate-800 block">Annual Maintenance Contract (AMC)</span>
+                            <span className="text-[11px] text-slate-500">CMS/plugin updates, monitoring, security & priority support SLA</span>
+                          </div>
+                          <div className="col-span-4 flex justify-end">
+                            <input
+                              type="number"
+                              value={proposal.servicesScope?.amc?.cost || 0}
+                              onChange={(e) => updateServiceDetail('amc', 'cost', Number(e.target.value))}
+                              className="w-32 px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-mono font-bold text-right"
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {(proposal.servicesScope?.selectedServices || []).includes('custom_service') && (
+                        <div className="grid grid-cols-12 gap-2 py-3 px-4 items-center">
+                          <div className="col-span-8">
+                            <span className="font-bold text-xs text-slate-800 block">{proposal.servicesScope?.customService?.title || 'Custom Tailored Service'}</span>
+                            <span className="text-[11px] text-slate-500">{proposal.servicesScope?.customService?.deliverables || 'Custom deliverables and scope of work'}</span>
+                          </div>
+                          <div className="col-span-4 flex justify-end">
+                            <input
+                              type="number"
+                              value={proposal.servicesScope?.customService?.cost || 0}
+                              onChange={(e) => updateServiceDetail('customService', 'cost', Number(e.target.value))}
+                              className="w-32 px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-mono font-bold text-right"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : isBranding ? (
                 /* Branding Resource Billing */
                 <div className="space-y-4">
                   <div className="flex justify-between items-center mb-1">
