@@ -16,6 +16,8 @@ export interface ModularDeliverableLineItem {
   unitLabel: string;
   unitPrice: number;
   totalCost: number;
+  domainList?: string[];
+  summaryLabel?: string;
 }
 
 // Simple unique ID generator
@@ -125,8 +127,26 @@ export function createDefaultModularServicesScope(): ModularServicesScope {
       cost: 1800
     },
     sslRenewal: {
+      entries: [
+        {
+          id: "ssl-1",
+          domainName: "clientdomain.com",
+          certificateType: "2048-bit RSA High-Assurance SSL Certificate (HTTPS)",
+          renewalDuration: "1 Year",
+          cost: 600,
+          notes: "Primary Domain SSL Certificate"
+        },
+        {
+          id: "ssl-2",
+          domainName: "clientdomain.qa",
+          certificateType: "2048-bit RSA High-Assurance SSL Certificate (HTTPS)",
+          renewalDuration: "1 Year",
+          cost: 600,
+          notes: "Regional Registry (.qa) SSL Certificate"
+        }
+      ],
       sslYears: 1,
-      quantity: 1,
+      quantity: 2,
       unitPrice: 600,
       certificateType: "2048-bit RSA High-Assurance SSL Certificate (HTTPS)",
       sslType: "2048-bit RSA High-Assurance SSL Certificate",
@@ -134,9 +154,27 @@ export function createDefaultModularServicesScope(): ModularServicesScope {
       validationTesting: true,
       securityBenefits: "Encrypts user data transmission, builds customer trust badge, prevents browser 'Not Secure' warnings, and satisfies search engine HTTPS ranking requirements.",
       termsConditions: "Includes domain validation, server CSR generation, CRT installation, HTTP to HTTPS 301 redirection, and cross-browser handshake verification.",
-      cost: 600
+      cost: 1200
     },
     amc: {
+      entries: [
+        {
+          id: "amc-1",
+          domainName: "clientdomain.com",
+          planName: "Standard AMC – Technical Maintenance & SLA",
+          contractPeriod: "12 Months",
+          cost: 3000,
+          notes: "Primary Production Website Technical AMC"
+        },
+        {
+          id: "amc-2",
+          domainName: "clientdomain.qa",
+          planName: "Secondary Site Maintenance",
+          contractPeriod: "12 Months",
+          cost: 1500,
+          notes: "Regional Web Asset Maintenance"
+        }
+      ],
       cmsUpdates: true,
       pluginUpdates: true,
       themeUpdates: true,
@@ -153,8 +191,8 @@ export function createDefaultModularServicesScope(): ModularServicesScope {
       contractPeriod: "12 Months Annual Contract",
       supportHoursMonthly: "Up to 5 Hours / Month",
       termsConditions: "AMC covers routine updates, minor content adjustments, and bug fixes. Major functional redesigns or custom feature additions are quoted separately.",
-      quantity: 1,
-      unitPrice: 4500,
+      quantity: 2,
+      unitPrice: 2250,
       cost: 4500
     },
     customService: {
@@ -196,137 +234,127 @@ export function getModularDeliverableLineItems(servicesScope?: ModularServicesSc
 
   // 2. Hosting & Domain Renewal
   if (selectedServices.includes('hosting_domain') && hostingDomain) {
+    let domainList: string[] = [];
+    let totalCost = 0;
+
     if (hostingDomain.entries && hostingDomain.entries.length > 0) {
-      hostingDomain.entries.forEach((entry, idx) => {
-        const cost = Number(entry.renewalCost) || 0;
-        const name = entry.domainName 
-          ? `Hosting & Domain Renewal – ${entry.domainName}`
-          : `Hosting & Domain Renewal Item #${idx + 1}`;
-        
-        const descParts: string[] = [];
-        if (entry.hostingProvider) descParts.push(`Provider: ${entry.hostingProvider}`);
-        if (entry.hostingPlan) descParts.push(`Plan: ${entry.hostingPlan}`);
-        if (entry.renewalDate) descParts.push(`Renews: ${entry.renewalDate}`);
-        if (entry.notes) descParts.push(`Notes: ${entry.notes}`);
-
-        const scopeDesc = descParts.length > 0 
-          ? descParts.join(' • ') 
-          : 'Cloud Hosting Server Infrastructure & Domain Registry Renewal';
-
-        items.push({
-          id: `item_hd_${entry.id || idx}`,
-          moduleKey: 'hosting_domain',
-          moduleTitle: 'Hosting & Domain Renewal',
-          deliverableName: name,
-          scopeDescription: scopeDesc,
-          quantity: 1,
-          unitLabel: entry.renewalDuration || '1 Year',
-          unitPrice: cost,
-          totalCost: cost,
-        });
-      });
+      domainList = hostingDomain.entries.map(e => e.domainName).filter(Boolean);
+      totalCost = hostingDomain.entries.reduce((sum, e) => sum + (Number(e.renewalCost) || 0), 0);
+    } else if (hostingDomain.domains && hostingDomain.domains.length > 0) {
+      domainList = hostingDomain.domains.map(d => d.domainName).filter(Boolean);
+      totalCost = Number(hostingDomain.cost) || hostingDomain.domains.reduce((sum, d) => sum + (Number(d.renewalCost) || 0), 0);
+    } else if (hostingDomain.domainName) {
+      domainList = [hostingDomain.domainName];
+      totalCost = Number(hostingDomain.cost) || 0;
     } else {
-      // Fallback for legacy proposals
-      const hostingYears = hostingDomain.hostingRenewalYears || 1;
-      const totalModuleCost = Number(hostingDomain.cost) || 0;
-      const domainsList = hostingDomain.domains || [];
-      const sumDomainCosts = domainsList.reduce((sum, d) => sum + (Number(d.renewalCost) || 0), 0);
-      
-      let hostingCost = hostingDomain.hostingCost ?? (
-        sumDomainCosts > 0 && sumDomainCosts < totalModuleCost 
-          ? totalModuleCost - sumDomainCosts 
-          : totalModuleCost
-      );
-      if (domainsList.length === 0 && !hostingDomain.includeDomainRenewal && !hostingDomain.domainName && !hostingDomain.domainQty) {
-        hostingCost = totalModuleCost;
-      }
-
-      const hostingUnitPrice = hostingDomain.hostingUnitPrice || (hostingYears > 0 ? hostingCost / hostingYears : hostingCost);
-
-      items.push({
-        id: 'item_hosting_server',
-        moduleKey: 'hosting_domain',
-        moduleTitle: 'Hosting & Domain Renewal',
-        deliverableName: `Cloud Server Hosting Renewal (${hostingYears} ${hostingYears === 1 ? 'Year' : 'Years'})`,
-        scopeDescription: hostingDomain.serverSpecs || hostingDomain.hostingSpecifications || 'High-performance SSD Cloud Server with daily automated backups & 99.9% uptime SLA',
-        quantity: hostingYears,
-        unitLabel: hostingYears === 1 ? 'Year' : 'Years',
-        unitPrice: hostingUnitPrice,
-        totalCost: hostingCost,
-      });
-
-      if (hostingDomain.includeDomainRenewal || domainsList.length > 0 || (hostingDomain.domainQty && hostingDomain.domainQty > 0)) {
-        if (domainsList.length > 0) {
-          const domYears = hostingDomain.domainRenewalYears || 1;
-          const domCount = domainsList.length;
-          const totalDomainCost = sumDomainCosts || (hostingDomain.domainCost ?? 0);
-          const avgUnitPrice = domCount > 0 ? totalDomainCost / domCount : totalDomainCost;
-          const domainNamesStr = domainsList.map(d => d.domainName).filter(Boolean).join(', ');
-
-          items.push({
-            id: 'item_domains_grouped',
-            moduleKey: 'hosting_domain',
-            moduleTitle: 'Hosting & Domain Renewal',
-            deliverableName: `Domain Renewal – Annual Renewal (${domCount} ${domCount === 1 ? 'Domain' : 'Domains'})`,
-            scopeDescription: `Annual Registry Renewal for ${domainNamesStr || 'Managed Portfolio Domains'} (${domYears} ${domYears === 1 ? 'Yr' : 'Yrs'})`,
-            quantity: domCount,
-            unitLabel: domCount === 1 ? 'Domain' : 'Domains',
-            unitPrice: avgUnitPrice,
-            totalCost: totalDomainCost,
-          });
-        } else if (hostingDomain.domainName) {
-          const domYears = hostingDomain.domainRenewalYears || 1;
-          const domTotal = hostingDomain.domainCost ?? (totalModuleCost - hostingCost);
-          const domUnitPrice = domYears > 0 ? domTotal / domYears : domTotal;
-          items.push({
-            id: 'item_domain_primary',
-            moduleKey: 'hosting_domain',
-            moduleTitle: 'Hosting & Domain Renewal',
-            deliverableName: `Domain Renewal – ${hostingDomain.domainName} (${domYears} ${domYears === 1 ? 'Year' : 'Years'})`,
-            scopeDescription: `Annual Registry Renewal & DNS Management`,
-            quantity: domYears,
-            unitLabel: domYears === 1 ? 'Domain' : 'Domains',
-            unitPrice: domUnitPrice,
-            totalCost: domTotal,
-          });
-        }
-      }
+      totalCost = Number(hostingDomain.cost) || 0;
     }
+
+    const qty = domainList.length > 0 ? domainList.length : (hostingDomain.hostingRenewalYears || 1);
+    const uPrice = qty > 0 ? totalCost / qty : totalCost;
+
+    const summaryLabel = `Total Renewal Items: ${qty}`;
+    const scopeLines = [summaryLabel];
+    if (domainList.length > 0) {
+      domainList.forEach(d => scopeLines.push(`• ${d}`));
+    } else {
+      scopeLines.push('Cloud Hosting Server Infrastructure & Domain Registry Renewal');
+    }
+
+    items.push({
+      id: 'item_hosting_domain_summary',
+      moduleKey: 'hosting_domain',
+      moduleTitle: 'Hosting & Domain Renewal',
+      deliverableName: 'Hosting & Domain Renewal',
+      scopeDescription: scopeLines.join('\n'),
+      quantity: qty,
+      unitLabel: qty === 1 ? 'Item' : 'Items',
+      unitPrice: uPrice,
+      totalCost: totalCost,
+      domainList: domainList,
+      summaryLabel: summaryLabel,
+    });
   }
 
-  // 3. SSL Renewal
+  // 3. SSL Renewal & Security Certificate
   if (selectedServices.includes('ssl_renewal') && sslRenewal) {
-    const qty = sslRenewal.quantity || sslRenewal.sslYears || 1;
-    const total = Number(sslRenewal.cost) || 0;
-    const uPrice = sslRenewal.unitPrice || (qty > 0 ? total / qty : total);
+    let domainList: string[] = [];
+    let totalCost = 0;
+
+    if (sslRenewal.entries && sslRenewal.entries.length > 0) {
+      domainList = sslRenewal.entries.map(e => e.domainName).filter(Boolean);
+      totalCost = sslRenewal.entries.reduce((sum, e) => sum + (Number(e.cost) || 0), 0);
+    } else if (sslRenewal.domainName) {
+      domainList = [sslRenewal.domainName];
+      totalCost = Number(sslRenewal.cost) || 0;
+    } else {
+      totalCost = Number(sslRenewal.cost) || 0;
+    }
+
+    const qty = domainList.length > 0 ? domainList.length : (sslRenewal.quantity || sslRenewal.sslYears || 1);
+    const uPrice = qty > 0 ? totalCost / qty : totalCost;
+
+    const summaryLabel = `Total SSL Certificates: ${qty}`;
+    const scopeLines = [summaryLabel];
+    if (domainList.length > 0) {
+      domainList.forEach(d => scopeLines.push(`• ${d}`));
+    } else {
+      scopeLines.push('2048-bit RSA Security Certificate & HTTPS Setup');
+    }
+
     items.push({
-      id: 'item_ssl_renewal',
+      id: 'item_ssl_renewal_summary',
       moduleKey: 'ssl_renewal',
       moduleTitle: 'SSL Certificate & Renewal',
-      deliverableName: `SSL Certificate & Security Installation (${sslRenewal.sslType || '2048-bit RSA Encryption'})`,
-      scopeDescription: `${sslRenewal.sslYears || 1} Year Certificate Coverage, CSR Key Generation & HTTPS Redirection Verification`,
+      deliverableName: 'SSL Renewal & Security Certificate',
+      scopeDescription: scopeLines.join('\n'),
       quantity: qty,
-      unitLabel: qty === 1 ? 'Certificate' : 'Certificates',
+      unitLabel: qty === 1 ? 'Certificate' : 'SSL Certificates',
       unitPrice: uPrice,
-      totalCost: total,
+      totalCost: totalCost,
+      domainList: domainList,
+      summaryLabel: summaryLabel,
     });
   }
 
   // 4. Annual Maintenance Contract (AMC)
   if (selectedServices.includes('amc') && amc) {
-    const qty = amc.quantity || 1;
-    const total = Number(amc.cost) || 0;
-    const uPrice = amc.unitPrice || (qty > 0 ? total / qty : total);
+    let domainList: string[] = [];
+    let totalCost = 0;
+
+    if (amc.entries && amc.entries.length > 0) {
+      domainList = amc.entries.map(e => e.domainName).filter(Boolean);
+      totalCost = amc.entries.reduce((sum, e) => sum + (Number(e.cost) || 0), 0);
+    } else if (amc.domainName) {
+      domainList = [amc.domainName];
+      totalCost = Number(amc.cost) || 0;
+    } else {
+      totalCost = Number(amc.cost) || 0;
+    }
+
+    const qty = domainList.length > 0 ? domainList.length : (amc.quantity || 1);
+    const uPrice = qty > 0 ? totalCost / qty : totalCost;
+
+    const summaryLabel = `Total AMC Items: ${qty}`;
+    const scopeLines = [summaryLabel];
+    if (domainList.length > 0) {
+      domainList.forEach(d => scopeLines.push(`• ${d}`));
+    } else {
+      scopeLines.push('CMS Updates, Health Checks, Backups & SLA Technical Support');
+    }
+
     items.push({
-      id: 'item_amc',
+      id: 'item_amc_summary',
       moduleKey: 'amc',
       moduleTitle: 'Annual Maintenance Contract (AMC)',
-      deliverableName: `Annual Maintenance Contract (AMC) – ${amc.contractPeriod || '12 Months Coverage'}`,
-      scopeDescription: `CMS & Plugin Updates, Health Checks, Backups, SLA (${amc.supportHoursMonthly || 'Up to 5 Hours / Month'})`,
+      deliverableName: 'Annual Maintenance Contract (AMC)',
+      scopeDescription: scopeLines.join('\n'),
       quantity: qty,
-      unitLabel: 'Contract',
+      unitLabel: qty === 1 ? 'AMC Item' : 'AMC Items',
       unitPrice: uPrice,
-      totalCost: total,
+      totalCost: totalCost,
+      domainList: domainList,
+      summaryLabel: summaryLabel,
     });
   }
 

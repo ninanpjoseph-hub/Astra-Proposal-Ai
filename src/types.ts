@@ -41,6 +41,24 @@ export interface HostingDomainEntry {
   notes?: string;
 }
 
+export interface SSLEntry {
+  id: string;
+  domainName: string;
+  certificateType?: string;
+  renewalDuration?: string;
+  cost: number;
+  notes?: string;
+}
+
+export interface AMCEntry {
+  id: string;
+  domainName: string;
+  planName?: string;
+  contractPeriod?: string;
+  cost: number;
+  notes?: string;
+}
+
 export interface DomainItem {
   id: string;
   domainName: string;
@@ -75,6 +93,8 @@ export interface HostingDomainScope {
 }
 
 export interface SslRenewalScope {
+  entries?: SSLEntry[];
+  domainName?: string;
   sslYears: number;
   sslType?: string;
   certificateType: string;
@@ -88,6 +108,8 @@ export interface SslRenewalScope {
 }
 
 export interface AmcScope {
+  entries?: AMCEntry[];
+  domainName?: string;
   cmsUpdates: boolean;
   pluginUpdates: boolean;
   themeUpdates: boolean;

@@ -890,12 +890,13 @@ function createMetaCell(label: string, value: string, isGold: boolean = false) {
   });
 }
 
-function createHeaderCell(text: string) {
+function createHeaderCell(text: string, align: (typeof AlignmentType)[keyof typeof AlignmentType] = AlignmentType.LEFT) {
   return new TableCell({
     shading: { fill: COLOR_PRIMARY, type: ShadingType.CLEAR },
     margins: { top: 120, bottom: 120, left: 150, right: 150 },
     children: [
       new Paragraph({
+        alignment: align,
         children: [
           new TextRun({ text, bold: true, color: 'FFFFFF', size: 18 }),
         ],
@@ -905,14 +906,20 @@ function createHeaderCell(text: string) {
 }
 
 function createTableCell(text: string, isBold: boolean = false, align: (typeof AlignmentType)[keyof typeof AlignmentType] = AlignmentType.LEFT) {
+  const lines = (text || '').split('\n');
+  const paragraphs = lines.map(line => new Paragraph({
+    alignment: align,
+    children: [
+      new TextRun({ text: line, bold: isBold, size: 18, color: COLOR_SLATE_DARK }),
+    ],
+  }));
+
   return new TableCell({
     margins: { top: 100, bottom: 100, left: 150, right: 150 },
-    children: [
+    children: paragraphs.length > 0 ? paragraphs : [
       new Paragraph({
         alignment: align,
-        children: [
-          new TextRun({ text, bold: isBold, size: 18, color: COLOR_SLATE_DARK }),
-        ],
+        children: [new TextRun({ text: '', size: 18 })],
       }),
     ],
   });

@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Proposal, ProposalType, Milestone, ResourceCost, ProposalStatus, DomainItem, WebsiteAuditScope } from '../types';
+import { Proposal, ProposalType, Milestone, ResourceCost, ProposalStatus, DomainItem, WebsiteAuditScope, HostingDomainEntry, SSLEntry, AMCEntry } from '../types';
 import { createDefaultProposal, generateId, formatQAR, createDefaultModularServicesScope, calculateModularServicesTotal, getModularDeliverableLineItems } from '../proposalUtils';
 import { DEFAULT_SCOPE_TEMPLATES } from '../staticTemplates';
 import SitemapGenerator from './SitemapGenerator';
@@ -303,8 +303,8 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
     setProposal(prev => {
       const currentScope = prev.servicesScope || createDefaultModularServicesScope();
       const currentHosting = currentScope.hostingDomain || {} as any;
-      const currentEntries: HostingDomainEntry[] = currentHosting.entries || [];
-      const newEntry: HostingDomainEntry = {
+      const currentHostingEntries: HostingDomainEntry[] = currentHosting.entries || [];
+      const newHdEntry: HostingDomainEntry = {
         id: `hd-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
         domainName: '',
         hostingProvider: '',
@@ -314,14 +314,55 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
         renewalCost: 0,
         notes: ''
       };
-      const updatedEntries = [...currentEntries, newEntry];
-      const newModuleCost = updatedEntries.reduce((sum, item) => sum + (Number(item.renewalCost) || 0), 0);
+      const updatedHdEntries = [...currentHostingEntries, newHdEntry];
+      const newHdCost = updatedHdEntries.reduce((sum, item) => sum + (Number(item.renewalCost) || 0), 0);
+
+      // Replicate to SSL entries
+      const currentSsl = currentScope.sslRenewal || {} as any;
+      const currentSslEntries: SSLEntry[] = currentSsl.entries || [];
+      const newSslEntry: SSLEntry = {
+        id: `ssl-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        domainName: '',
+        certificateType: '2048-bit RSA High-Assurance SSL Certificate (HTTPS)',
+        renewalDuration: '1 Year',
+        cost: 600,
+        notes: ''
+      };
+      const updatedSslEntries = [...currentSslEntries, newSslEntry];
+      const newSslCost = updatedSslEntries.reduce((sum, item) => sum + (Number(item.cost) || 0), 0);
+
+      // Replicate to AMC entries
+      const currentAmc = currentScope.amc || {} as any;
+      const currentAmcEntries: AMCEntry[] = currentAmc.entries || [];
+      const newAmcEntry: AMCEntry = {
+        id: `amc-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        domainName: '',
+        planName: 'Standard AMC – Technical Maintenance & SLA',
+        contractPeriod: '12 Months',
+        cost: 2500,
+        notes: ''
+      };
+      const updatedAmcEntries = [...currentAmcEntries, newAmcEntry];
+      const newAmcCost = updatedAmcEntries.reduce((sum, item) => sum + (Number(item.cost) || 0), 0);
+
       const updatedScope = {
         ...currentScope,
         hostingDomain: {
           ...currentHosting,
-          entries: updatedEntries,
-          cost: newModuleCost
+          entries: updatedHdEntries,
+          cost: newHdCost
+        },
+        sslRenewal: {
+          ...currentSsl,
+          entries: updatedSslEntries,
+          cost: newSslCost,
+          quantity: updatedSslEntries.length
+        },
+        amc: {
+          ...currentAmc,
+          entries: updatedAmcEntries,
+          cost: newAmcCost,
+          quantity: updatedAmcEntries.length
         }
       };
       const newTotal = calculateModularServicesTotal(updatedScope);
@@ -337,15 +378,53 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
     setProposal(prev => {
       const currentScope = prev.servicesScope || createDefaultModularServicesScope();
       const currentHosting = currentScope.hostingDomain || {} as any;
-      const currentEntries: HostingDomainEntry[] = currentHosting.entries || [];
-      const updatedEntries = currentEntries.map(e => e.id === id ? { ...e, [field]: value } : e);
-      const newModuleCost = updatedEntries.reduce((sum, item) => sum + (Number(item.renewalCost) || 0), 0);
+      const currentHostingEntries: HostingDomainEntry[] = currentHosting.entries || [];
+      
+      const targetIdx = currentHostingEntries.findIndex(e => e.id === id);
+      const prevDomainName = targetIdx !== -1 ? currentHostingEntries[targetIdx].domainName : '';
+
+      const updatedHdEntries = currentHostingEntries.map(e => e.id === id ? { ...e, [field]: value } : e);
+      const newHdCost = updatedHdEntries.reduce((sum, item) => sum + (Number(item.renewalCost) || 0), 0);
+
+      let updatedSslEntries = currentScope.sslRenewal?.entries || [];
+      let updatedAmcEntries = currentScope.amc?.entries || [];
+
+      // If domainName field changed, sync domain name across linked SSL and AMC entries
+      if (field === 'domainName' && targetIdx !== -1) {
+        if (updatedSslEntries.length > 0) {
+          updatedSslEntries = updatedSslEntries.map((se, idx) => {
+            if (idx === targetIdx || (prevDomainName && se.domainName === prevDomainName)) {
+              return { ...se, domainName: value };
+            }
+            return se;
+          });
+        }
+        if (updatedAmcEntries.length > 0) {
+          updatedAmcEntries = updatedAmcEntries.map((ae, idx) => {
+            if (idx === targetIdx || (prevDomainName && ae.domainName === prevDomainName)) {
+              return { ...ae, domainName: value };
+            }
+            return ae;
+          });
+        }
+      }
+
       const updatedScope = {
         ...currentScope,
         hostingDomain: {
           ...currentHosting,
-          entries: updatedEntries,
-          cost: newModuleCost
+          entries: updatedHdEntries,
+          cost: newHdCost
+        },
+        sslRenewal: {
+          ...currentScope.sslRenewal,
+          entries: updatedSslEntries,
+          cost: updatedSslEntries.reduce((sum, item) => sum + (Number(item.cost) || 0), 0)
+        },
+        amc: {
+          ...currentScope.amc,
+          entries: updatedAmcEntries,
+          cost: updatedAmcEntries.reduce((sum, item) => sum + (Number(item.cost) || 0), 0)
         }
       };
       const newTotal = calculateModularServicesTotal(updatedScope);
@@ -370,6 +449,264 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
           ...currentHosting,
           entries: updatedEntries,
           cost: newModuleCost
+        }
+      };
+      const newTotal = calculateModularServicesTotal(updatedScope);
+      return {
+        ...prev,
+        servicesScope: updatedScope,
+        totalCost: newTotal
+      };
+    });
+  };
+
+  // SSL Entry Handlers (Independent Editing)
+  const addSslEntry = () => {
+    setProposal(prev => {
+      const currentScope = prev.servicesScope || createDefaultModularServicesScope();
+      const currentSsl = currentScope.sslRenewal || {} as any;
+      const currentEntries: SSLEntry[] = currentSsl.entries || [];
+      const newEntry: SSLEntry = {
+        id: `ssl-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        domainName: '',
+        certificateType: '2048-bit RSA High-Assurance SSL Certificate (HTTPS)',
+        renewalDuration: '1 Year',
+        cost: 600,
+        notes: ''
+      };
+      const updatedEntries = [...currentEntries, newEntry];
+      const newModuleCost = updatedEntries.reduce((sum, item) => sum + (Number(item.cost) || 0), 0);
+      const updatedScope = {
+        ...currentScope,
+        sslRenewal: {
+          ...currentSsl,
+          entries: updatedEntries,
+          cost: newModuleCost,
+          quantity: updatedEntries.length
+        }
+      };
+      const newTotal = calculateModularServicesTotal(updatedScope);
+      return {
+        ...prev,
+        servicesScope: updatedScope,
+        totalCost: newTotal
+      };
+    });
+  };
+
+  const updateSslEntry = (id: string, field: keyof SSLEntry, value: any) => {
+    setProposal(prev => {
+      const currentScope = prev.servicesScope || createDefaultModularServicesScope();
+      const currentSsl = currentScope.sslRenewal || {} as any;
+      const currentEntries: SSLEntry[] = currentSsl.entries || [];
+      const updatedEntries = currentEntries.map(e => e.id === id ? { ...e, [field]: value } : e);
+      const newModuleCost = updatedEntries.reduce((sum, item) => sum + (Number(item.cost) || 0), 0);
+      const updatedScope = {
+        ...currentScope,
+        sslRenewal: {
+          ...currentSsl,
+          entries: updatedEntries,
+          cost: newModuleCost
+        }
+      };
+      const newTotal = calculateModularServicesTotal(updatedScope);
+      return {
+        ...prev,
+        servicesScope: updatedScope,
+        totalCost: newTotal
+      };
+    });
+  };
+
+  const removeSslEntry = (id: string) => {
+    setProposal(prev => {
+      const currentScope = prev.servicesScope || createDefaultModularServicesScope();
+      const currentSsl = currentScope.sslRenewal || {} as any;
+      const currentEntries: SSLEntry[] = currentSsl.entries || [];
+      const updatedEntries = currentEntries.filter(e => e.id !== id);
+      const newModuleCost = updatedEntries.reduce((sum, item) => sum + (Number(item.cost) || 0), 0);
+      const updatedScope = {
+        ...currentScope,
+        sslRenewal: {
+          ...currentSsl,
+          entries: updatedEntries,
+          cost: newModuleCost,
+          quantity: updatedEntries.length
+        }
+      };
+      const newTotal = calculateModularServicesTotal(updatedScope);
+      return {
+        ...prev,
+        servicesScope: updatedScope,
+        totalCost: newTotal
+      };
+    });
+  };
+
+  const syncSslFromHosting = () => {
+    setProposal(prev => {
+      const currentScope = prev.servicesScope || createDefaultModularServicesScope();
+      const hostingDomains = (currentScope.hostingDomain?.entries || []).map(e => e.domainName).filter(Boolean);
+      const currentSsl = currentScope.sslRenewal || {} as any;
+      const currentEntries: SSLEntry[] = currentSsl.entries || [];
+      
+      const existingSslDomains = new Set(currentEntries.map(e => e.domainName.toLowerCase().trim()));
+      const newEntriesToAdd: SSLEntry[] = [];
+
+      hostingDomains.forEach(dom => {
+        if (!existingSslDomains.has(dom.toLowerCase().trim())) {
+          newEntriesToAdd.push({
+            id: `ssl-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+            domainName: dom,
+            certificateType: '2048-bit RSA High-Assurance SSL Certificate (HTTPS)',
+            renewalDuration: '1 Year',
+            cost: 600,
+            notes: ''
+          });
+          existingSslDomains.add(dom.toLowerCase().trim());
+        }
+      });
+
+      if (newEntriesToAdd.length === 0) return prev;
+
+      const updatedEntries = [...currentEntries, ...newEntriesToAdd];
+      const newModuleCost = updatedEntries.reduce((sum, item) => sum + (Number(item.cost) || 0), 0);
+      const updatedScope = {
+        ...currentScope,
+        sslRenewal: {
+          ...currentSsl,
+          entries: updatedEntries,
+          cost: newModuleCost,
+          quantity: updatedEntries.length
+        }
+      };
+      const newTotal = calculateModularServicesTotal(updatedScope);
+      return {
+        ...prev,
+        servicesScope: updatedScope,
+        totalCost: newTotal
+      };
+    });
+  };
+
+  // AMC Entry Handlers (Independent Editing)
+  const addAmcEntry = () => {
+    setProposal(prev => {
+      const currentScope = prev.servicesScope || createDefaultModularServicesScope();
+      const currentAmc = currentScope.amc || {} as any;
+      const currentEntries: AMCEntry[] = currentAmc.entries || [];
+      const newEntry: AMCEntry = {
+        id: `amc-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        domainName: '',
+        planName: 'Standard AMC – Technical Maintenance & SLA',
+        contractPeriod: '12 Months',
+        cost: 2500,
+        notes: ''
+      };
+      const updatedEntries = [...currentEntries, newEntry];
+      const newModuleCost = updatedEntries.reduce((sum, item) => sum + (Number(item.cost) || 0), 0);
+      const updatedScope = {
+        ...currentScope,
+        amc: {
+          ...currentAmc,
+          entries: updatedEntries,
+          cost: newModuleCost,
+          quantity: updatedEntries.length
+        }
+      };
+      const newTotal = calculateModularServicesTotal(updatedScope);
+      return {
+        ...prev,
+        servicesScope: updatedScope,
+        totalCost: newTotal
+      };
+    });
+  };
+
+  const updateAmcEntry = (id: string, field: keyof AMCEntry, value: any) => {
+    setProposal(prev => {
+      const currentScope = prev.servicesScope || createDefaultModularServicesScope();
+      const currentAmc = currentScope.amc || {} as any;
+      const currentEntries: AMCEntry[] = currentAmc.entries || [];
+      const updatedEntries = currentEntries.map(e => e.id === id ? { ...e, [field]: value } : e);
+      const newModuleCost = updatedEntries.reduce((sum, item) => sum + (Number(item.cost) || 0), 0);
+      const updatedScope = {
+        ...currentScope,
+        amc: {
+          ...currentAmc,
+          entries: updatedEntries,
+          cost: newModuleCost
+        }
+      };
+      const newTotal = calculateModularServicesTotal(updatedScope);
+      return {
+        ...prev,
+        servicesScope: updatedScope,
+        totalCost: newTotal
+      };
+    });
+  };
+
+  const removeAmcEntry = (id: string) => {
+    setProposal(prev => {
+      const currentScope = prev.servicesScope || createDefaultModularServicesScope();
+      const currentAmc = currentScope.amc || {} as any;
+      const currentEntries: AMCEntry[] = currentAmc.entries || [];
+      const updatedEntries = currentEntries.filter(e => e.id !== id);
+      const newModuleCost = updatedEntries.reduce((sum, item) => sum + (Number(item.cost) || 0), 0);
+      const updatedScope = {
+        ...currentScope,
+        amc: {
+          ...currentAmc,
+          entries: updatedEntries,
+          cost: newModuleCost,
+          quantity: updatedEntries.length
+        }
+      };
+      const newTotal = calculateModularServicesTotal(updatedScope);
+      return {
+        ...prev,
+        servicesScope: updatedScope,
+        totalCost: newTotal
+      };
+    });
+  };
+
+  const syncAmcFromHosting = () => {
+    setProposal(prev => {
+      const currentScope = prev.servicesScope || createDefaultModularServicesScope();
+      const hostingDomains = (currentScope.hostingDomain?.entries || []).map(e => e.domainName).filter(Boolean);
+      const currentAmc = currentScope.amc || {} as any;
+      const currentEntries: AMCEntry[] = currentAmc.entries || [];
+      
+      const existingAmcDomains = new Set(currentEntries.map(e => e.domainName.toLowerCase().trim()));
+      const newEntriesToAdd: AMCEntry[] = [];
+
+      hostingDomains.forEach(dom => {
+        if (!existingAmcDomains.has(dom.toLowerCase().trim())) {
+          newEntriesToAdd.push({
+            id: `amc-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+            domainName: dom,
+            planName: 'Standard AMC – Technical Maintenance & SLA',
+            contractPeriod: '12 Months',
+            cost: 2500,
+            notes: ''
+          });
+          existingAmcDomains.add(dom.toLowerCase().trim());
+        }
+      });
+
+      if (newEntriesToAdd.length === 0) return prev;
+
+      const updatedEntries = [...currentEntries, ...newEntriesToAdd];
+      const newModuleCost = updatedEntries.reduce((sum, item) => sum + (Number(item.cost) || 0), 0);
+      const updatedScope = {
+        ...currentScope,
+        amc: {
+          ...currentAmc,
+          entries: updatedEntries,
+          cost: newModuleCost,
+          quantity: updatedEntries.length
         }
       };
       const newTotal = calculateModularServicesTotal(updatedScope);
@@ -1167,13 +1504,13 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
                       </label>
                       {(proposal.servicesScope?.selectedServices || []).includes('ssl_renewal') && (
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-semibold text-slate-600">Module Cost:</span>
+                          <span className="text-xs font-semibold text-slate-600">Module Subtotal:</span>
                           <div className="relative">
                             <input
                               type="number"
-                              value={proposal.servicesScope?.sslRenewal?.cost || 0}
-                              onChange={(e) => updateServiceDetail('sslRenewal', 'cost', Number(e.target.value))}
-                              className="w-28 px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-bold text-right pr-11 focus:ring-2 focus:ring-blue-500/20"
+                              readOnly
+                              value={(proposal.servicesScope?.sslRenewal?.entries || []).reduce((sum, e) => sum + (Number(e.cost) || 0), 0)}
+                              className="w-28 px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-bold text-right pr-11 bg-slate-50 text-slate-900"
                             />
                             <span className="absolute right-3 top-2 text-[10px] font-bold text-slate-400">QAR</span>
                           </div>
@@ -1183,28 +1520,145 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
 
                     {(proposal.servicesScope?.selectedServices || []).includes('ssl_renewal') && (
                       <div className="mt-4 pt-4 border-t border-slate-200 space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div className="flex flex-wrap items-center justify-between gap-2 bg-slate-50 border border-slate-200 p-3.5 rounded-xl">
                           <div>
-                            <label className="text-xs font-semibold text-slate-700 block mb-1">SSL Certificate Type</label>
-                            <input
-                              type="text"
-                              value={proposal.servicesScope?.sslRenewal?.sslType || '2048-bit RSA High-Assurance SSL Certificate'}
-                              onChange={(e) => updateServiceDetail('sslRenewal', 'sslType', e.target.value)}
-                              className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-sans"
-                            />
+                            <h4 className="text-xs font-bold text-slate-800 flex items-center gap-2">
+                              <Landmark className="h-4 w-4 text-blue-600" />
+                              SSL Certificate Renewal Entries
+                            </h4>
+                            <p className="text-[11px] text-slate-500">
+                              Manage SSL certificates independently for each website or add multiple certificates.
+                            </p>
                           </div>
-                          <div>
-                            <label className="text-xs font-semibold text-slate-700 block mb-1">SSL Validity Term (Years)</label>
-                            <input
-                              type="number"
-                              min={1}
-                              max={5}
-                              value={proposal.servicesScope?.sslRenewal?.sslYears || 1}
-                              onChange={(e) => updateServiceDetail('sslRenewal', 'sslYears', Number(e.target.value))}
-                              className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-sans"
-                            />
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={syncSslFromHosting}
+                              className="px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg text-xs font-bold hover:bg-blue-100 transition-all flex items-center gap-1.5"
+                              title="Sync missing website domains from Hosting Scope"
+                            >
+                              <Sparkles className="h-3.5 w-3.5 text-blue-600" />
+                              Sync Websites
+                            </button>
+                            <button
+                              type="button"
+                              onClick={addSslEntry}
+                              className="px-3.5 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 transition-all flex items-center gap-1.5 shadow-xs"
+                            >
+                              <Plus className="h-3.5 w-3.5" />
+                              Add SSL Entry
+                            </button>
                           </div>
                         </div>
+
+                        {/* SSL ENTRIES LIST */}
+                        {(!proposal.servicesScope?.sslRenewal?.entries || proposal.servicesScope.sslRenewal.entries.length === 0) ? (
+                          <div className="text-center py-8 border border-dashed border-slate-300 rounded-xl bg-white space-y-2">
+                            <p className="text-xs text-slate-500 font-medium">No SSL certificate entries added yet.</p>
+                            <button
+                              type="button"
+                              onClick={addSslEntry}
+                              className="px-4 py-2 bg-blue-50 text-blue-700 border border-blue-200 text-xs font-bold rounded-lg hover:bg-blue-100 transition-all inline-flex items-center gap-1.5"
+                            >
+                              <Plus className="h-3.5 w-3.5" />
+                              Add First SSL Certificate
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="space-y-3">
+                            {(proposal.servicesScope?.sslRenewal?.entries || []).map((entry, idx) => (
+                              <div key={entry.id || idx} className="bg-white border border-slate-200 rounded-xl p-4 space-y-3 shadow-2xs hover:border-blue-200 transition-all relative">
+                                <div className="flex items-center justify-between border-b border-slate-150 pb-2.5">
+                                  <span className="text-xs font-bold text-slate-800 flex items-center gap-2">
+                                    <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-700 text-[10px] font-mono flex items-center justify-center font-bold">
+                                      {idx + 1}
+                                    </span>
+                                    {entry.domainName ? entry.domainName : `SSL Certificate #${idx + 1}`}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => removeSslEntry(entry.id)}
+                                    className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                                    title="Remove SSL Certificate"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </button>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                                  <div>
+                                    <label className="text-[11px] font-bold text-slate-700 block mb-1">Website / Domain</label>
+                                    <input
+                                      type="text"
+                                      value={entry.domainName || ''}
+                                      placeholder="e.g. clientdomain.com"
+                                      onChange={(e) => updateSslEntry(entry.id, 'domainName', e.target.value)}
+                                      className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-mono font-bold text-slate-900 focus:ring-2 focus:ring-blue-500/20"
+                                    />
+                                  </div>
+
+                                  <div>
+                                    <label className="text-[11px] font-bold text-slate-700 block mb-1">SSL Certificate Standard</label>
+                                    <input
+                                      type="text"
+                                      value={entry.certificateType || '2048-bit RSA High-Assurance SSL Certificate (HTTPS)'}
+                                      placeholder="e.g. Wildcard SSL / EV SSL"
+                                      onChange={(e) => updateSslEntry(entry.id, 'certificateType', e.target.value)}
+                                      className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs text-slate-800"
+                                    />
+                                  </div>
+
+                                  <div>
+                                    <label className="text-[11px] font-bold text-slate-700 block mb-1">Validity Term</label>
+                                    <input
+                                      type="text"
+                                      value={entry.renewalDuration || '1 Year'}
+                                      placeholder="e.g. 1 Year, 2 Years"
+                                      onChange={(e) => updateSslEntry(entry.id, 'renewalDuration', e.target.value)}
+                                      className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs text-slate-800"
+                                    />
+                                  </div>
+
+                                  <div>
+                                    <label className="text-[11px] font-bold text-slate-700 block mb-1">SSL Cost (QAR)</label>
+                                    <input
+                                      type="number"
+                                      value={entry.cost || 0}
+                                      onChange={(e) => updateSslEntry(entry.id, 'cost', Number(e.target.value))}
+                                      className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-mono font-bold text-right text-slate-900 focus:ring-2 focus:ring-blue-500/20"
+                                    />
+                                  </div>
+                                </div>
+
+                                <div>
+                                  <label className="text-[11px] font-bold text-slate-700 block mb-1">Notes / Installation Specs (Optional)</label>
+                                  <input
+                                    type="text"
+                                    value={entry.notes || ''}
+                                    placeholder="e.g. CSR Key generated, Wildcard covers subdomains"
+                                    onChange={(e) => updateSslEntry(entry.id, 'notes', e.target.value)}
+                                    className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs text-slate-600"
+                                  />
+                                </div>
+                              </div>
+                            ))}
+
+                            <div className="flex items-center justify-between bg-slate-100 p-3 rounded-xl border border-slate-200">
+                              <button
+                                type="button"
+                                onClick={addSslEntry}
+                                className="px-3.5 py-1.5 bg-white border border-slate-300 text-slate-800 text-xs font-bold rounded-lg hover:bg-slate-50 transition-all flex items-center gap-1.5 shadow-2xs"
+                              >
+                                <Plus className="h-3.5 w-3.5 text-blue-600" />
+                                Add More
+                              </button>
+                              <div className="text-right text-xs font-bold text-slate-800">
+                                Total SSL Certificates: <span className="font-mono text-blue-700 font-extrabold mr-3">{(proposal.servicesScope?.sslRenewal?.entries || []).length}</span>
+                                Combined Subtotal: <span className="font-mono text-emerald-700 font-extrabold">{formatQAR((proposal.servicesScope?.sslRenewal?.entries || []).reduce((sum, e) => sum + (Number(e.cost) || 0), 0))}</span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -1230,13 +1684,13 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
                       </label>
                       {(proposal.servicesScope?.selectedServices || []).includes('amc') && (
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-semibold text-slate-600">Module Cost:</span>
+                          <span className="text-xs font-semibold text-slate-600">Module Subtotal:</span>
                           <div className="relative">
                             <input
                               type="number"
-                              value={proposal.servicesScope?.amc?.cost || 0}
-                              onChange={(e) => updateServiceDetail('amc', 'cost', Number(e.target.value))}
-                              className="w-28 px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-bold text-right pr-11 focus:ring-2 focus:ring-blue-500/20"
+                              readOnly
+                              value={(proposal.servicesScope?.amc?.entries || []).reduce((sum, e) => sum + (Number(e.cost) || 0), 0)}
+                              className="w-28 px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-bold text-right pr-11 bg-slate-50 text-slate-900"
                             />
                             <span className="absolute right-3 top-2 text-[10px] font-bold text-slate-400">QAR</span>
                           </div>
@@ -1246,36 +1700,166 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
 
                     {(proposal.servicesScope?.selectedServices || []).includes('amc') && (
                       <div className="mt-4 pt-4 border-t border-slate-200 space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div className="flex flex-wrap items-center justify-between gap-2 bg-slate-50 border border-slate-200 p-3.5 rounded-xl">
                           <div>
-                            <label className="text-xs font-semibold text-slate-700 block mb-1">Contract Duration</label>
-                            <input
-                              type="text"
-                              value={proposal.servicesScope?.amc?.contractPeriod || '12 Months Annual Contract'}
-                              onChange={(e) => updateServiceDetail('amc', 'contractPeriod', e.target.value)}
-                              className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-sans"
-                            />
+                            <h4 className="text-xs font-bold text-slate-800 flex items-center gap-2">
+                              <Landmark className="h-4 w-4 text-blue-600" />
+                              Annual Maintenance Contract (AMC) Items
+                            </h4>
+                            <p className="text-[11px] text-slate-500">
+                              Manage maintenance plans independently per website or exclude AMC where not required.
+                            </p>
                           </div>
-                          <div>
-                            <label className="text-xs font-semibold text-slate-700 block mb-1">Dedicated Support Hours / Month</label>
-                            <input
-                              type="text"
-                              value={proposal.servicesScope?.amc?.supportHoursMonthly || 'Up to 5 Hours / Month'}
-                              onChange={(e) => updateServiceDetail('amc', 'supportHoursMonthly', e.target.value)}
-                              className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-sans"
-                            />
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={syncAmcFromHosting}
+                              className="px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg text-xs font-bold hover:bg-blue-100 transition-all flex items-center gap-1.5"
+                              title="Sync missing website domains from Hosting Scope"
+                            >
+                              <Sparkles className="h-3.5 w-3.5 text-blue-600" />
+                              Sync Websites
+                            </button>
+                            <button
+                              type="button"
+                              onClick={addAmcEntry}
+                              className="px-3.5 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 transition-all flex items-center gap-1.5 shadow-xs"
+                            >
+                              <Plus className="h-3.5 w-3.5" />
+                              Add AMC Entry
+                            </button>
                           </div>
                         </div>
 
-                        <div>
-                          <label className="text-xs font-semibold text-slate-700 block mb-1">SLA Ticket Response Time</label>
-                          <input
-                            type="text"
-                            value={proposal.servicesScope?.amc?.responseTimeSLA || 'Within 24 Hours Standard / 4 Hours Critical Outages'}
-                            onChange={(e) => updateServiceDetail('amc', 'responseTimeSLA', e.target.value)}
-                            className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-sans"
-                          />
-                        </div>
+                        {/* AMC ENTRIES LIST */}
+                        {(!proposal.servicesScope?.amc?.entries || proposal.servicesScope.amc.entries.length === 0) ? (
+                          <div className="text-center py-8 border border-dashed border-slate-300 rounded-xl bg-white space-y-2">
+                            <p className="text-xs text-slate-500 font-medium">No AMC entries added yet.</p>
+                            <button
+                              type="button"
+                              onClick={addAmcEntry}
+                              className="px-4 py-2 bg-blue-50 text-blue-700 border border-blue-200 text-xs font-bold rounded-lg hover:bg-blue-100 transition-all inline-flex items-center gap-1.5"
+                            >
+                              <Plus className="h-3.5 w-3.5" />
+                              Add First AMC Item
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="space-y-3">
+                            {(proposal.servicesScope?.amc?.entries || []).map((entry, idx) => (
+                              <div key={entry.id || idx} className="bg-white border border-slate-200 rounded-xl p-4 space-y-3 shadow-2xs hover:border-blue-200 transition-all relative">
+                                <div className="flex items-center justify-between border-b border-slate-150 pb-2.5">
+                                  <span className="text-xs font-bold text-slate-800 flex items-center gap-2">
+                                    <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-700 text-[10px] font-mono flex items-center justify-center font-bold">
+                                      {idx + 1}
+                                    </span>
+                                    {entry.domainName ? entry.domainName : `AMC Item #${idx + 1}`}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => removeAmcEntry(entry.id)}
+                                    className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                                    title="Remove AMC Item"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </button>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                                  <div>
+                                    <label className="text-[11px] font-bold text-slate-700 block mb-1">Website / Domain</label>
+                                    <input
+                                      type="text"
+                                      value={entry.domainName || ''}
+                                      placeholder="e.g. clientdomain.com"
+                                      onChange={(e) => updateAmcEntry(entry.id, 'domainName', e.target.value)}
+                                      className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-mono font-bold text-slate-900 focus:ring-2 focus:ring-blue-500/20"
+                                    />
+                                  </div>
+
+                                  <div>
+                                    <label className="text-[11px] font-bold text-slate-700 block mb-1">Maintenance Plan / Coverage</label>
+                                    <input
+                                      type="text"
+                                      value={entry.planName || 'Standard AMC – Technical Maintenance & SLA'}
+                                      placeholder="e.g. Comprehensive AMC / Extended SLA"
+                                      onChange={(e) => updateAmcEntry(entry.id, 'planName', e.target.value)}
+                                      className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs text-slate-800"
+                                    />
+                                  </div>
+
+                                  <div>
+                                    <label className="text-[11px] font-bold text-slate-700 block mb-1">Contract Period</label>
+                                    <input
+                                      type="text"
+                                      value={entry.contractPeriod || '12 Months'}
+                                      placeholder="e.g. 12 Months, 24 Months"
+                                      onChange={(e) => updateAmcEntry(entry.id, 'contractPeriod', e.target.value)}
+                                      className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs text-slate-800"
+                                    />
+                                  </div>
+
+                                  <div>
+                                    <label className="text-[11px] font-bold text-slate-700 block mb-1">AMC Cost (QAR)</label>
+                                    <input
+                                      type="number"
+                                      value={entry.cost || 0}
+                                      onChange={(e) => updateAmcEntry(entry.id, 'cost', Number(e.target.value))}
+                                      className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-mono font-bold text-right text-slate-900 focus:ring-2 focus:ring-blue-500/20"
+                                    />
+                                  </div>
+                                </div>
+
+                                <div>
+                                  <label className="text-[11px] font-bold text-slate-700 block mb-1">Notes / Support Details (Optional)</label>
+                                  <input
+                                    type="text"
+                                    value={entry.notes || ''}
+                                    placeholder="e.g. Includes monthly health audits, core CMS updates & priority hotline"
+                                    onChange={(e) => updateAmcEntry(entry.id, 'notes', e.target.value)}
+                                    className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs text-slate-600"
+                                  />
+                                </div>
+                              </div>
+                            ))}
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+                              <div>
+                                <label className="text-xs font-semibold text-slate-700 block mb-1">Dedicated Support Hours / Month</label>
+                                <input
+                                  type="text"
+                                  value={proposal.servicesScope?.amc?.supportHoursMonthly || 'Up to 5 Hours / Month'}
+                                  onChange={(e) => updateServiceDetail('amc', 'supportHoursMonthly', e.target.value)}
+                                  className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-sans"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-xs font-semibold text-slate-700 block mb-1">SLA Ticket Response Time</label>
+                                <input
+                                  type="text"
+                                  value={proposal.servicesScope?.amc?.responseTimeSLA || 'Within 24 Hours Standard / 4 Hours Critical Outages'}
+                                  onChange={(e) => updateServiceDetail('amc', 'responseTimeSLA', e.target.value)}
+                                  className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-sans"
+                                />
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-between bg-slate-100 p-3 rounded-xl border border-slate-200 mt-2">
+                              <button
+                                type="button"
+                                onClick={addAmcEntry}
+                                className="px-3.5 py-1.5 bg-white border border-slate-300 text-slate-800 text-xs font-bold rounded-lg hover:bg-slate-50 transition-all flex items-center gap-1.5 shadow-2xs"
+                              >
+                                <Plus className="h-3.5 w-3.5 text-blue-600" />
+                                Add More
+                              </button>
+                              <div className="text-right text-xs font-bold text-slate-800">
+                                Total AMC Items: <span className="font-mono text-blue-700 font-extrabold mr-3">{(proposal.servicesScope?.amc?.entries || []).length}</span>
+                                Combined Subtotal: <span className="font-mono text-emerald-700 font-extrabold">{formatQAR((proposal.servicesScope?.amc?.entries || []).reduce((sum, e) => sum + (Number(e.cost) || 0), 0))}</span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

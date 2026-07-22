@@ -3040,7 +3040,22 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
                             <div className="text-[10px] text-slate-400 font-normal">{item.moduleTitle}</div>
                           )}
                         </td>
-                        <td className="py-3 px-4 text-slate-500 max-w-xs">{item.scopeDescription}</td>
+                        <td className="py-3 px-4 text-slate-600 max-w-sm">
+                          {item.domainList && item.domainList.length > 0 ? (
+                            <div className="space-y-1">
+                              <div className="font-bold text-slate-800 text-[11px]">
+                                {item.summaryLabel}
+                              </div>
+                              <ul className="list-disc list-inside space-y-0.5 text-[11px] text-slate-600 pl-0.5 font-mono">
+                                {item.domainList.map((domain, dIdx) => (
+                                  <li key={dIdx}>{domain}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          ) : (
+                            <div className="whitespace-pre-line text-[11px]">{item.scopeDescription}</div>
+                          )}
+                        </td>
                         <td className="py-3 px-3 text-center font-semibold text-slate-700 whitespace-nowrap">
                           {item.quantity} {item.unitLabel}
                         </td>
