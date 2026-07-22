@@ -1,6 +1,5 @@
--- Create Database
-CREATE DATABASE IF NOT EXISTS `astra_proposal_ai` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE `astra_proposal_ai`;
+-- Hostinger phpMyAdmin Schema
+-- Direct table creation script for your selected database in phpMyAdmin
 
 -- 1. USERS Table
 CREATE TABLE IF NOT EXISTS `users` (
@@ -173,18 +172,18 @@ CREATE TABLE IF NOT EXISTS `notifications` (
 -- ==========================================
 
 -- A. Users Seeds
-INSERT INTO `users` (`id`, `name`, `email`, `role`, `is_active`, `password`) VALUES
+INSERT IGNORE INTO `users` (`id`, `name`, `email`, `role`, `is_active`, `password`) VALUES
 ('user_ninan', 'Ninan P Joseph', 'ninanpjoseph@gmail.com', 'Admin', 1, 'astra2026'),
 ('user_shamlan', 'Shamlan CT', 'shamlan@technoastra.com', 'Manager', 1, 'shamlan123'),
 ('user_shareef', 'Shareef', 'shareef@technoastra.com', 'Designer', 1, 'shareef123');
 
 -- B. Clients Seeds (Qatar-based companies)
-INSERT INTO `clients` (`id`, `name`, `company_name`, `email`, `phone`) VALUES
+INSERT IGNORE INTO `clients` (`id`, `name`, `company_name`, `email`, `phone`) VALUES
 ('client_mannai', 'Mannai Technology', 'Mannai TechHub', 'info@mannaitech.qa', '+974 4455 6677'),
 ('client_pearl', 'Pearl Property Advisors', 'Pearl Capital Advisors', 'pearl_advisory@pearl.com.qa', '+974 4488 9900');
 
 -- C. Proposal Templates Seeds
-INSERT INTO `proposal_templates` (`id`, `name`, `type`, `description`, `structure_data`) VALUES
+INSERT IGNORE INTO `proposal_templates` (`id`, `name`, `type`, `description`, `structure_data`) VALUES
 ('tpl_website_default', 'Astra Web Design & Dev Framework', 'website', 'Standard dynamic template with a 4-milestone plan for high-performance React/TypeScript application designs.', 
 '{
   "weeks": 8,
@@ -218,7 +217,7 @@ INSERT INTO `proposal_templates` (`id`, `name`, `type`, `description`, `structur
 }');
 
 -- D. Sample Saved Proposal Seed (Mannai TechHub)
-INSERT INTO `proposals` (
+INSERT IGNORE INTO `proposals` (
   `id`, `type`, `status`, `client_id`, `client_name`, `company_name`, `proposal_date`, `brief_description`,
   `weeks`, `branding_scope`, `website_scope`, `milestones`, `resource_costs`,
   `development_cost`, `plugin_cost`, `maintenance_cost`, `additional_cost`, `total_cost`, `payment_terms`,
@@ -243,11 +242,11 @@ INSERT INTO `proposals` (
 );
 
 -- E. CRM Pipeline Seed
-INSERT INTO `crm_pipeline` (`id`, `proposal_id`, `client_id`, `stage`, `deal_value`, `probability`, `expected_close_date`) VALUES
+INSERT IGNORE INTO `crm_pipeline` (`id`, `proposal_id`, `client_id`, `stage`, `deal_value`, `probability`, `expected_close_date`) VALUES
 ('crm_mannai', 'prop_sample_mannai', 'client_mannai', 'In Negotiations', 16200.00, 75, '2026-03-15');
 
 -- F. Activity Log Seed
-INSERT INTO `activity_log` (`id`, `timestamp`, `user_id`, `user_name`, `user_role`, `action`, `details`) VALUES
+INSERT IGNORE INTO `activity_log` (`id`, `timestamp`, `user_id`, `user_name`, `user_role`, `action`, `details`) VALUES
 ('act_seed_1', '2026-02-08T10:00:00.000Z', 'user_ninan', 'Ninan P Joseph', 'Admin', 'Create Proposal', 'Initialized Mannai TechHub Web proposal successfully.'),
 ('act_seed_2', '2026-02-08T10:30:00.000Z', 'user_ninan', 'Ninan P Joseph', 'Admin', 'Assign Proposal', 'Assigned Mannai TechHub Web proposal to Shamlan CT.');
 
