@@ -9,6 +9,7 @@ import {
 import { Proposal, User, UserRole, ProposalStatus, Reminder, ActivityLog } from '../types';
 import { formatQAR, generateId, triggerAutomatedFollowUp } from '../proposalUtils';
 import { InvoiceModal, StatementOfAccountModal } from './FinanceModals';
+import { canUserViewProposal, canUserEditProposal, canUserDeleteProposal, canUserManageUsers, canUserViewAuditLogs, getAuthHeaders } from '../lib/rbac';
 
 interface AdminPortalProps {
   proposals: Proposal[];
@@ -24,6 +25,7 @@ interface AdminPortalProps {
 const DEFAULT_USERS: User[] = [
   { id: 'user_ninan', name: 'Ninan P Joseph', email: 'ninanpjoseph@gmail.com', role: UserRole.ADMIN, isActive: true },
   { id: 'user_shamlan', name: 'Shamlan CT', email: 'shamlan@technoastra.com', role: UserRole.MANAGER, isActive: true },
+  { id: 'user_carlos', name: 'Carlos Mendoza', email: 'carlos@technoastra.com', role: UserRole.SALES, isActive: true },
   { id: 'user_shareef', name: 'Shareef', email: 'shareef@technoastra.com', role: UserRole.DESIGNER, isActive: true },
 ];
 
@@ -280,9 +282,9 @@ export default function AdminPortal({
     };
   }, []);
 
-  // Tab access reset if user role changes or is not admin/manager
+  // Tab access reset if user role changes or is not admin
   useEffect(() => {
-    if (currentUser?.role !== UserRole.ADMIN && currentUser?.role !== UserRole.MANAGER && (activeTab === 'users' || activeTab === 'logs')) {
+    if (currentUser?.role !== UserRole.ADMIN && (activeTab === 'users' || activeTab === 'logs')) {
       setActiveTab('overview');
     }
   }, [currentUser, activeTab]);
@@ -759,17 +761,8 @@ export default function AdminPortal({
     }
   };
 
-  // Filter core proposals for standard user roles
-  const visibleProposals = proposals.filter(p => {
-    if (!currentUser) return true;
-    if (currentUser.role === UserRole.ADMIN || currentUser.role === UserRole.MANAGER) return true;
-
-    const isPreparedBy = p.preparedByUserId === currentUser.id;
-    const isAssignedTo = p.assignedUserId === currentUser.id;
-    const isShared = p.sharedUserIds && p.sharedUserIds.includes(currentUser.id);
-
-    return isPreparedBy || isAssignedTo || isShared;
-  });
+  // Filter core proposals according to RBAC Data Visibility Rules
+  const visibleProposals = proposals.filter(p => canUserViewProposal(p, currentUser, users));
 
   // Report statistics and aggregate metrics
   const getPerformanceMetrics = () => {
@@ -1033,7 +1026,7 @@ export default function AdminPortal({
           <FileText className="h-3.5 w-3.5" /> Pipeline Controller
         </button>
 
-        {(currentUser?.role === UserRole.ADMIN || currentUser?.role === UserRole.MANAGER) && (
+        {currentUser?.role === UserRole.ADMIN && (
           <button
             onClick={() => setActiveTab('users')}
             className={`px-3 py-1.5 rounded-lg text-xs leading-none font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
@@ -1468,7 +1461,7 @@ export default function AdminPortal({
                                   >
                                     Manage
                                   </button>
-                                  {(currentUser?.role === UserRole.ADMIN || currentUser?.role === UserRole.MANAGER) && (
+                                  {currentUser?.role === UserRole.ADMIN && (
                                     <button
                                       onClick={() => handleAdminDeleteProposal(p.id, p.clientName)}
                                       className="p-1.5 hover:bg-rose-50 text-slate-300 hover:text-rose-600 rounded transition-colors"
@@ -1499,7 +1492,7 @@ export default function AdminPortal({
         )}
 
         {/* TAB 3: USER COLLABORATION & INTEGRITY */}
-        {activeTab === 'users' && currentUser && (currentUser.role === UserRole.ADMIN || currentUser.role === UserRole.MANAGER) && (
+        {activeTab === 'users' && currentUser && currentUser.role === UserRole.ADMIN && (
           <div className="space-y-6">
             
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

@@ -1,5 +1,6 @@
 import express from 'express';
 import path from 'path';
+import fs from 'fs';
 import dotenv from 'dotenv';
 import { createServer as createViteServer } from 'vite';
 import proposalsRouter from './src/server/routes/proposals';
@@ -18,6 +19,21 @@ async function startServer() {
 
   // API Routes - Must be registered first!
   app.use('/api/proposals', proposalsRouter);
+
+  // G. Download or fetch full SQL Database Dump
+  app.get('/api/db/export', (req, res) => {
+    try {
+      const sqlFilePath = path.join(process.cwd(), 'astra_proposal_ai.sql');
+      if (fs.existsSync(sqlFilePath)) {
+        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+        res.setHeader('Content-Disposition', 'attachment; filename="astra_proposal_ai.sql"');
+        return res.sendFile(sqlFilePath);
+      }
+      res.status(404).json({ error: 'SQL backup file not found.' });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
 
   // Outgoing SMTP system configuration secrets
   app.get('/api/config', (req, res) => {
@@ -42,8 +58,13 @@ async function startServer() {
     }
   });
 
-  // B. Save / Upsert Administrative User in database
+  // B. Save / Upsert Administrative User in database (Admin only)
   app.post('/api/users', async (req, res) => {
+    const activeRole = (req.headers['x-user-role'] as string) || req.body.callerRole;
+    if (activeRole && activeRole !== 'Admin') {
+      return res.status(403).json({ error: 'Permission Denied: Only Administrators can create, edit, activate/deactivate, or modify users and passwords.' });
+    }
+
     const u = req.body;
     try {
       await query(`
@@ -56,8 +77,13 @@ async function startServer() {
     }
   });
 
-  // C. Delete User
+  // C. Delete User (Admin only)
   app.delete('/api/users/:id', async (req, res) => {
+    const activeRole = (req.headers['x-user-role'] as string) || (req.query.role as string);
+    if (activeRole && activeRole !== 'Admin') {
+      return res.status(403).json({ error: 'Permission Denied: Only Administrators can delete user accounts.' });
+    }
+
     const { id } = req.params;
     try {
       // Clean up references in other tables to bypass any foreign key constraint holds
@@ -94,8 +120,13 @@ async function startServer() {
     }
   });
 
-  // D. List Activity Logs from Database
+  // D. List Activity Logs from Database (Admin only)
   app.get('/api/activity-logs', async (req, res) => {
+    const activeRole = (req.headers['x-user-role'] as string) || (req.query.role as string);
+    if (activeRole && activeRole !== 'Admin') {
+      return res.status(403).json({ error: 'Permission Denied: Only Administrators can access complete audit history.' });
+    }
+
     try {
       const logs = await query('SELECT * FROM activity_log ORDER BY timestamp DESC LIMIT 150');
       res.json(logs);

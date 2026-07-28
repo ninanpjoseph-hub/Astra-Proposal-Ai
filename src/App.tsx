@@ -12,6 +12,7 @@ import AdminPortal from './components/AdminPortal';
 import LandingPage from './components/LandingPage';
 import ChequeQuotationModule from './components/ChequeQuotationModule';
 import SupplierProfitDesk from './components/SupplierProfitDesk';
+import { canUserViewProposal, getAuthHeaders } from './lib/rbac';
 import { 
   Plus, Search, FileText, Calendar, Building, Landmark, Trash2, Edit3, Eye, 
   HelpCircle, ChevronRight, BarChart3, Database, TrendingUp, Sparkles, AlertCircle,
@@ -143,7 +144,7 @@ export default function App() {
         // Fetch proposals from API
         let dbProposals: Proposal[] = [];
         try {
-          const response = await fetch('/api/proposals');
+          const response = await fetch('/api/proposals', { headers: getAuthHeaders(currentUser) });
           if (response.ok) {
             const rawProposalsList = await response.json();
             if (Array.isArray(rawProposalsList)) {
@@ -529,17 +530,7 @@ export default function App() {
   ];
 
   // Security Access Control: Filter proposals based on active session role cards
-  const visibleProposals = proposals.filter(p => {
-    if (!currentUser) return true; // Show all to non-logged users/guests by default
-    if (currentUser.role === UserRole.ADMIN || currentUser.role === UserRole.MANAGER) return true;
-
-    // Standard users can see proposals prepared by them, assigned to them, or explicitly shared with them
-    const isPreparedBy = p.preparedByUserId === currentUser.id;
-    const isAssignedTo = p.assignedUserId === currentUser.id;
-    const isShared = p.sharedUserIds && p.sharedUserIds.includes(currentUser.id);
-
-    return isPreparedBy || isAssignedTo || isShared;
-  });
+  const visibleProposals = proposals.filter(p => canUserViewProposal(p, currentUser));
 
   // Smart conversational / natural search matching algorithm
   const getFilteredProposals = () => {

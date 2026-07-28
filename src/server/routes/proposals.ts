@@ -291,22 +291,52 @@ Provide a JSON object containing:
 
 /**
  * GET /api/proposals
- * List all proposals with search and optional filters
+ * List all proposals with search and optional filters enforcing RBAC permissions at database level
  */
 router.get('/', async (req, res) => {
-  const { search, status, type, userId, role } = req.query;
+  const activeUserId = (req.headers['x-user-id'] as string) || (req.query.userId as string);
+  const activeUserRole = (req.headers['x-user-role'] as string) || (req.query.role as string);
+  const activeUserName = (req.headers['x-user-name'] as string) || (req.query.userName as string);
+
+  const { search, status, type } = req.query;
 
   try {
     let sql = 'SELECT * FROM proposals';
     const params: any[] = [];
     const conditions: string[] = [];
 
-    // Apply role-based filters to match client-side filtering
-    // Admins and Managers see everything, Sales and Designers see their assigned or prepared proposals
-    if (userId && role && role !== 'Admin' && role !== 'Manager') {
-      conditions.push('(prepared_by_user_id = ? OR assigned_user_id = ? OR JSON_CONTAINS(shared_user_ids, ?))');
-      params.push(userId, userId, JSON.stringify(userId));
+    // Backend Role-Based Access Control (RBAC) Filtering
+    if (activeUserRole === 'Sales Executive' || activeUserRole === 'Designer') {
+      // Sales Executives & Designers can ONLY see their own work
+      if (activeUserId || activeUserName) {
+        conditions.push('(prepared_by_user_id = ? OR prepared_by_name = ?)');
+        params.push(activeUserId || '', activeUserName || '');
+      }
+    } else if (activeUserRole === 'Manager') {
+      // Managers can view proposals created by Sales Executives and Designers.
+      // Admin proposals MUST be completely hidden!
+      try {
+        const adminUsers = await query("SELECT id, name FROM users WHERE role = 'Admin'");
+        const adminUserIds = adminUsers.map((u: any) => u.id);
+        const adminUserNames = adminUsers.map((u: any) => u.name);
+
+        const excludeConds: string[] = ["(prepared_by_title NOT LIKE '%Admin%')"];
+        if (adminUserIds.length > 0) {
+          excludeConds.push(`prepared_by_user_id NOT IN (${adminUserIds.map(() => '?').join(',')})`);
+          params.push(...adminUserIds);
+        }
+        if (adminUserNames.length > 0) {
+          excludeConds.push(`prepared_by_name NOT IN (${adminUserNames.map(() => '?').join(',')})`);
+          params.push(...adminUserNames);
+        }
+
+        conditions.push(`(${excludeConds.join(' AND ')})`);
+      } catch (err) {
+        // Fallback title check if user lookup fails
+        conditions.push("(prepared_by_title NOT LIKE '%Admin%' AND prepared_by_name NOT LIKE '%Ninan%')");
+      }
     }
+    // Admin role receives full unfiltered access
 
     if (status && status !== 'ALL') {
       conditions.push('status = ?');
@@ -563,13 +593,38 @@ router.post('/', async (req, res) => {
 
 /**
  * PUT /api/proposals/:id
- * Updates an existing proposal status, assignments, or state details
+ * Updates an existing proposal status, assignments, or state details with RBAC authorization checks
  */
 router.put('/:id', async (req, res) => {
   const { id } = req.params;
   const p = req.body;
+  const activeUserRole = (req.headers['x-user-role'] as string) || p.callerRole;
+  const activeUserId = (req.headers['x-user-id'] as string) || p.callerUserId;
 
   try {
+    // Check permission on target proposal
+    const existing = await query('SELECT prepared_by_user_id, prepared_by_title, prepared_by_name, status FROM proposals WHERE id = ?', [id]);
+    if (existing.length === 0) {
+      return res.status(404).json({ error: 'Proposal not found' });
+    }
+    const currentProp = existing[0];
+
+    if (activeUserRole === 'Manager') {
+      // Manager cannot edit Admin proposals
+      if (currentProp.prepared_by_title?.toLowerCase().includes('admin') || currentProp.prepared_by_name?.toLowerCase().includes('ninan')) {
+        return res.status(403).json({ error: 'Permission Denied: Managers cannot edit proposals created by Admin.' });
+      }
+    } else if (activeUserRole === 'Sales Executive' || activeUserRole === 'Designer') {
+      const isCreator = currentProp.prepared_by_user_id === activeUserId || currentProp.prepared_by_name === req.headers['x-user-name'];
+      if (!isCreator) {
+        return res.status(403).json({ error: 'Permission Denied: You can only edit proposals created by yourself.' });
+      }
+      const isLocked = ['Completed', 'Won', 'Closed', 'Cancelled'].includes(currentProp.status);
+      if (isLocked) {
+        return res.status(403).json({ error: 'Permission Denied: This proposal has been approved or locked and cannot be edited.' });
+      }
+    }
+
     const fieldsToUpdate: string[] = [];
     const params: any[] = [];
 
@@ -636,10 +691,16 @@ router.put('/:id', async (req, res) => {
 
 /**
  * DELETE /api/proposals/:id
- * soft delete or complete delete (hard delete preferred to cleanup)
+ * Only Admin can delete proposals
  */
 router.delete('/:id', async (req, res) => {
   const { id } = req.params;
+  const activeUserRole = (req.headers['x-user-role'] as string) || (req.query.role as string);
+
+  if (activeUserRole !== 'Admin') {
+    return res.status(403).json({ error: 'Permission Denied: Only Administrators can delete proposals.' });
+  }
+
   try {
     // Manually delete related records from other tables to bypass any foreign key constraint holds
     try {

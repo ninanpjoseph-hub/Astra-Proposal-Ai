@@ -14,6 +14,7 @@ interface LandingPageProps {
 const DEFAULT_USERS: User[] = [
   { id: 'user_ninan', name: 'Ninan P Joseph', email: 'ninanpjoseph@gmail.com', role: UserRole.ADMIN, isActive: true },
   { id: 'user_shamlan', name: 'Shamlan CT', email: 'shamlan@technoastra.com', role: UserRole.MANAGER, isActive: true },
+  { id: 'user_carlos', name: 'Carlos Mendoza', email: 'carlos@technoastra.com', role: UserRole.SALES, isActive: true },
   { id: 'user_shareef', name: 'Shareef', email: 'shareef@technoastra.com', role: UserRole.DESIGNER, isActive: true },
 ];
 

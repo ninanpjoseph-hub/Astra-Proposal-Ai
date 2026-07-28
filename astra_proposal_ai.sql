@@ -316,3 +316,22 @@ CREATE TABLE IF NOT EXISTS `supplier_payments` (
   CONSTRAINT `fk_supplier_payments_proposal` FOREIGN KEY (`proposal_id`) REFERENCES `proposals` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- G. Proposal Payments Seed
+INSERT IGNORE INTO `proposal_payments` (`id`, `proposal_id`, `payment_number`, `amount`, `payment_date`, `payment_reference`, `payment_method`, `notes`, `recorded_by`) VALUES
+('pay_seed_1', 'prop_sample_mannai', 1, 8100.00, '2026-02-10', 'TRX-998231', 'Bank Transfer', '50% Advance Payment received upon contract signing.', 'user_ninan');
+
+-- H. Suppliers Seed
+INSERT IGNORE INTO `suppliers` (`id`, `name`, `contact_person`, `mobile`, `email`, `company_name`, `notes`) VALUES
+('sup_cloud_hosting', 'Gulf Cloud Solutions', 'Ahmad Al-Kuwari', '+974 5511 2233', 'ahmad@gulfcloud.qa', 'Gulf Cloud Solutions W.L.L.', 'Primary infrastructure provider for VPS and Dedicated hosting in Qatar.'),
+('sup_ssl_provider', 'DigiCert Qatar', 'Sarah Jenkins', '+974 4422 3344', 'sales@digicert.qa', 'DigiCert Qatar Authorized Partner', 'SSL & Security Certificate provisioning.');
+
+-- I. Supplier Items Seed
+INSERT IGNORE INTO `supplier_items` (`id`, `proposal_id`, `supplier_id`, `description`, `qty`, `purchase_cost`, `unit_price`) VALUES
+('sup_item_1', 'prop_sample_mannai', 'sup_cloud_hosting', 'Annual High-Performance Enterprise Cloud Hosting Server', 1, 2500.00, 3500.00),
+('sup_item_2', 'prop_sample_mannai', 'sup_ssl_provider', 'Wildcard SSL Security Certificate (2-Year Warranty)', 1, 600.00, 900.00);
+
+-- J. Supplier Payments Seed
+INSERT IGNORE INTO `supplier_payments` (`id`, `supplier_id`, `proposal_id`, `amount`, `payment_date`, `reference`, `notes`) VALUES
+('sup_pay_1', 'sup_cloud_hosting', 'prop_sample_mannai', 2500.00, '2026-02-12', 'REF-GULF-001', 'Settled annual cloud infrastructure hosting fee.');
+
+
