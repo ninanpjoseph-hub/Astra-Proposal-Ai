@@ -12,22 +12,14 @@ export interface SendFollowUpResult {
  * Reusable Nodemailer transporter using system environment variables
  */
 export function getTransporter() {
-  const host = process.env.SMTP_HOST || 'smtp.hostinger.com';
-  const port = Number(process.env.SMTP_PORT) || 465;
-  const secure = process.env.SMTP_SECURE !== 'false';
-
   return nodemailer.createTransport({
-    host,
-    port,
-    secure,
+    host: process.env.SMTP_HOST || 'smtp.hostinger.com',
+    port: parseInt(process.env.SMTP_PORT || '465'),
+    secure: process.env.SMTP_SECURE !== 'false',
     auth: {
-      user: process.env.SMTP_FROM_EMAIL,
-      pass: process.env.SMTP_PASSWORD
-    },
-    // Provide a sensible connection timeout
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 15000,
+      user: process.env.SMTP_FROM_EMAIL || 'ninan@technoastra.com',
+      pass: process.env.SMTP_PASSWORD || ''
+    }
   });
 }
 
