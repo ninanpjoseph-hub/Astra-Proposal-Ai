@@ -15,14 +15,15 @@ export function getTransporter() {
   const host = process.env.SMTP_HOST || 'smtp.hostinger.com';
   const port = Number(process.env.SMTP_PORT) || 465;
   const secure = process.env.SMTP_SECURE !== 'false';
-  const fromEmail = process.env.SMTP_FROM_EMAIL || 'ninan@technoastra.com';
-  const pass = process.env.SMTP_PASSWORD || '';
 
   return nodemailer.createTransport({
     host,
     port,
     secure,
-    auth: pass ? { user: fromEmail, pass } : undefined,
+    auth: {
+      user: process.env.SMTP_FROM_EMAIL,
+      pass: process.env.SMTP_PASSWORD
+    },
     // Provide a sensible connection timeout
     connectionTimeout: 10000,
     greetingTimeout: 10000,
