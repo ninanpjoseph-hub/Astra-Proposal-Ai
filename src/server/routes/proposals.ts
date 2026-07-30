@@ -306,12 +306,8 @@ router.get('/', async (req, res) => {
     const conditions: string[] = [];
 
     // Backend Role-Based Access Control (RBAC) Filtering
-    if (activeUserRole === 'Sales Executive' || activeUserRole === 'Designer') {
-      // Sales Executives & Designers can ONLY see their own work
-      if (activeUserId || activeUserName) {
-        conditions.push('(prepared_by_user_id = ? OR prepared_by_name = ?)');
-        params.push(activeUserId || '', activeUserName || '');
-      }
+    if (activeUserRole === 'Admin') {
+      // Admin role receives full unfiltered access
     } else if (activeUserRole === 'Manager') {
       // Managers can view proposals created by Sales Executives and Designers.
       // Admin proposals MUST be completely hidden!
@@ -335,8 +331,16 @@ router.get('/', async (req, res) => {
         // Fallback title check if user lookup fails
         conditions.push("(prepared_by_title NOT LIKE '%Admin%' AND prepared_by_name NOT LIKE '%Ninan%')");
       }
+    } else {
+      // Standard User Role (Sales Executive, Designer, etc.): Can ONLY see their own work!
+      if (activeUserId || activeUserName) {
+        conditions.push('(prepared_by_user_id = ? OR assigned_user_id = ? OR prepared_by_name = ?)');
+        params.push(activeUserId || '', activeUserId || '', activeUserName || '');
+      } else {
+        // Unauthenticated or missing identity -> return zero records
+        conditions.push('1 = 0');
+      }
     }
-    // Admin role receives full unfiltered access
 
     if (status && status !== 'ALL') {
       conditions.push('status = ?');
@@ -418,12 +422,33 @@ router.get('/', async (req, res) => {
  */
 router.get('/:id', async (req, res) => {
   const { id } = req.params;
+  const activeUserId = (req.headers['x-user-id'] as string) || (req.query.userId as string);
+  const activeUserRole = (req.headers['x-user-role'] as string) || (req.query.role as string);
+  const activeUserName = (req.headers['x-user-name'] as string) || (req.query.userName as string);
+
   try {
     const records = await query('SELECT * FROM proposals WHERE id = ?', [id]);
     if (records.length === 0) {
       return res.status(404).json({ error: 'Proposal not found' });
     }
     const rec = records[0];
+
+    // Security Authorization Check: non-admin users cannot view another user's proposal by changing URL or ID
+    if (activeUserRole !== 'Admin') {
+      if (activeUserRole === 'Manager') {
+        const titleLower = (rec.prepared_by_title || '').toLowerCase();
+        const nameLower = (rec.prepared_by_name || '').toLowerCase();
+        if (titleLower.includes('admin') || nameLower.includes('ninan')) {
+          return res.status(403).json({ error: 'Permission Denied: Managers cannot access proposals created by Admin.' });
+        }
+      } else {
+        const isOwner = (activeUserId && (rec.prepared_by_user_id === activeUserId || rec.assigned_user_id === activeUserId)) ||
+                        (activeUserName && rec.prepared_by_name === activeUserName);
+        if (!isOwner) {
+          return res.status(403).json({ error: 'Permission Denied: You do not have permission to access another user\'s proposal.' });
+        }
+      }
+    }
 
     // Supplement with relational supplier items if present
     try {
@@ -459,8 +484,34 @@ router.get('/:id', async (req, res) => {
  */
 router.post('/', async (req, res) => {
   const p = req.body;
+  const activeUserId = (req.headers['x-user-id'] as string) || p.preparedByUserId;
+  const activeUserRole = (req.headers['x-user-role'] as string) || p.callerRole;
+  const activeUserName = (req.headers['x-user-name'] as string) || p.preparedByName;
+
+  // Ensure proposal is linked to the user creating it
+  if (!p.preparedByUserId && activeUserId) {
+    p.preparedByUserId = activeUserId;
+  }
 
   try {
+    // Authorization Check: If updating an existing proposal, verify user has edit permission
+    if (p.id) {
+      const existing = await query('SELECT prepared_by_user_id, prepared_by_name, prepared_by_title, assigned_user_id FROM proposals WHERE id = ?', [p.id]);
+      if (existing.length > 0 && activeUserRole !== 'Admin') {
+        const currentProp = existing[0];
+        if (activeUserRole === 'Manager') {
+          if (currentProp.prepared_by_title?.toLowerCase().includes('admin') || currentProp.prepared_by_name?.toLowerCase().includes('ninan')) {
+            return res.status(403).json({ error: 'Permission Denied: Managers cannot modify proposals created by Admin.' });
+          }
+        } else {
+          const isOwner = (activeUserId && (currentProp.prepared_by_user_id === activeUserId || currentProp.assigned_user_id === activeUserId)) ||
+                          (activeUserName && currentProp.prepared_by_name === activeUserName);
+          if (!isOwner) {
+            return res.status(403).json({ error: 'Permission Denied: You do not have permission to modify another user\'s proposal.' });
+          }
+        }
+      }
+    }
     // 1. Ensure client exists in client registry
     let clientId = p.client_id || `client_${Math.random().toString(36).substring(2, 11)}`;
     const clientsFound = await query('SELECT id FROM clients WHERE company_name = ? OR name = ?', [p.companyName, p.clientName]);
@@ -609,15 +660,18 @@ router.put('/:id', async (req, res) => {
     }
     const currentProp = existing[0];
 
-    if (activeUserRole === 'Manager') {
+    if (activeUserRole === 'Admin') {
+      // Admin has unrestricted edit permission
+    } else if (activeUserRole === 'Manager') {
       // Manager cannot edit Admin proposals
       if (currentProp.prepared_by_title?.toLowerCase().includes('admin') || currentProp.prepared_by_name?.toLowerCase().includes('ninan')) {
         return res.status(403).json({ error: 'Permission Denied: Managers cannot edit proposals created by Admin.' });
       }
-    } else if (activeUserRole === 'Sales Executive' || activeUserRole === 'Designer') {
-      const isCreator = currentProp.prepared_by_user_id === activeUserId || currentProp.prepared_by_name === req.headers['x-user-name'];
+    } else {
+      const isCreator = (activeUserId && (currentProp.prepared_by_user_id === activeUserId || currentProp.assigned_user_id === activeUserId)) || 
+                        (req.headers['x-user-name'] && currentProp.prepared_by_name === req.headers['x-user-name']);
       if (!isCreator) {
-        return res.status(403).json({ error: 'Permission Denied: You can only edit proposals created by yourself.' });
+        return res.status(403).json({ error: 'Permission Denied: You can only edit proposals created by or assigned to yourself.' });
       }
       const isLocked = ['Completed', 'Won', 'Closed', 'Cancelled'].includes(currentProp.status);
       if (isLocked) {

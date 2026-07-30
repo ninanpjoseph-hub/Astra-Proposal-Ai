@@ -232,7 +232,7 @@ export default function App() {
               try {
                 await fetch('/api/proposals', {
                   method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
+                  headers: { 'Content-Type': 'application/json', ...getAuthHeaders(currentUser) },
                   body: JSON.stringify(prop)
                 });
               } catch (err) {
@@ -242,7 +242,7 @@ export default function App() {
 
             // Re-fetch master state from DB
             try {
-              const refetchResponse = await fetch('/api/proposals');
+              const refetchResponse = await fetch('/api/proposals', { headers: getAuthHeaders(currentUser) });
               if (refetchResponse.ok) {
                 const rawRefetched = await refetchResponse.json();
                 if (Array.isArray(rawRefetched)) {
@@ -293,9 +293,12 @@ export default function App() {
           }
         }
 
+        // Filter local storage proposals to ensure RBAC privacy
+        const filteredLocalProposals = localProposals.filter(p => canUserViewProposal(p, currentUser));
+
         // Merge DB master records and local storage records
         const mergedList = [...dbProposals];
-        for (const localP of localProposals) {
+        for (const localP of filteredLocalProposals) {
           if (!localP.id.startsWith('prop_sample_') && !mergedList.some(p => p.id === localP.id)) {
             mergedList.push(localP);
           }
@@ -312,22 +315,21 @@ export default function App() {
         if (cached) {
           try {
             const parsed = JSON.parse(cached);
-            const cleanList = Array.isArray(parsed) ? parsed.filter((p: any) => !p.id.startsWith('prop_sample_')) : [];
+            const cleanList = Array.isArray(parsed) 
+              ? parsed.filter((p: any) => !p.id.startsWith('prop_sample_') && canUserViewProposal(p, currentUser)) 
+              : [];
             setProposals(cleanList);
-            localStorage.setItem('prowess_proposals_v1', JSON.stringify(cleanList));
           } catch (e) {
             setProposals([]);
-            localStorage.setItem('prowess_proposals_v1', JSON.stringify([]));
           }
         } else {
           setProposals([]);
-          localStorage.setItem('prowess_proposals_v1', JSON.stringify([]));
         }
       }
     }
     
     loadDataAndVerifyDb();
-  }, []);
+  }, [currentUser?.id, currentUser?.role]);
 
   // Save proposals helper
   const handleSaveProposal = async (savedProp: Proposal) => {
@@ -390,7 +392,8 @@ export default function App() {
       const saveRes = await fetch('/api/proposals', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          ...getAuthHeaders(currentUser)
         },
         body: JSON.stringify(savedProp)
       });
@@ -409,7 +412,7 @@ export default function App() {
         
         await fetch('/api/activity-logs', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...getAuthHeaders(currentUser) },
           body: JSON.stringify(logEntry)
         });
       }
@@ -460,7 +463,8 @@ export default function App() {
         await fetch('/api/proposals', {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            ...getAuthHeaders(currentUser)
           },
           body: JSON.stringify(revertedState)
         });
@@ -485,7 +489,8 @@ export default function App() {
 
       try {
         await fetch(`/api/proposals/${id}`, {
-          method: 'DELETE'
+          method: 'DELETE',
+          headers: getAuthHeaders(currentUser)
         });
 
         // Register deletion log
@@ -831,7 +836,7 @@ export default function App() {
                   // Synchronize proposal state in host database dynamically
                   fetch('/api/proposals', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', ...getAuthHeaders(currentUser) },
                     body: JSON.stringify(finalizedUpdated)
                   }).catch(err => console.warn("Failed to update proposal state in database:", err.message));
                   
@@ -1041,7 +1046,7 @@ export default function App() {
                       try {
                         await fetch('/api/proposals', {
                           method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
+                          headers: { 'Content-Type': 'application/json', ...getAuthHeaders(currentUser) },
                           body: JSON.stringify(updatedProp)
                         });
                       } catch (err: any) {

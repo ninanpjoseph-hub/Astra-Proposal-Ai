@@ -61,16 +61,17 @@ export function canUserViewProposal(
   currentUser: User | null,
   allUsers: User[] = []
 ): boolean {
-  if (!currentUser) return true; // Unauthenticated guest view defaults to all or default dashboard
+  if (!currentUser) return false; // Privacy by default
 
-  // 1. Admin Permissions (Full Access)
+  // 1. Admin Permissions (Unrestricted Full Access)
   if (currentUser.role === UserRole.ADMIN) {
     return true;
   }
 
   const creatorRole = getProposalCreatorRole(proposal, allUsers);
   const isOwnProposal = 
-    proposal.preparedByUserId === currentUser.id ||
+    (proposal.preparedByUserId && proposal.preparedByUserId === currentUser.id) ||
+    (proposal.assignedUserId && proposal.assignedUserId === currentUser.id) ||
     (proposal.preparedByName && proposal.preparedByName.toLowerCase() === currentUser.name.toLowerCase());
 
   // 2. Manager Permissions
@@ -87,12 +88,8 @@ export function canUserViewProposal(
     return true;
   }
 
-  // 3. Sales Executive & Designer Permissions (Own Work Only)
-  if (currentUser.role === UserRole.SALES || currentUser.role === UserRole.DESIGNER) {
-    return isOwnProposal;
-  }
-
-  return false;
+  // 3. Standard User Permissions (Sales Executive & Designer - Own Work Only)
+  return isOwnProposal;
 }
 
 /**
@@ -116,7 +113,8 @@ export function canUserEditProposal(proposal: Proposal, currentUser: User | null
 
   if (currentUser.role === UserRole.SALES || currentUser.role === UserRole.DESIGNER) {
     const isOwn = 
-      proposal.preparedByUserId === currentUser.id ||
+      (proposal.preparedByUserId && proposal.preparedByUserId === currentUser.id) ||
+      (proposal.assignedUserId && proposal.assignedUserId === currentUser.id) ||
       (proposal.preparedByName && proposal.preparedByName.toLowerCase() === currentUser.name.toLowerCase());
 
     if (!isOwn) return false;
