@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Proposal, ProposalType, ProposalHistoryEntry, User, UserRole } from './types';
-import { SAMPLE_PROPOSALS, formatQAR, createDefaultProposal } from './proposalUtils';
+import { formatQAR, createDefaultProposal } from './proposalUtils';
 import ProposalWizard from './components/ProposalWizard';
 import ProposalDocumentView from './components/ProposalDocumentView';
 import AdminPortal from './components/AdminPortal';
@@ -197,30 +197,32 @@ export default function App() {
         let localProposals: Proposal[] = [];
         if (localCached) {
           try {
-            localProposals = JSON.parse(localCached);
+            const parsed = JSON.parse(localCached);
+            if (Array.isArray(parsed)) {
+              localProposals = parsed.filter(p => !p.id.startsWith('prop_sample_'));
+            }
           } catch (e) {
             console.error("Failed to parse local cached proposals", e);
           }
         }
 
-        // If DB is connected and active: we upload any newer or missing local proposals to the DB
+        // Filter out dummy sample proposals from DB list as well
+        dbProposals = dbProposals.filter(p => !p.id.startsWith('prop_sample_'));
+
+        // If DB is connected and active: upload any newer or missing local real proposals to the DB
         if (dbTestData && dbTestData.success && localProposals.length > 0) {
-          // Identify missing/newer proposals in localStorage to upload
           const proposalsToUpload = localProposals.filter(localP => {
-            // Do not upload uncustomized sample/template proposals unless they were edited
-            if (localP.id.startsWith('prop_sample_') && !localP.updatedAt) {
+            if (localP.id.startsWith('prop_sample_')) {
               return false;
             }
 
             const matchingDbP = dbProposals.find(dbP => dbP.id === localP.id);
             if (!matchingDbP) {
-              // Missing in DB entirely - should be migrated
               return true;
             } else {
-              // Exists in DB: compare timestamps and upload if local copy is strictly newer
               const localTime = new Date(localP.updatedAt || localP.createdAt || 0).getTime();
               const dbTime = new Date(matchingDbP.updatedAt || matchingDbP.createdAt || 0).getTime();
-              return localTime > dbTime + 1000; // local is newer by more than a second
+              return localTime > dbTime + 1000;
             }
           });
 
@@ -238,49 +240,51 @@ export default function App() {
               }
             }
 
-            // Re-fetch master state from DB to get the consolidated online lists
+            // Re-fetch master state from DB
             try {
               const refetchResponse = await fetch('/api/proposals');
               if (refetchResponse.ok) {
                 const rawRefetched = await refetchResponse.json();
                 if (Array.isArray(rawRefetched)) {
-                  dbProposals = rawRefetched.map((item: any) => ({
-                    id: item.id,
-                    type: item.type,
-                    status: item.status,
-                    createdAt: item.created_at,
-                    updatedAt: item.updated_at,
-                    clientName: item.client_name,
-                    companyName: item.company_name,
-                    proposalDate: item.proposal_date,
-                    briefDescription: item.brief_description,
-                    brandingScope: typeof item.branding_scope === 'string' ? JSON.parse(item.branding_scope) : (item.branding_scope || {}),
-                    websiteScope: typeof item.website_scope === 'string' ? JSON.parse(item.website_scope) : (item.website_scope || {}),
-                    servicesScope: typeof item.services_scope === 'string' ? JSON.parse(item.services_scope) : (item.services_scope || {}),
-                    milestones: typeof item.milestones === 'string' ? JSON.parse(item.milestones) : (item.milestones || []),
-                    resourceCosts: typeof item.resource_costs === 'string' ? JSON.parse(item.resource_costs) : (item.resource_costs || []),
-                    weeks: item.weeks,
-                    developmentCost: parseFloat(item.development_cost || 0),
-                    pluginCost: parseFloat(item.plugin_cost || 0),
-                    maintenanceCost: parseFloat(item.maintenance_cost || 0),
-                    additionalCost: parseFloat(item.additional_cost || 0),
-                    totalCost: parseFloat(item.total_cost || 0),
-                    paymentTerms: item.payment_terms,
-                    preparedByName: item.prepared_by_name,
-                    preparedByCompany: item.prepared_by_company,
-                    preparedByTitle: item.prepared_by_title,
-                    preparedByUserId: item.prepared_by_user_id,
-                    assignedUserId: item.assigned_user_id,
-                    assignedUserName: item.assigned_user_name,
-                    sharedUserIds: typeof item.shared_user_ids === 'string' ? JSON.parse(item.shared_user_ids) : (item.shared_user_ids || []),
-                    paymentEntries: typeof item.payment_entries === 'string' ? JSON.parse(item.payment_entries) : (item.payment_entries || []),
-                    customLetterhead: item.custom_letterhead,
-                    letterheadHeight: item.letterhead_height,
-                    letterheadMode: item.letterhead_mode,
-                    letterheadFullPage: item.letterhead_full_page === 1,
-                    showWatermark: item.show_watermark === 1,
-                    customWatermarkText: item.custom_watermark_text,
-                  }));
+                  dbProposals = rawRefetched
+                    .filter((item: any) => !item.id.startsWith('prop_sample_'))
+                    .map((item: any) => ({
+                      id: item.id,
+                      type: item.type,
+                      status: item.status,
+                      createdAt: item.created_at,
+                      updatedAt: item.updated_at,
+                      clientName: item.client_name,
+                      companyName: item.company_name,
+                      proposalDate: item.proposal_date,
+                      briefDescription: item.brief_description,
+                      brandingScope: typeof item.branding_scope === 'string' ? JSON.parse(item.branding_scope) : (item.branding_scope || {}),
+                      websiteScope: typeof item.website_scope === 'string' ? JSON.parse(item.website_scope) : (item.website_scope || {}),
+                      servicesScope: typeof item.services_scope === 'string' ? JSON.parse(item.services_scope) : (item.services_scope || {}),
+                      milestones: typeof item.milestones === 'string' ? JSON.parse(item.milestones) : (item.milestones || []),
+                      resourceCosts: typeof item.resource_costs === 'string' ? JSON.parse(item.resource_costs) : (item.resource_costs || []),
+                      weeks: item.weeks,
+                      developmentCost: parseFloat(item.development_cost || 0),
+                      pluginCost: parseFloat(item.plugin_cost || 0),
+                      maintenanceCost: parseFloat(item.maintenance_cost || 0),
+                      additionalCost: parseFloat(item.additional_cost || 0),
+                      totalCost: parseFloat(item.total_cost || 0),
+                      paymentTerms: item.payment_terms,
+                      preparedByName: item.prepared_by_name,
+                      preparedByCompany: item.prepared_by_company,
+                      preparedByTitle: item.prepared_by_title,
+                      preparedByUserId: item.prepared_by_user_id,
+                      assignedUserId: item.assigned_user_id,
+                      assignedUserName: item.assigned_user_name,
+                      sharedUserIds: typeof item.shared_user_ids === 'string' ? JSON.parse(item.shared_user_ids) : (item.shared_user_ids || []),
+                      paymentEntries: typeof item.payment_entries === 'string' ? JSON.parse(item.payment_entries) : (item.payment_entries || []),
+                      customLetterhead: item.custom_letterhead,
+                      letterheadHeight: item.letterhead_height,
+                      letterheadMode: item.letterhead_mode,
+                      letterheadFullPage: item.letterhead_full_page === 1,
+                      showWatermark: item.show_watermark === 1,
+                      customWatermarkText: item.custom_watermark_text,
+                    }));
                 }
               }
             } catch (err) {
@@ -289,22 +293,17 @@ export default function App() {
           }
         }
 
-        // Merge DB master records and local storage records to ensure zero data loss
+        // Merge DB master records and local storage records
         const mergedList = [...dbProposals];
         for (const localP of localProposals) {
-          if (!mergedList.some(p => p.id === localP.id)) {
-            // Keep any unique local records that aren't on the DB yet (e.g., templates or items we skipped)
+          if (!localP.id.startsWith('prop_sample_') && !mergedList.some(p => p.id === localP.id)) {
             mergedList.push(localP);
           }
         }
 
-        if (mergedList.length > 0) {
-          setProposals(mergedList);
-          localStorage.setItem('prowess_proposals_v1', JSON.stringify(mergedList));
-        } else {
-          setProposals(SAMPLE_PROPOSALS);
-          localStorage.setItem('prowess_proposals_v1', JSON.stringify(SAMPLE_PROPOSALS));
-        }
+        const cleanList = mergedList.filter(p => !p.id.startsWith('prop_sample_'));
+        setProposals(cleanList);
+        localStorage.setItem('prowess_proposals_v1', JSON.stringify(cleanList));
       } catch (err: any) {
         console.warn("Could not leverage Hostinger MySQL backend, relying on local state cache:", err.message);
         setDbStatusDetails("Offline Mode");
@@ -312,12 +311,17 @@ export default function App() {
         const cached = localStorage.getItem('prowess_proposals_v1');
         if (cached) {
           try {
-            setProposals(JSON.parse(cached));
+            const parsed = JSON.parse(cached);
+            const cleanList = Array.isArray(parsed) ? parsed.filter((p: any) => !p.id.startsWith('prop_sample_')) : [];
+            setProposals(cleanList);
+            localStorage.setItem('prowess_proposals_v1', JSON.stringify(cleanList));
           } catch (e) {
-            setProposals(SAMPLE_PROPOSALS);
+            setProposals([]);
+            localStorage.setItem('prowess_proposals_v1', JSON.stringify([]));
           }
         } else {
-          setProposals(SAMPLE_PROPOSALS);
+          setProposals([]);
+          localStorage.setItem('prowess_proposals_v1', JSON.stringify([]));
         }
       }
     }
