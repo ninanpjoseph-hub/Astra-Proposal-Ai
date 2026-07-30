@@ -4,6 +4,8 @@ import fs from 'fs';
 import dotenv from 'dotenv';
 import { createServer as createViteServer } from 'vite';
 import proposalsRouter from './src/server/routes/proposals';
+import emailRouter from './src/server/routes/email';
+import { runDailyScheduledFollowUps } from './src/server/services/emailService';
 import { query } from './src/lib/db';
 
 // Load environmental variables
@@ -19,6 +21,7 @@ async function startServer() {
 
   // API Routes - Must be registered first!
   app.use('/api/proposals', proposalsRouter);
+  app.use('/api/email', emailRouter);
 
   // G. Download or fetch full SQL Database Dump
   app.get('/api/db/export', (req, res) => {
@@ -211,6 +214,14 @@ async function startServer() {
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`📡 Astra Proposal AI backend running on port: ${PORT}`);
     console.log(`🌍 Health Check online at http://localhost:${PORT}/api/proposals/test-db`);
+
+    // Initialize 24-hour daily automated email follow-up scheduler
+    const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+    setInterval(() => {
+      runDailyScheduledFollowUps().catch(err => {
+        console.error('Scheduled daily email run background error:', err.message);
+      });
+    }, TWENTY_FOUR_HOURS);
   });
 }
 

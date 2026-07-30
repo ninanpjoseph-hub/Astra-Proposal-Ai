@@ -656,86 +656,93 @@ export default function AdminPortal({
     addLog('Delete Reminder', `Removed follow-up reminder "${rem.title}" for ${rem.proposalClient}`);
   };
 
-  const handleRunDailyEmailReminders = () => {
-    // Open statuses: anything other than Won, Lost, and Closed
-    const openProps = proposals.filter(p => {
-      const currentStatus = p.status || ProposalStatus.DRAFT;
-      return currentStatus !== ProposalStatus.WON &&
-             currentStatus !== ProposalStatus.LOST &&
-             currentStatus !== ProposalStatus.CLOSED;
-    });
-
-    if (openProps.length === 0) {
-      alert("No active open opportunities found! Please ensure there are proposals whose status is NOT Closed, Won, or Lost.");
-      return;
-    }
-
-    const timestamp = new Date().toISOString();
-    const newLogs: any[] = [];
-
-    openProps.forEach(p => {
-      let creatorName = p.preparedByName || "Ninan P Joseph";
-      let creatorEmail = "ninanpjoseph@gmail.com";
-
-      if (p.preparedByUserId) {
-        const u = users.find(user => user.id === p.preparedByUserId);
-        if (u) {
-          creatorName = u.name;
-          creatorEmail = u.email;
+  const handleRunDailyEmailReminders = async () => {
+    try {
+      const response = await fetch('/api/email/trigger-daily-run', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': currentUser?.id || '',
+          'x-user-role': currentUser?.role || '',
+          'x-user-name': currentUser?.name || ''
         }
-      } else if (p.assignedUserId) {
-        const u = users.find(user => user.id === p.assignedUserId);
-        if (u) {
-          creatorName = u.name;
-          creatorEmail = u.email;
-        }
+      });
+
+      const data = await response.json();
+      if (!response.ok || data.success === false) {
+        alert(`Daily email dispatch failed: ${data.error || data.message || 'Unknown error'}`);
+        return;
       }
 
-      const projectName = p.companyName || p.clientName || "Astra Project";
-      const subject = `[Daily Follow-up Alert] Active Opportunity: ${projectName}`;
-      const body = `Dear ${creatorName},\n\n` +
-        `This is your automated daily follow-up summary alert for the active opportunity "${projectName}" (Client: ${p.clientName}).\n\n` +
-        `Project Summary & Current Parameters:\n` +
-        `- Current Pipeline Status: ${p.status || "Draft"}\n` +
-        `- Estimated Deal Contract Value: QAR ${p.totalCost.toLocaleString()}\n` +
-        `- Last Record Update Timestamp: ${new Date(p.updatedAt || p.createdAt).toLocaleString()}\n\n` +
-        `Action Item Required:\n` +
-        `Please perform consistent touchpoint checks with your contact person to maintain momentum and progression down the sales funnel.\n\n` +
-        `*Alert Cycle Lifetime: This system reminder dispatches scheduled messages every 24 hours. Emails will continue to be sent daily until this opportunity's pipeline status is officially updated to a closed state (Won, Lost, or Closed).`;
+      const timestamp = new Date().toISOString();
+      const todayStr = timestamp.split('T')[0];
 
-      // Calculate how many times we've reminded this proposal before
-      const existingSentCount = dailyEmailLogs.filter(log => log.proposalId === p.id).length;
+      const newRun = {
+        date: todayStr,
+        countSent: data.totalSent || 0,
+        timestamp
+      };
+      const updatedRuns = [newRun, ...dailyRunHistory];
+      setDailyRunHistory(updatedRuns);
+      localStorage.setItem('prowess_daily_run_history', JSON.stringify(updatedRuns));
 
-      newLogs.push({
-        id: 'eml_' + Math.random().toString(36).substring(2, 10),
-        timestamp,
-        proposalId: p.id,
-        clientName: p.clientName,
-        projectName,
-        creatorName,
-        creatorEmail,
-        subject,
-        body,
-        sentIndex: existingSentCount + 1
+      // Construct live display logs for outbox preview
+      const newLogs: any[] = [];
+      if (Array.isArray(data.dispatchedDetails)) {
+        data.dispatchedDetails.forEach((item: any) => {
+          const p = proposals.find(prop => prop.id === item.proposalId);
+          const projectName = p ? (p.companyName || p.clientName || item.proposalId) : item.proposalId;
+          const sentRecipients = item.result?.sent || [];
+          sentRecipients.forEach((recipEmail: string) => {
+            newLogs.push({
+              id: 'eml_live_' + Math.random().toString(36).substring(2, 10),
+              timestamp,
+              proposalId: item.proposalId,
+              clientName: p?.clientName || 'Client',
+              projectName,
+              creatorName: recipEmail.split('@')[0],
+              creatorEmail: recipEmail,
+              subject: `[Daily Follow-up Alert] Active Opportunity: ${projectName}`,
+              body: `LIVE SMTP DISPATCH RECORD\nRecipient: ${recipEmail}\nProposal ID: ${item.proposalId}\nTimestamp: ${new Date().toLocaleString()}\nStatus: Delivered via Nodemailer Transporter`
+            });
+          });
+        });
+      }
+
+      const updatedLogs = [...newLogs, ...dailyEmailLogs];
+      setDailyEmailLogs(updatedLogs);
+      localStorage.setItem('prowess_daily_email_logs', JSON.stringify(updatedLogs));
+
+      addLog("Daily Email Automation", `Executed real daily follow-up run: ${data.totalSent} emails dispatched across ${data.openDealsCount} active opportunities.`);
+      alert(`Daily automated emails dispatched successfully!\n\nFollow-up alerts sent to ${data.totalSent} recipients across ${data.openDealsCount} active deals.`);
+    } catch (err: any) {
+      alert(`Failed to execute daily email dispatch: ${err.message}`);
+    }
+  };
+
+  const handleSendSingleFollowUp = async (proposalId: string, clientName: string) => {
+    try {
+      const res = await fetch('/api/email/send-followup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': currentUser?.id || '',
+          'x-user-role': currentUser?.role || '',
+          'x-user-name': currentUser?.name || ''
+        },
+        body: JSON.stringify({ proposal_id: proposalId, trigger: 'manual' })
       });
-    });
-
-    const updatedLogs = [...newLogs, ...dailyEmailLogs];
-    setDailyEmailLogs(updatedLogs);
-    localStorage.setItem('prowess_daily_email_logs', JSON.stringify(updatedLogs));
-
-    const todayStr = new Date().toISOString().split('T')[0];
-    const newRun = {
-      date: todayStr,
-      countSent: openProps.length,
-      timestamp
-    };
-    const updatedRuns = [newRun, ...dailyRunHistory];
-    setDailyRunHistory(updatedRuns);
-    localStorage.setItem('prowess_daily_run_history', JSON.stringify(updatedRuns));
-
-    addLog("Daily Email Automation", `Auto-checked pipeline and simulated daily follow-up alerts to ${openProps.length} deal creators.`);
-    alert(`Daily automated emails compiled and dispatched successfully!\n\nEmail follow-ups sent to ${openProps.length} active deal creators.`);
+      const data = await res.json();
+      if (!res.ok || data.success === false) {
+        alert(`Error sending email for ${clientName}: ${data.error || data.message || 'Dispatch failed'}`);
+        return;
+      }
+      const sentNames = data.sent && data.sent.length > 0 ? data.sent.join(', ') : 'recipients';
+      alert(`Email sent to ${sentNames}`);
+      addLog("Email Alert Dispatched", `Manual follow-up alert dispatched for ${clientName} (${proposalId}) to ${sentNames}`);
+    } catch (err: any) {
+      alert(`Failed to send follow-up alert: ${err.message}`);
+    }
   };
 
   const handleClearDailyEmailLogs = () => {
@@ -1674,7 +1681,14 @@ export default function AdminPortal({
                             {u.name} {currentUser?.id === u.id && <span className="ml-1.5 text-[8px] tracking-wider text-blue-500 bg-blue-50 font-mono font-bold leading-normal px-1 py-0.5 border border-blue-200/50 rounded uppercase">Active session</span>}
                           </td>
                           <td className="py-4 px-4 font-mono text-slate-500 text-[11px]">
-                            {u.email}
+                            {u.email ? u.email : (
+                              <span className="text-amber-600 font-bold block">No email address</span>
+                            )}
+                            {(!u.email || u.email.trim() === '') && (
+                              <span className="block text-[9.5px] text-amber-600 font-sans mt-0.5 font-semibold">
+                                ⚠️ This user will not receive email alerts until an email address is added.
+                              </span>
+                            )}
                           </td>
                           <td className="py-4 px-4">
                             <div className="flex flex-col gap-1 align-top items-start">
@@ -1778,7 +1792,7 @@ export default function AdminPortal({
                     onClick={handleRunDailyEmailReminders}
                     className="px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs rounded-xl shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
                   >
-                    <RefreshCw className="h-3.5 w-3.5 animate-spin-slow" /> Trigger Simulated Daily Run Now
+                    <RefreshCw className="h-3.5 w-3.5 animate-spin-slow" /> Trigger Daily Follow-Up Alerts
                   </button>
                   <button
                     onClick={handleClearDailyEmailLogs}
@@ -1887,11 +1901,14 @@ export default function AdminPortal({
                               </div>
                             </div>
 
-                            <div className="text-right shrink-0">
+                            <div className="text-right shrink-0 flex flex-col items-end gap-1">
                               <span className="text-xs font-bold font-mono text-blue-400 block">{formatQAR(p.totalCost)}</span>
-                              <div className="text-[9px] text-slate-400 font-mono mt-0.5 flex items-center justify-end gap-1">
-                                <Mail className="h-2.5 w-2.5 text-slate-500" /> Dispatched: <span className="text-slate-200 font-semibold">{remindedCount}x</span>
-                              </div>
+                              <button
+                                onClick={() => handleSendSingleFollowUp(p.id, p.companyName || p.clientName)}
+                                className="px-2 py-0.5 bg-blue-600/20 hover:bg-blue-600 text-blue-300 hover:text-white border border-blue-500/30 rounded text-[9px] font-mono font-semibold transition-colors cursor-pointer flex items-center gap-1"
+                              >
+                                <Mail className="h-2.5 w-2.5" /> Send Follow-up Alert
+                              </button>
                             </div>
                           </div>
                         );
@@ -1904,11 +1921,11 @@ export default function AdminPortal({
                   </div>
                 </div>
 
-                {/* Panel row 2: Real-time simulation log */}
+                {/* Panel row 2: Real-time outbox log */}
                 <div className="space-y-3">
                   <div className="flex justify-between items-center bg-slate-950/40 p-3 rounded-lg border border-slate-800/80">
                     <strong className="text-[10px] font-mono font-bold text-emerald-400 tracking-wider uppercase block">
-                      OUTBOX SIMULATOR & DISPATCHED EMAIL LOGS ({dailyEmailLogs.length})
+                      LIVE DISPATCH & EMAIL LOGS ({dailyEmailLogs.length})
                     </strong>
                     <span className="text-[9px] text-slate-400 font-mono">Click to preview</span>
                   </div>
@@ -1928,7 +1945,7 @@ export default function AdminPortal({
                             <div className="min-w-0">
                               <div className="flex items-center gap-2">
                                 <span className="bg-emerald-500/10 text-emerald-400 text-[8px] font-mono font-bold px-1.5 py-0.5 rounded border border-emerald-500/20 leading-none">
-                                  DAILY REMINDER SENT
+                                  LIVE DISPATCH SENT
                                 </span>
                                 <span className="text-[9px] text-slate-400 font-mono leading-none">
                                   {new Date(log.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'})}
@@ -1948,7 +1965,7 @@ export default function AdminPortal({
                       })
                     ) : (
                       <div className="p-8 text-center text-xs text-slate-500 italic font-sans">
-                        No automated daily alert runs captured yet. Click "Trigger Simulated Daily Run" above to execute a run.
+                        No automated daily alert runs captured yet. Click "Trigger Daily Follow-Up Alerts" above to execute a run.
                       </div>
                     )}
                   </div>
@@ -1962,7 +1979,7 @@ export default function AdminPortal({
                   <div className="flex justify-between items-start border-b border-slate-800 pb-3">
                     <div>
                       <h4 className="text-white text-xs font-bold leading-normal font-sans">
-                        Simulated Electronic Mail Delivery Header Log
+                        LIVE DISPATCH ELECTRONIC MAIL HEADER LOG
                       </h4>
                       <p className="text-[10px] text-slate-500 font-mono mt-0.5">
                         Delivered successfully through Astra SMTP Mail Servers

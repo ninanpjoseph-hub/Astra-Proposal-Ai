@@ -496,22 +496,23 @@ export function createDefaultProposal(type: ProposalType): Proposal {
 // Empty default array - no dummy proposals generated or seeded
 export const SAMPLE_PROPOSALS: Proposal[] = [];
 
-export function triggerAutomatedFollowUp(proposal: Proposal) {
-  const cached = localStorage.getItem('prowess_admin_reminders');
-  let remindersList: Reminder[] = [];
-  if (cached) {
-    try {
-      remindersList = JSON.parse(cached);
-    } catch {
-      remindersList = [];
+export async function triggerAutomatedFollowUp(proposal: Proposal) {
+  try {
+    const res = await fetch('/api/email/send-followup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        proposal_id: proposal.id,
+        trigger: 'manual'
+      })
+    });
+
+    const data = await res.json();
+    if (!res.ok || data.success === false) {
+      throw new Error(data.error || data.message || 'Failed to dispatch email follow-up alert.');
     }
-  }
 
-  const hasExisting = remindersList.some(
-    r => r.proposalId === proposal.id && !r.isCompleted && r.title.startsWith('Follow-up:')
-  );
-
-  if (!hasExisting) {
+    // Store reminder in local state for UI list tracking
     const futureDate = new Date();
     futureDate.setDate(futureDate.getDate() + 2);
     const formattedDueDate = futureDate.toISOString().split('T')[0];
@@ -522,16 +523,26 @@ export function triggerAutomatedFollowUp(proposal: Proposal) {
       proposalClient: proposal.clientName || 'Client',
       title: `Follow-up: ${proposal.clientName || 'Client'} Proposal`,
       dueDate: formattedDueDate,
-      notes: `Automated 2-day professional outreach touchpoint regarding the finalized and downloaded ${proposal.type === 'branding' ? 'Branding & Identity' : (proposal.type === 'services' ? 'Modular IT Services' : 'Website Design & Development')} proposal (Value: QAR ${proposal.totalCost}).`,
+      notes: `Automated SMTP follow-up alert dispatched to ${data.sent && data.sent.length > 0 ? data.sent.join(', ') : 'recipients'}. Value: QAR ${proposal.totalCost}.`,
       isCompleted: false,
       createdAt: new Date().toISOString()
     };
 
+    const cached = localStorage.getItem('prowess_admin_reminders');
+    let remindersList: Reminder[] = [];
+    if (cached) {
+      try { remindersList = JSON.parse(cached); } catch { remindersList = []; }
+    }
     const updatedReminders = [newReminder, ...remindersList];
     localStorage.setItem('prowess_admin_reminders', JSON.stringify(updatedReminders));
 
     window.dispatchEvent(new Event('storage'));
     window.dispatchEvent(new CustomEvent('reminders_updated', { detail: updatedReminders }));
+
+    return data;
+  } catch (err: any) {
+    console.error('Failed to dispatch follow-up email alert:', err.message);
+    throw err;
   }
 }
 
