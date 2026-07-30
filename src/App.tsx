@@ -16,7 +16,7 @@ import { canUserViewProposal, getAuthHeaders } from './lib/rbac';
 import { 
   Plus, Search, FileText, Calendar, Building, Landmark, Trash2, Edit3, Eye, 
   HelpCircle, ChevronRight, BarChart3, Database, TrendingUp, Sparkles, AlertCircle,
-  LogOut, X, Server, Users
+  LogOut, X, Server, Users, ArrowLeft
 } from 'lucide-react';
 
 function generateEditSummary(oldProp: Proposal, newProp: Proposal): string {
@@ -731,23 +731,6 @@ export default function App() {
           </button>
           <button
             onClick={() => {
-              setActiveModule('cheque-quotations');
-            }}
-            className={`py-3.5 text-xs font-serif font-extrabold uppercase tracking-wider border-b-2 transition-all cursor-pointer flex items-center gap-2 ${
-              activeModule === 'cheque-quotations' 
-                ? isLuxury 
-                  ? 'border-[#C5A059] text-[#C5A059]' 
-                  : 'border-blue-600 text-blue-700' 
-                : isLuxury 
-                  ? 'border-transparent text-slate-400 hover:text-white' 
-                  : 'border-transparent text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <Landmark className="h-4 w-4" />
-            Cheque Printing Software Quotations
-          </button>
-          <button
-            onClick={() => {
               setActiveModule('suppliers');
             }}
             className={`py-3.5 text-xs font-serif font-extrabold uppercase tracking-wider border-b-2 transition-all cursor-pointer flex items-center gap-2 ${
@@ -772,7 +755,26 @@ export default function App() {
         {activeModule === 'suppliers' ? (
           <SupplierProfitDesk />
         ) : activeModule === 'cheque-quotations' ? (
-          <ChequeQuotationModule />
+          <div className="space-y-4">
+            <div className="no-print flex items-center justify-between bg-white dark:bg-[#0F172A] p-3.5 px-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => {
+                    setActiveModule('proposals');
+                  }}
+                  className="h-9 px-3.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl border border-slate-250 dark:border-slate-700 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.97] cursor-pointer flex items-center gap-1.5"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  <span>Back to Proposals Directory</span>
+                </button>
+                <span className="text-slate-300 dark:text-slate-700">|</span>
+                <h2 className="text-sm font-serif font-bold text-slate-800 dark:text-[#C5A059]">
+                  Cheque Printing Software Quotations & Invoicing Console
+                </h2>
+              </div>
+            </div>
+            <ChequeQuotationModule />
+          </div>
         ) : viewingProposal ? (
           <div id="full-screen-document-preview" className="space-y-4">
             <div className="no-print flex items-center gap-2 mb-2">
@@ -942,56 +944,71 @@ export default function App() {
             </div>
 
             {/* Create Proposal Selector Bar */}
-            <div className={`p-6 rounded-2xl border transition-all flex flex-col md:flex-row items-center justify-between gap-4 ${
+            <div className={`p-6 rounded-2xl border transition-all flex flex-col md:flex-row items-start md:items-center justify-between gap-6 ${
               isLuxury 
-                ? 'bg-[#111C35]/65 border-[#C5A059]/20 shadow-xl text-white' 
-                : 'bg-white border border-slate-200 shadow-xs'
+                ? 'bg-[#0B1120] border-[#C5A059]/25 shadow-2xl text-white' 
+                : 'bg-slate-900 border border-slate-800 shadow-xl text-white'
             }`}>
-              <div>
-                <h2 className={`font-serif font-bold text-lg tracking-tight ${isLuxury ? 'text-[#C5A059]' : 'text-slate-900'}`}>
+              <div className="max-w-xl">
+                <h2 className="font-serif font-bold text-xl tracking-tight text-[#C5A059]">
                   Design bespoke proposals instantly
                 </h2>
-                <p className={`text-xs leading-normal font-sans ${isLuxury ? 'text-slate-300' : 'text-slate-500'}`}>
+                <p className="text-xs leading-relaxed font-sans text-slate-300 mt-1">
                   Choose a blueprint target below. The wizard compiles locking master pages and asks only for clients specifics.
                 </p>
               </div>
 
-              <div className="flex gap-3 shrink-0 flex-wrap">
+              {/* Structured Button Grouping Matrix */}
+              <div className="flex flex-wrap items-center gap-2.5 shrink-0 max-w-2xl">
+                {/* Primary Action Button - Solid Gold/Amber Pill */}
                 <button
                   onClick={() => startNewProposal('branding')}
                   id="create-branding-proposal-btn"
-                  className={`px-4 py-2 font-semibold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer ${
-                    isLuxury 
-                      ? 'bg-gradient-to-r from-[#C5A059] to-[#D4AF37] text-[#070b19] hover:brightness-110 font-bold' 
-                      : 'bg-slate-900 hover:bg-slate-850 text-white'
-                  }`}
+                  className="px-4 py-2.5 bg-gradient-to-r from-amber-400 via-amber-450 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-extrabold text-xs rounded-xl shadow-md hover:shadow-xl border border-amber-300 flex items-center gap-1.5 cursor-pointer transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.97]"
                 >
-                  <Plus className={`h-4 w-4 ${isLuxury ? 'text-[#070b19]' : 'text-blue-400'}`} />
-                  + Branding & Identity Proposal
+                  <Plus className="h-4 w-4 text-slate-950 stroke-[3]" />
+                  <span>+ Branding & Identity Proposal</span>
                 </button>
+
+                {/* Secondary Action Buttons - Outlined Dark Pills */}
                 <button
                   onClick={() => startNewProposal('website')}
                   id="create-website-proposal-btn"
-                  className={`px-4 py-2 font-semibold text-xs rounded-xl transition-all flex items-center gap-1.5 cursor-pointer ${
-                    isLuxury 
-                      ? 'bg-[#111C35] hover:bg-[#1E293B] text-[#C5A059] border border-[#C5A059]/40 shadow-xs' 
-                      : 'bg-blue-600 hover:bg-blue-700 text-white shadow-md'
-                  }`}
+                  className="px-4 py-2.5 bg-[#111C35] hover:bg-[#1E293B] text-amber-200 border border-[#C5A059]/40 hover:border-[#C5A059]/80 font-semibold text-xs rounded-xl shadow-xs hover:shadow-md flex items-center gap-1.5 cursor-pointer transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.97]"
                 >
-                  <Plus className="h-4 w-4" />
-                  + Website Development Proposal
+                  <Plus className="h-4 w-4 text-amber-300" />
+                  <span>+ Website Development Proposal</span>
                 </button>
+
                 <button
                   onClick={() => startNewProposal('services')}
                   id="create-services-proposal-btn"
-                  className={`px-4 py-2 font-semibold text-xs rounded-xl transition-all flex items-center gap-1.5 cursor-pointer ${
-                    isLuxury 
-                      ? 'bg-[#111C35] hover:bg-[#1E293B] text-emerald-400 border border-emerald-500/40 shadow-xs' 
-                      : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-md'
-                  }`}
+                  className="px-4 py-2.5 bg-[#111C35] hover:bg-[#1E293B] text-emerald-300 border border-emerald-500/40 hover:border-emerald-500/80 font-semibold text-xs rounded-xl shadow-xs hover:shadow-md flex items-center gap-1.5 cursor-pointer transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.97]"
                 >
-                  <Plus className="h-4 w-4" />
-                  + Modular IT Services Proposal
+                  <Plus className="h-4 w-4 text-emerald-400" />
+                  <span>+ Modular IT Services Proposal</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setActiveModule('cheque-quotations');
+                    setViewingProposal(null);
+                    setIsCreating(false);
+                  }}
+                  id="create-cheque-proposal-btn"
+                  className="px-4 py-2.5 bg-[#111C35] hover:bg-[#1E293B] text-amber-200 border border-[#C5A059]/40 hover:border-[#C5A059]/80 font-semibold text-xs rounded-xl shadow-xs hover:shadow-md flex items-center gap-1.5 cursor-pointer transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.97]"
+                >
+                  <Plus className="h-4 w-4 text-amber-300" />
+                  <span>+ Cheque Printing Software</span>
+                </button>
+
+                <button
+                  onClick={() => startNewProposal('services')}
+                  id="create-whatsapp-proposal-btn"
+                  className="px-4 py-2.5 bg-[#111C35] hover:bg-[#1E293B] text-emerald-300 border border-emerald-500/40 hover:border-emerald-500/80 font-semibold text-xs rounded-xl shadow-xs hover:shadow-md flex items-center gap-1.5 cursor-pointer transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.97]"
+                >
+                  <Plus className="h-4 w-4 text-emerald-400" />
+                  <span>+ WhatsApp Marketing</span>
                 </button>
               </div>
             </div>
@@ -1215,44 +1232,54 @@ export default function App() {
                             </strong>
                           </div>
 
-                          <div className="flex gap-1">
-                            {/* View block */}
+                          <div className="flex items-center gap-2">
+                            {/* Primary Action Button: Preview */}
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setProposalViewTab('document');
                                 setViewingProposal(prop);
                               }}
-                              className={`p-1.5 rounded-md transition-colors ${
-                                isLuxury ? 'hover:bg-[#C5A059]/10 text-slate-400 hover:text-[#C5A059]' : 'hover:bg-slate-100 text-slate-500 hover:text-blue-600'
+                              className={`h-8 px-3 rounded-lg font-semibold text-xs transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.96] cursor-pointer flex items-center gap-1.5 ${
+                                isLuxury 
+                                  ? 'bg-[#C5A059]/15 hover:bg-[#C5A059] text-[#C5A059] hover:text-slate-950 border border-[#C5A059]/30 hover:border-[#C5A059] hover:shadow-md' 
+                                  : 'bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white border border-blue-200 hover:shadow-md'
                               }`}
-                              title="Render PDF"
+                              title="Preview Proposal"
                             >
-                              <Eye className="h-4.5 w-4.5" />
+                              <Eye className="h-3.5 w-3.5" />
+                              <span>Preview</span>
                             </button>
-                            {/* Edit block */}
+
+                            {/* Secondary Action Button: Edit */}
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setEditingProposal(prop);
                                 setIsCreating(true);
                               }}
-                              className={`p-1.5 rounded-md transition-colors ${
-                                isLuxury ? 'hover:bg-[#C5A059]/10 text-slate-400 hover:text-[#C5A059]' : 'hover:bg-slate-100 text-[#C5A059] hover:text-blue-600'
+                              className={`h-8 px-3 rounded-lg font-medium text-xs transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.96] cursor-pointer flex items-center gap-1.5 ${
+                                isLuxury 
+                                  ? 'bg-[#111C35] hover:bg-[#1E293B] text-slate-300 border border-slate-700 hover:border-slate-500' 
+                                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-250'
                               }`}
                               title="Modify Proposal"
                             >
-                              <Edit3 className="h-4.5 w-4.5" />
+                              <Edit3 className="h-3.5 w-3.5" />
+                              <span>Edit</span>
                             </button>
-                            {/* Delete block */}
+
+                            {/* Delete Action Button */}
                             <button
                               onClick={(e) => handleDeleteProposal(prop.id, e)}
-                              className={`p-1.5 rounded-md transition-colors ${
-                                isLuxury ? 'hover:bg-rose-500/10 text-slate-400 hover:text-rose-400' : 'hover:bg-slate-100 text-slate-400 hover:text-rose-600'
+                              className={`h-8 w-8 rounded-lg flex items-center justify-center transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.96] cursor-pointer ${
+                                isLuxury 
+                                  ? 'hover:bg-rose-500/15 text-slate-400 hover:text-rose-400 border border-transparent hover:border-rose-500/30' 
+                                  : 'hover:bg-rose-50 text-slate-400 hover:text-rose-600 border border-transparent hover:border-rose-200'
                               }`}
-                              title="Delete from memory"
+                              title="Delete Proposal"
                             >
-                              <Trash2 className="h-4.5 w-4.5" />
+                              <Trash2 className="h-3.5 w-3.5" />
                             </button>
                           </div>
                         </div>

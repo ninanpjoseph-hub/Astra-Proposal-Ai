@@ -10,7 +10,7 @@ import { BRANDING_TEMPLATES, WEBSITE_TEMPLATES, DEFAULT_SCOPE_TEMPLATES } from '
 import { formatQAR, DEFAULT_BRANDING_MILESTONES, DEFAULT_WEBSITE_MILESTONES, triggerAutomatedFollowUp, createDefaultProposal, getModularDeliverableLineItems } from '../proposalUtils';
 import SitemapGenerator from './SitemapGenerator';
 import { groupScopeIntoPages } from '../utils/scopeClassifier';
-import { Check, Bookmark, DollarSign, Calendar, Landmark, BookOpen, Signature, Award, ChevronRight, FileText, Printer, Download, History, RotateCcw, Clock, Sliders, Upload, Trash2, Plus, AlertCircle, Coins, CreditCard, Shield, Users } from 'lucide-react';
+import { Check, Bookmark, DollarSign, Calendar, Landmark, BookOpen, Signature, Award, ChevronRight, FileText, Printer, Download, History, RotateCcw, Clock, Sliders, Upload, Trash2, Plus, AlertCircle, Coins, CreditCard, Shield, Users, MoreVertical, ChevronDown, Mail } from 'lucide-react';
 import { Proposal, ProposalHistoryEntry, ProposalStatus, PaymentEntry, UserRole } from '../types';
 import { exportProposalToDocx } from '../utils/docxExport';
 
@@ -471,6 +471,7 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
   const [isGeneratingDocx, setIsGeneratingDocx] = React.useState(false);
   const [progressText, setProgressText] = React.useState('');
   const [activeTab, setActiveTab] = React.useState<'document' | 'history' | 'payment'>('document');
+  const [isMoreMenuOpen, setIsMoreMenuOpen] = React.useState(false);
 
   const handleDownloadDocx = async () => {
     try {
@@ -916,77 +917,172 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
   return (
     <div id="document-viewer-wrapper" className="flex flex-col gap-8 w-full max-w-5xl mx-auto py-6">
       {/* Top action header - hidden when printing */}
-      <div className="no-print bg-white border border-slate-200 p-4 rounded-xl shadow-xs flex flex-wrap gap-4 items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="bg-blue-50 text-blue-700 h-10 w-10 rounded-lg flex items-center justify-center font-bold">
+      <div className="no-print bg-[#0F172A] border border-slate-800 p-4 rounded-2xl shadow-xl flex flex-wrap gap-4 items-center justify-between text-white">
+        <div className="flex items-center gap-3.5">
+          <div className="bg-[#C5A059]/15 border border-[#C5A059]/30 text-[#C5A059] h-11 w-11 rounded-xl flex items-center justify-center font-bold font-serif text-base shadow-xs">
             {isBranding ? "BI" : "WD"}
           </div>
           <div>
-            <h3 className="font-sans font-bold text-slate-800 text-base leading-tight">
-              Proposal: {proposal.clientName || "Unnamed Client"}
-            </h3>
-            <p className="text-xs text-slate-500 font-sans">
-              Type: {isBranding ? "Branding & Identity" : "Website Design & Development"} | Standard Value: <strong className="text-blue-600 font-semibold">{formatQAR(proposal.totalCost)}</strong>
+            <div className="flex items-center gap-2">
+              <h3 className="font-sans font-bold text-white text-base leading-tight">
+                {proposal.clientName || "Unnamed Client"}
+              </h3>
+              <span className={`text-[9.5px] font-sans font-bold px-2 py-0.5 border rounded-full leading-none uppercase ${
+                proposal.status === ProposalStatus.COMPLETED ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' :
+                proposal.status === ProposalStatus.CANCELLED ? 'bg-rose-500/15 text-rose-400 border-rose-500/30' :
+                proposal.status === ProposalStatus.UNDER_PROCESS ? 'bg-[#C5A059]/15 text-[#C5A059] border-[#C5A059]/30' :
+                proposal.status === ProposalStatus.UNDER_REVIEW ? 'bg-amber-500/15 text-amber-400 border-amber-500/30' :
+                'bg-slate-800 text-slate-300 border-slate-700'
+              }`}>
+                {proposal.status || 'Draft'}
+              </span>
+            </div>
+            <p className="text-xs text-slate-400 font-sans mt-0.5">
+              Type: <span className="text-slate-200 font-medium">{isBranding ? "Branding & Identity" : "Website Design & Development"}</span> • Deal Value: <strong className="text-[#C5A059] font-semibold">{formatQAR(proposal.totalCost)} QAR</strong>
             </p>
           </div>
         </div>
         
-        <div className="flex gap-2">
+        {/* Structured Action Button System */}
+        <div className="flex items-center gap-2.5 flex-wrap">
           {showBackBtn && onBack && (
             <button
                onClick={onBack}
                id="back-to-dashboard-btn"
-               className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-lg border border-slate-200 transition-colors cursor-pointer"
+               className="h-9 px-3.5 text-xs font-semibold text-slate-300 hover:text-white bg-slate-800/80 hover:bg-slate-800 rounded-xl border border-slate-700 hover:border-slate-500 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.97] cursor-pointer flex items-center gap-1.5"
             >
-              Back to Workspace
+              ← Workspace
             </button>
           )}
-          <button
-            onClick={handlePrint}
-            id="print-proposal-btn"
-            className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg border border-slate-250 shadow-xs flex items-center gap-2 transition-colors cursor-pointer"
-          >
-            <Printer className="h-4 w-4" />
-            Print / Print Dialog
-          </button>
-          
+
+          {/* Primary Action: Download PDF Direct */}
           <button
             onClick={handleDownloadPDF}
             disabled={isGenerating}
             id="download-pdf-btn"
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-xs font-bold rounded-lg shadow-sm flex items-center gap-2 transition-all cursor-pointer"
+            className="h-9 px-4 bg-gradient-to-r from-[#C5A059] via-[#D4AF37] to-amber-500 hover:brightness-110 disabled:opacity-60 text-slate-950 text-xs font-bold rounded-xl shadow-md hover:shadow-xl border border-amber-300 flex items-center gap-2 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.97] cursor-pointer"
           >
             {isGenerating ? (
               <>
-                <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                <span>Generating...</span>
+                <span className="w-3.5 h-3.5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin"></span>
+                <span>Compiling...</span>
               </>
             ) : (
               <>
-                <Download className="h-4 w-4" />
-                Download PDF Direct
+                <Download className="h-4 w-4 text-slate-950 stroke-[2.5]" />
+                <span>Download PDF</span>
               </>
             )}
           </button>
 
+          {/* Secondary Action 1: Word Export */}
           <button
             onClick={handleDownloadDocx}
             disabled={isGeneratingDocx}
             id="download-docx-btn"
-            className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 disabled:bg-emerald-400 text-white text-xs font-bold rounded-lg shadow-sm flex items-center gap-2 transition-all cursor-pointer"
+            className="h-9 px-3.5 bg-[#111C35] hover:bg-[#1E293B] text-emerald-300 border border-emerald-500/40 hover:border-emerald-500/80 text-xs font-semibold rounded-xl shadow-xs hover:shadow-md flex items-center gap-2 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.97] cursor-pointer disabled:opacity-60"
           >
             {isGeneratingDocx ? (
               <>
-                <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                <span>Generating DOCX...</span>
+                <span className="w-3.5 h-3.5 border-2 border-emerald-300 border-t-transparent rounded-full animate-spin"></span>
+                <span>Exporting...</span>
               </>
             ) : (
               <>
-                <FileText className="h-4 w-4" />
-                Download Word (.docx)
+                <FileText className="h-4 w-4 text-emerald-400" />
+                <span>Word (.docx)</span>
               </>
             )}
           </button>
+
+          {/* Secondary Action 2: Print */}
+          <button
+            onClick={handlePrint}
+            id="print-proposal-btn"
+            className="h-9 px-3.5 bg-[#111C35] hover:bg-[#1E293B] text-slate-200 border border-slate-700 hover:border-slate-500 text-xs font-semibold rounded-xl shadow-xs hover:shadow-md flex items-center gap-2 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.97] cursor-pointer"
+          >
+            <Printer className="h-4 w-4 text-slate-400" />
+            <span>Print</span>
+          </button>
+
+          {/* Secondary Action 3: Approve (When Eligible) */}
+          {currentUser?.role === UserRole.ADMIN && proposal.status !== ProposalStatus.COMPLETED && (
+            <button
+              onClick={handleAdminApprove}
+              className="h-9 px-3.5 bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/40 hover:border-emerald-500 text-xs font-bold rounded-xl shadow-xs hover:shadow-md flex items-center gap-1.5 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.97] cursor-pointer"
+            >
+              <Check className="h-4 w-4" />
+              <span>Approve</span>
+            </button>
+          )}
+
+          {/* Action Menu: More Options Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setIsMoreMenuOpen(!isMoreMenuOpen)}
+              className="h-9 px-3 bg-[#111C35] hover:bg-[#1E293B] text-slate-300 border border-slate-700 hover:border-slate-500 text-xs font-semibold rounded-xl shadow-xs hover:shadow-md flex items-center gap-1.5 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.97] cursor-pointer"
+            >
+              <MoreVertical className="h-4 w-4 text-slate-400" />
+              <span>More</span>
+              <ChevronDown className={`h-3.5 w-3.5 text-slate-400 transition-transform ${isMoreMenuOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {isMoreMenuOpen && (
+              <div 
+                className="absolute right-0 mt-2 w-56 bg-[#0F172A] border border-slate-800 rounded-xl shadow-2xl z-50 py-1.5 text-xs text-slate-200 divide-y divide-slate-800 animate-in fade-in zoom-in-95 duration-100"
+                onClick={() => setIsMoreMenuOpen(false)}
+              >
+                <div className="py-1">
+                  <button
+                    onClick={async () => {
+                      try {
+                        await triggerAutomatedFollowUp(proposal.id);
+                        alert(`Follow-up notification sent for ${proposal.clientName}`);
+                      } catch (e: any) {
+                        alert(`Error sending alert: ${e.message}`);
+                      }
+                    }}
+                    className="w-full text-left px-3.5 py-2 hover:bg-slate-800/80 hover:text-amber-300 flex items-center gap-2 transition-colors cursor-pointer"
+                  >
+                    <Mail className="h-3.5 w-3.5 text-amber-400" />
+                    <span>Send Follow-Up Alert</span>
+                  </button>
+
+                  <button
+                    onClick={() => setActiveTab('history')}
+                    className="w-full text-left px-3.5 py-2 hover:bg-slate-800/80 hover:text-white flex items-center gap-2 transition-colors cursor-pointer"
+                  >
+                    <History className="h-3.5 w-3.5 text-sky-400" />
+                    <span>Revision History ({proposal.history?.length || 0})</span>
+                  </button>
+
+                  <button
+                    onClick={() => setActiveTab('payment')}
+                    className="w-full text-left px-3.5 py-2 hover:bg-slate-800/80 hover:text-white flex items-center gap-2 transition-colors cursor-pointer"
+                  >
+                    <Landmark className="h-3.5 w-3.5 text-emerald-400" />
+                    <span>Payment Tracker</span>
+                  </button>
+                </div>
+
+                {currentUser?.role === UserRole.ADMIN && (
+                  <div className="py-1">
+                    <button
+                      onClick={() => {
+                        const el = document.getElementById('admin-action-center-panel');
+                        if (el) el.scrollIntoView({ behavior: 'smooth' });
+                      }}
+                      className="w-full text-left px-3.5 py-2 hover:bg-slate-800/80 hover:text-amber-300 flex items-center gap-2 transition-colors cursor-pointer"
+                    >
+                      <Shield className="h-3.5 w-3.5 text-amber-400" />
+                      <span>Admin Settings & Sharing</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
         </div>
       </div>
 
@@ -1004,46 +1100,46 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
       )}
 
       {/* TABS SELECTION BAR - Hidden when printing */}
-      <div className="no-print flex border-b border-slate-200 my-1 gap-2">
+      <div className="no-print flex border-b border-slate-200/80 dark:border-slate-800 my-2 gap-1 bg-slate-100/60 dark:bg-[#0B1120] p-1.5 rounded-xl">
         <button
           onClick={() => setActiveTab('document')}
-          className={`px-5 py-2.5 text-xs font-bold tracking-wide uppercase border-b-2 transition-all cursor-pointer flex items-center gap-2 ${
+          className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
             activeTab === 'document'
-              ? 'border-blue-600 text-blue-600 font-extrabold'
-              : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-200'
+              ? 'bg-white dark:bg-[#1E293B] text-slate-900 dark:text-white shadow-xs'
+              : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
           }`}
         >
-          <FileText className="h-4 w-4" />
-          Document Draft
+          <FileText className="h-4 w-4 text-blue-500" />
+          <span>Document Draft</span>
         </button>
         <button
           onClick={() => setActiveTab('history')}
-          className={`px-5 py-2.5 text-xs font-bold tracking-wide uppercase border-b-2 transition-all cursor-pointer flex items-center gap-2 ${
+          className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
             activeTab === 'history'
-              ? 'border-blue-600 text-blue-600 font-extrabold'
-              : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-200'
+              ? 'bg-white dark:bg-[#1E293B] text-slate-900 dark:text-white shadow-xs'
+              : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
           }`}
         >
-          <History className="h-4 w-4" />
-          Revision History
+          <History className="h-4 w-4 text-amber-500" />
+          <span>Revision History</span>
           {proposal.history && proposal.history.length > 0 && (
-            <span className="bg-blue-100 text-blue-700 font-extrabold px-2 py-0.5 rounded-full text-[10px] shrink-0">
+            <span className="bg-amber-500/15 text-amber-700 dark:text-amber-300 font-extrabold px-2 py-0.5 rounded-full text-[10px] shrink-0">
               {proposal.history.length}
             </span>
           )}
         </button>
         <button
           onClick={() => setActiveTab('payment')}
-          className={`px-5 py-2.5 text-xs font-bold tracking-wide uppercase border-b-2 transition-all cursor-pointer flex items-center gap-2 ${
+          className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
             activeTab === 'payment'
-              ? 'border-blue-600 text-blue-600 font-extrabold'
-              : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-200'
+              ? 'bg-white dark:bg-[#1E293B] text-slate-900 dark:text-white shadow-xs'
+              : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
           }`}
         >
-          <Landmark className="h-4 w-4" />
-          Payment Tracker
+          <Landmark className="h-4 w-4 text-emerald-500" />
+          <span>Payment Tracker</span>
           {proposal.paymentEntries && proposal.paymentEntries.length > 0 && (
-            <span className="bg-emerald-100 text-emerald-800 font-extrabold px-2 py-0.5 rounded-full text-[10px] shrink-0">
+            <span className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 font-extrabold px-2 py-0.5 rounded-full text-[10px] shrink-0">
               {proposal.paymentEntries.length}
             </span>
           )}
