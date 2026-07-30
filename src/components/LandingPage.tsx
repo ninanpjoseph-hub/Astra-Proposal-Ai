@@ -217,14 +217,14 @@ export default function LandingPage({ onLogin, theme = 'luxury-dark' }: LandingP
 
                 <div>
                   <label className="block text-[10.5px] uppercase font-mono tracking-widest font-extrabold text-slate-350 mb-1.5">
-                    Username / Email Address
+                    Email ID
                   </label>
                   <div className="relative font-sans">
                     <Mail className={`absolute left-3.5 top-3.5 h-4 w-4 ${isLuxury ? 'text-[#C5A059]/80' : 'text-slate-400'}`} />
                     <input 
                       type="email"
                       required
-                      placeholder="e.g. ninanpjoseph@gmail.com"
+                      placeholder="Email ID"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       className={`w-full pl-11 pr-4 py-3 rounded-xl font-sans text-xs dark-login-input transition-all duration-200 outline-none ${
@@ -240,7 +240,7 @@ export default function LandingPage({ onLogin, theme = 'luxury-dark' }: LandingP
                 <div>
                   <div className="flex justify-between items-center mb-1.5">
                     <label className="block text-[10.5px] uppercase font-mono tracking-widest font-extrabold text-slate-350">
-                      Access Password
+                      Password
                     </label>
                     <span className="text-[10px] font-sans font-medium text-slate-500">
                       Standard validation active
@@ -252,7 +252,7 @@ export default function LandingPage({ onLogin, theme = 'luxury-dark' }: LandingP
                     <input 
                       type={showPassword ? "text" : "password"}
                       required
-                      placeholder="••••••••"
+                      placeholder="Password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       className={`w-full pl-11 pr-11 py-3 rounded-xl font-sans text-xs dark-login-input transition-all duration-200 outline-none ${

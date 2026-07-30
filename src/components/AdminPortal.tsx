@@ -2534,13 +2534,13 @@ export default function AdminPortal({
                   )}
 
                   <div className="flex flex-col gap-1">
-                    <label className="text-[10px] font-bold text-slate-500 font-mono uppercase">User Handle Email</label>
+                    <label className="text-[10px] font-bold text-slate-500 font-mono uppercase">Email ID</label>
                     <input
                       type="text"
                       value={loginEmail}
                       onChange={(e) => setLoginEmail(e.target.value)}
                       required
-                      placeholder="e.g. ninanpjoseph@gmail.com"
+                      placeholder="Email ID"
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs leading-normal bg-white"
                       id="input_modal_email"
                     />
@@ -2548,7 +2548,7 @@ export default function AdminPortal({
 
                   <div className="flex flex-col gap-1">
                     <div className="flex justify-between items-center">
-                      <label className="text-[10px] font-bold text-slate-500 font-mono uppercase">Authentication Key</label>
+                      <label className="text-[10px] font-bold text-slate-500 font-mono uppercase">Password</label>
                       <span className="text-[9px] text-slate-400 italic">Pre-filled bypass enabled</span>
                     </div>
                     <input
@@ -2557,7 +2557,7 @@ export default function AdminPortal({
                       onChange={(e) => setLoginPassword(e.target.value)}
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs leading-normal bg-slate-100/50 cursor-not-allowed"
                       readOnly
-                      placeholder="••••••••••••"
+                      placeholder="Password"
                       id="input_modal_password"
                     />
                   </div>
