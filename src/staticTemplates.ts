@@ -140,36 +140,47 @@ export const WEBSITE_TEMPLATES: Record<string, StaticPage> = {
   }
 };
 
-export const DEFAULT_SCOPE_TEMPLATES: Record<'static' | 'dynamic' | 'ecommerce', { title: string; description: string; isSelected: boolean }[]> = {
+export const DEFAULT_SCOPE_TEMPLATES: Record<'static' | 'dynamic' | 'ecommerce', { title: string; description: string; isSelected: boolean; isCustom?: boolean }[]> = {
   static: [
-    { title: "Number of pages", description: "Design and content layout for standard pages (Home, About, Services, Contact, etc.).", isSelected: true },
-    { title: "Basic UI/UX design", description: "User interface and experience design phase ensuring clean aesthetics and consistent font pairings.", isSelected: true },
-    { title: "Responsive design", description: "Seamless mobile, tablet, and desktop layout compatibility testing and viewport optimizations.", isSelected: true },
-    { title: "Contact form integration", description: "Interactive contact forms to capture user inquiries and route to email seamlessly.", isSelected: true },
-    { title: "Basic SEO setup", description: "Meta titles, descriptions, open graph social sharing cards, and foundational indexing parameters.", isSelected: true },
-    { title: "Hosting deployment support", description: "Staging deployment, main domain DNS settings, and SSL security certificate installation.", isSelected: true }
+    { title: "Homepage layout & design", description: "Homepage layout and visual design structure.", isSelected: true },
+    { title: "Standard page templates (About, Services, Contact)", description: "Standard page layout templates including About Us, Services, Contact, etc.", isSelected: true },
+    { title: "Navigation & information architecture", description: "Header navigation menus, footer layouts, and site information architecture.", isSelected: true },
+    { title: "Contact form (email/leads collection)", description: "Interactive contact forms to capture user inquiries and route leads via email.", isSelected: true },
+    { title: "Google Analytics setup", description: "Basic Google Analytics property setup and visitor tracking parameters.", isSelected: true }
   ],
   dynamic: [
-    { title: "Admin panel / CMS integration", description: "Secure backoffice administrative dashboards for painless and dynamic page content updates.", isSelected: true },
-    { title: "Database-driven content structure", description: "Structured database models for post categories, news listings, or other relational data records.", isSelected: true },
-    { title: "User management", description: "Restricted profile areas, registration, and role-based login protocols if needed.", isSelected: true },
-    { title: "Dynamic page templates", description: "Reusable dynamic layout blocks fetching database items (e.g. single blog posts, dynamic projects).", isSelected: true },
-    { title: "API integrations", description: "Connecting external web services, RSS feeds, or application helper APIs to synchronize content.", isSelected: true },
-    { title: "Advanced SEO configuration", description: "Automatic dynamic XML sitemaps, structured local schema metadata markups, and search console registration.", isSelected: true }
+    { title: "Homepage with dynamic content blocks", description: "Dynamic homepage featuring interactive modules, hero blocks, and live content feeds.", isSelected: true },
+    { title: "Blog/News section with post management", description: "Full blog or news management system for publishing, categorizing, and managing articles.", isSelected: true },
+    { title: "User authentication (login/signup)", description: "Secure user registration, authentication, login, and password recovery protocols.", isSelected: true },
+    { title: "Admin dashboard for content management", description: "Backoffice administrative panel for managing dynamic page content, posts, and media.", isSelected: true },
+    { title: "Search functionality", description: "Site-wide instant search capability across dynamic content and blog articles.", isSelected: true },
+    { title: "Comment system (if blog)", description: "Interactive user comment and discussion thread system on blog posts.", isSelected: true },
+    { title: "User profile management", description: "User account management, profile settings, and preference controls.", isSelected: true },
+    { title: "CMS (WordPress/Strapi/Custom PHP)", description: "Content Management System implementation and custom backend connection.", isSelected: true },
+    { title: "Email notification system", description: "Automated transactional and operational email notification workflows.", isSelected: true },
+    { title: "Google Analytics with event tracking", description: "Google Analytics setup with custom conversion event tracking and goals.", isSelected: true },
+    { title: "User behavior dashboard", description: "User activity, pageview engagement, and behavior analytics dashboard.", isSelected: true },
+    { title: "Custom database schema & data models", description: "Custom database schema design, entity relationships, and relational data modeling.", isSelected: true, isCustom: true }
   ],
   ecommerce: [
-    { title: "Omnichannel E-Commerce Web Storefront", description: "Fully responsive, optimized React.js/Next.js store featuring product catalogs, advanced categories/subcategories, filtering, search, sorting, zoomable media galleries, and verified reviews.", isSelected: true },
-    { title: "Bilingual iOS & Android Customer Mobile Applications", description: "Bilingual (English & Arabic) native mobile apps with secure profile management, address books, saved card tokens, wishlists, order histories, and push notifications.", isSelected: true },
-    { title: "Real-Time Driver Delivery Tracking App", description: "Interactive map-driven mobile application for delivery agents offering instant routing directions, status tags, and automated nearest-driver assignment logic.", isSelected: true },
-    { title: "Centralized Admin Management Portal", description: "A command center dashboard displaying sales analytics, revenue reports, branch performances, product catalog uploads, and secure refund/cancellation controls.", isSelected: true },
-    { title: "Dynamic Multi-Branch Inventory Control", description: "Automated routing that geolocates buyers, runs stock-checks at nearest fulfillment centers, and routes order tracking branch-wise to optimize delivery speed.", isSelected: true },
-    { title: "Targeted Promotions & Promo Code Engine", description: "Promo code management module supporting fixed discounts, percentages, first-order incentives, category-based triggers, and segmented customer campaign rules.", isSelected: true },
-    { title: "Odoo ERP API Integration Gateway", description: "API-based bidirectional integration between E-Commerce engines and Client's existing Odoo ERP environment for customer profiles, stock, and orders synchronization.", isSelected: true },
-    { title: "Integrated Payment Processor & COD", description: "Secure integration of approved credit/debit card payment gateways and optional Cash on Delivery (COD) workflows with checkout validations.", isSelected: true },
-    { title: "Enterprise-Grade Security & Audit Suite", description: "Implementation of secure protocol architectures (SSL, JWT auth tokens, granular RBAC permissions, client data protection policies, and immutable system audit logs).", isSelected: true },
-    { title: "High-Availability Database & Cloud Hosting", description: "Staging and production deployment of Node.js backend pipelines and PostgreSQL/MySQL databases on high-uptime hosting systems with auto-backups.", isSelected: true },
-    { title: "User Guides & Technical Documentation", description: "Publication of operator user onboarding guides, developer system maps, data dictionaries, API path descriptions, and administrator training instructions.", isSelected: true },
-    { title: "Corporate Staff Training & Maintenance Support", description: "Live interactive training workshops for administrators and branch agents, plus initial post-launch AMC support covering fixes and optimization monitoring.", isSelected: true }
+    { title: "Product catalog pages with filtering", description: "Product catalog pages with multi-attribute filtering, category browsing, and sorting.", isSelected: true },
+    { title: "Shopping cart system", description: "Interactive shopping cart system with real-time price, discount, and tax calculations.", isSelected: true },
+    { title: "Checkout flow (multi-step)", description: "Streamlined multi-step checkout flow with shipping address validation and payment selection.", isSelected: true },
+    { title: "Order management system", description: "Complete order processing, status tracking, and customer order history workflow.", isSelected: true },
+    { title: "Admin dashboard (inventory, orders, customers)", description: "Centralized e-commerce command portal for managing inventory, orders, products, and customer data.", isSelected: true },
+    { title: "Product search & advanced filtering", description: "Instant product search with advanced facet filtering by price, category, and specifications.", isSelected: true },
+    { title: "Wishlist/favorites functionality", description: "Customer wishlist and saved product favorites functionality.", isSelected: true },
+    { title: "Customer reviews & ratings", description: "Product review submission, star ratings, and verified buyer badge display.", isSelected: true },
+    { title: "Discount/coupon system", description: "Promo code management module supporting percentage, fixed discounts, and coupon rules.", isSelected: true },
+    { title: "Email order confirmations", description: "Automated order confirmation, invoice summary, and shipping notification emails.", isSelected: true },
+    { title: "Payment gateway (Stripe/PayPal/2Checkout)", description: "Secure payment gateway integration for credit/debit card and online checkout.", isSelected: true },
+    { title: "Email marketing system (abandoned cart)", description: "Email marketing integration with automated abandoned cart recovery campaigns.", isSelected: true },
+    { title: "Inventory/POS synchronization", description: "Real-time inventory and point-of-sale system synchronization.", isSelected: true },
+    { title: "Sales dashboard & reporting", description: "Comprehensive sales analytics, revenue reports, and performance metrics.", isSelected: true },
+    { title: "Customer behavior tracking", description: "Customer funnel tracking, cart analytics, and drop-off behavior analysis.", isSelected: true },
+    { title: "Conversion rate optimization metrics", description: "Conversion tracking, funnel metrics, and optimization KPIs.", isSelected: true },
+    { title: "Product database schema", description: "Complex product catalog schema, variants, inventory models, and attribute mapping.", isSelected: true, isCustom: true },
+    { title: "Security compliance (PCI-DSS, SSL encryption)", description: "PCI-DSS compliance standards, SSL encryption, and secure transactional protocols.", isSelected: true, isCustom: true }
   ]
 };
 

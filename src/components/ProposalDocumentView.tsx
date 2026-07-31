@@ -826,43 +826,33 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
       list.push({ id: "scope_setup", title: "Deliverable Parameters & Stack", pageNumStr: String(currentNum).padStart(2, '0') });
       currentNum++;
 
-      // Website has Sprints pages combined logically on the same pages
+      // Progressive Scope Blueprint dedicated page(s)
       const activeItems = (proposal.websiteScope.scopeItems && proposal.websiteScope.scopeItems.filter(item => item.isSelected).length > 0)
         ? proposal.websiteScope.scopeItems.filter(item => item.isSelected)
-        : DEFAULT_SCOPE_TEMPLATES[proposal.websiteScope.websiteType || 'static'].map(item => ({ ...item, id: Math.random().toString() }));
-      const scopePages = groupScopeIntoPages(activeItems, 3);
+        : DEFAULT_SCOPE_TEMPLATES[proposal.websiteScope.websiteType || 'static'].map(item => ({ ...item, id: Math.random().toString(), isSelected: true }));
       
-      const group1 = scopePages.slice(0, 2);
-      if (group1.length > 0) {
-        const titles = group1.map(g => {
-          let label = g.categoryTitle;
-          if (g.subPageLabel) {
-            label += ` (${g.subPageLabel.toUpperCase()})`;
-          }
-          return label.replace(" & Functionality", "").replace(" Structure", "");
-        }).join(" & ");
-        list.push({ id: "scope_combined_1", title: `Scope Sprints: ${titles}`, pageNumStr: String(currentNum).padStart(2, '0') });
+      const scopePages = groupScopeIntoPages(activeItems, 4);
+
+      if (scopePages.length <= 2) {
+        list.push({ id: "scope_progressive_1", title: "Progressive Scope Blueprint", pageNumStr: String(currentNum).padStart(2, '0') });
         currentNum++;
+        if (scopePages.length === 2) {
+          list.push({ id: "scope_progressive_2", title: "Progressive Scope Blueprint (Part 2)", pageNumStr: String(currentNum).padStart(2, '0') });
+          currentNum++;
+        }
+      } else {
+        list.push({ id: "scope_progressive_1", title: "Progressive Scope Blueprint (Core & Features)", pageNumStr: String(currentNum).padStart(2, '0') });
+        currentNum++;
+        list.push({ id: "scope_progressive_2", title: "Progressive Scope Blueprint (Integrations & Analytics)", pageNumStr: String(currentNum).padStart(2, '0') });
+        currentNum++;
+        if (scopePages.length > 3) {
+          list.push({ id: "scope_progressive_3", title: "Progressive Scope Blueprint (Custom & Operations)", pageNumStr: String(currentNum).padStart(2, '0') });
+          currentNum++;
+        }
       }
 
-      const group2 = scopePages.slice(2, 5);
-      if (group2.length > 0) {
-        const titles = group2.map(g => {
-          let label = g.categoryTitle;
-          if (g.subPageLabel) {
-            label += ` (${g.subPageLabel.toUpperCase()})`;
-          }
-          return label.replace(" & Functionality", "").replace(" Structure", "").replace(" & APIs", "");
-        }).join(", ");
-        list.push({ id: "scope_combined_2", title: `Scope Sprints: ${titles}`, pageNumStr: String(currentNum).padStart(2, '0') });
-        currentNum++;
-      }
-
-      const group3 = scopePages.slice(5);
-      if (group3.length > 0) {
-        list.push({ id: "scope_combined_3", title: "Going Live & Deployment", pageNumStr: String(currentNum).padStart(2, '0') });
-        currentNum++;
-      }
+      list.push({ id: "scope_going_live", title: "Deployment & Launch Blueprint", pageNumStr: String(currentNum).padStart(2, '0') });
+      currentNum++;
 
       // Website has Sitemap Page
       list.push({ id: "scope_sitemap", title: "Interactive Sitemap Blueprint", pageNumStr: String(currentNum).padStart(2, '0') });
@@ -2864,271 +2854,131 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
               <ProposalPageFooter proposal={proposal} pageNumber={getPageNumberById("scope_setup")} />
             </div>
 
-            {/* 2. Custom Scope Sprint Pages (Combined statically into 3 structured high-density pages to avoid truncation) */}
+            {/* 2. Dynamic Progressive Scope Blueprint Pages */}
             {(() => {
-              const pNumber1 = getPageNumberById("scope_combined_1");
-              const pNumber2 = getPageNumberById("scope_combined_2");
-              const pNumber3 = getPageNumberById("scope_combined_3");
+              const activeItems = (proposal.websiteScope.scopeItems && proposal.websiteScope.scopeItems.filter(item => item.isSelected).length > 0)
+                ? proposal.websiteScope.scopeItems.filter(item => item.isSelected)
+                : DEFAULT_SCOPE_TEMPLATES[proposal.websiteScope.websiteType || 'static'].map(item => ({ ...item, id: Math.random().toString(), isSelected: true }));
+              
+              const scopePages = groupScopeIntoPages(activeItems, 4);
 
-              return (
-                <>
-                  {/* Page 7: Scope Page 1 */}
-                  <div id={`page-${pNumber1}-scope-combined-1`} className="proposal-page relative flex flex-col justify-between overflow-hidden" style={{ boxSizing: 'border-box' }}>
+              const webTypeLabel = proposal.websiteScope.websiteType === 'ecommerce' 
+                ? 'Omnichannel E-Commerce Scope Blueprint' 
+                : proposal.websiteScope.websiteType === 'dynamic' 
+                ? 'Dynamic CMS Scope Blueprint' 
+                : 'Static Website Scope Blueprint';
+
+              const webTypeDesc = proposal.websiteScope.websiteType === 'ecommerce'
+                ? 'Comprehensive catalog, transaction, fulfillment, and operational integration specifications.'
+                : proposal.websiteScope.websiteType === 'dynamic'
+                ? 'Content management, database schema, search, and dynamic publishing features.'
+                : 'Core page architecture, layout templates, lead forms, and analytics setup.';
+
+              // Map scopePages logically into page groups (e.g., 2 scope categories per physical page)
+              const renderedPages: React.ReactNode[] = [];
+
+              const pageGroups: typeof scopePages[] = [];
+              for (let i = 0; i < scopePages.length; i += 2) {
+                pageGroups.push(scopePages.slice(i, i + 2));
+              }
+
+              pageGroups.forEach((group, pageIdx) => {
+                const pageId = pageIdx === 0 ? "scope_progressive_1" : pageIdx === 1 ? "scope_progressive_2" : "scope_progressive_3";
+                const pNum = getPageNumberById(pageId);
+                if (!pNum) return;
+
+                renderedPages.push(
+                  <div key={pageId} id={`page-${pNum}-${pageId}`} className="proposal-page relative flex flex-col justify-between overflow-hidden" style={{ boxSizing: 'border-box' }}>
                     <ProposalWatermark proposal={proposal} />
                     <ProposalCustomLetterheadBackground proposal={proposal} />
-                    <ProposalPageHeader proposal={proposal} pageNumber={pNumber1} />
+                    <ProposalPageHeader proposal={proposal} pageNumber={pNum} />
 
                     <div className="my-auto w-full relative z-10 py-1" style={{ padding: '0 24px', boxSizing: 'border-box' }}>
                       <div className="max-w-2xl mx-auto" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                         
                         <div style={{ textAlign: 'center', borderBottom: '1px solid #e0ddd5', paddingBottom: '8px', marginBottom: '8px' }}>
                           <span style={{ display: 'block', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#B8962E', fontWeight: 'bold' }}>
-                            DELIVERABLE TRACK
+                            PROGRESSIVE SCOPE BLUEPRINT {pageGroups.length > 1 ? `(PART ${pageIdx + 1})` : ''}
                           </span>
                           <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#1a2744', marginTop: '2px', fontFamily: 'serif' }}>
-                            Foundational Architecture & Interface Framework
+                            {webTypeLabel}
                           </h2>
+                          <p style={{ fontSize: '11px', color: '#4b5563', margin: '2px 0 0 0' }}>
+                            {webTypeDesc}
+                          </p>
                         </div>
 
-                        {/* SECTION 01 */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                          <div style={{ borderLeft: '3px solid #B8962E', paddingLeft: '10px', marginBottom: '4px', textAlign: 'left' }}>
-                            <span style={{ display: 'block', fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#B8962E', fontWeight: 'bold' }}>
-                              SECTION 01
-                            </span>
-                            <h3 style={{ fontSize: '13px', fontWeight: 'bold', color: '#1a2744', marginTop: '1px', fontFamily: 'serif' }}>
-                              Core Website Structure
-                            </h3>
-                          </div>
-
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                            <div style={{ backgroundColor: '#ffffff', border: '1px solid #e0ddd5', borderRadius: '8px', padding: '14px 16px', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
-                              <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#1a2744', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                <span style={{ color: '#B8962E', fontWeight: 'bold' }}>✓</span> Omnichannel E-Commerce Web Storefront
-                              </h4>
-                              <p style={{ fontSize: '11.5px', color: '#4b5563', lineHeight: '1.55', margin: '0' }}>
-                                Fully responsive, optimised React.js/Next.js store featuring product catalogs, advanced search, multi-branch inventory visibility, and seamless checkout funnels integrated with Odoo ERP.
-                              </p>
+                        {group.map((sPage) => (
+                          <div key={sPage.id} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            <div style={{ borderLeft: '3px solid #B8962E', paddingLeft: '10px', marginBottom: '4px', textAlign: 'left' }}>
+                              <span style={{ display: 'block', fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#B8962E', fontWeight: 'bold' }}>
+                                CATEGORY
+                              </span>
+                              <h3 style={{ fontSize: '13px', fontWeight: 'bold', color: '#1a2744', marginTop: '1px', fontFamily: 'serif' }}>
+                                {sPage.categoryTitle} {sPage.subPageLabel ? `(${sPage.subPageLabel.toUpperCase()})` : ''}
+                              </h3>
                             </div>
 
-                            <div style={{ backgroundColor: '#ffffff', border: '1px solid #e0ddd5', borderRadius: '8px', padding: '14px 16px', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
-                              <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#1a2744', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                <span style={{ color: '#B8962E', fontWeight: 'bold' }}>✓</span> Bilingual iOS & Android Customer Mobile Application
-                              </h4>
-                              <p style={{ fontSize: '11.5px', color: '#4b5563', lineHeight: '1.55', margin: '0' }}>
-                                Bilingual (English & Arabic) native mobile apps with secure profile management, address books, saved card vaults, real-time order tracking, and push notification systems.
-                              </p>
+                            <div style={{ display: 'grid', gridTemplateColumns: sPage.items.length === 1 ? '1fr' : '1fr 1fr', gap: '10px' }}>
+                              {sPage.items.map((item, itemIdx) => (
+                                <div key={item.id || itemIdx} style={{ backgroundColor: '#ffffff', border: '1px solid #e0ddd5', borderRadius: '8px', padding: '12px 14px', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
+                                  <h4 style={{ fontSize: '12px', fontWeight: 'bold', color: '#1a2744', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <span style={{ color: '#B8962E', fontWeight: 'bold' }}>✓</span> {item.title}
+                                  </h4>
+                                  <p style={{ fontSize: '10.5px', color: '#4b5563', lineHeight: '1.45', margin: '0' }}>
+                                    {item.description}
+                                  </p>
+                                </div>
+                              ))}
                             </div>
                           </div>
-                        </div>
-
-                        {/* SECTION 02 */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                          <div style={{ borderLeft: '3px solid #B8962E', paddingLeft: '10px', marginBottom: '4px', textAlign: 'left' }}>
-                            <span style={{ display: 'block', fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#B8962E', fontWeight: 'bold' }}>
-                              SECTION 02
-                            </span>
-                            <h3 style={{ fontSize: '13px', fontWeight: 'bold', color: '#1a2744', marginTop: '1px', fontFamily: 'serif' }}>
-                              Features & Functionality (Part A)
-                            </h3>
-                          </div>
-
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                            <div style={{ backgroundColor: '#ffffff', border: '1px solid #e0ddd5', borderRadius: '8px', padding: '14px 16px', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
-                              <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#1a2744', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                <span style={{ color: '#B8962E', fontWeight: 'bold' }}>✓</span> Real-Time Driver Delivery Tracking Application
-                              </h4>
-                              <p style={{ fontSize: '11.5px', color: '#4b5563', lineHeight: '1.55', margin: '0' }}>
-                                Interactive map-driven mobile application for delivery agents offering instant routing directions, status tags, customer confirmations, and digital proof-of-delivery capture.
-                              </p>
-                            </div>
-
-                            <div style={{ backgroundColor: '#ffffff', border: '1px solid #e0ddd5', borderRadius: '8px', padding: '14px 16px', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
-                              <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#1a2744', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                <span style={{ color: '#B8962E', fontWeight: 'bold' }}>✓</span> Centralised Admin Management Portal
-                              </h4>
-                              <p style={{ fontSize: '11.5px', color: '#4b5563', lineHeight: '1.55', margin: '0' }}>
-                                A command centre dashboard displaying sales analytics, revenue reports, branch performances, product catalog controls, staff role permissions, and customer management tools.
-                              </p>
-                            </div>
-
-                            <div style={{ backgroundColor: '#ffffff', border: '1px solid #e0ddd5', borderRadius: '8px', padding: '14px 16px', display: 'flex', flexDirection: 'column', boxSizing: 'border-box', gridColumn: 'span 2' }}>
-                              <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#1a2744', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                <span style={{ color: '#B8962E', fontWeight: 'bold' }}>✓</span> Dynamic Multi-Branch Inventory Control
-                              </h4>
-                              <p style={{ fontSize: '11.5px', color: '#4b5563', lineHeight: '1.55', margin: '0' }}>
-                                Automated routing that geolocates buyers, runs stock checks at nearest fulfilment centres, and routes orders to the closest available branch for fastest delivery.
-                              </p>
-                            </div>
-                          </div>
-                        </div>
+                        ))}
 
                       </div>
                     </div>
 
-                    {/* Footer Footnote */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '9px', fontFamily: 'monospace', color: '#9ca3af', borderTop: '1px solid #e0ddd5', padding: '8px 24px 0 24px', marginTop: 'auto', width: '100%', boxSizing: 'border-box' }}>
-                      <span>* Fully authorised work package modules</span>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        Continued on Page 8 <ChevronRight style={{ width: '10px', height: '10px' }} />
-                      </span>
+                      <span>* Fully authorised work package modules ({activeItems.length} total deliverables)</span>
+                      <span>Progressive Scope Blueprint</span>
                     </div>
 
-                    <ProposalPageFooter proposal={proposal} pageNumber={pNumber1} />
+                    <ProposalPageFooter proposal={proposal} pageNumber={pNum} />
                   </div>
+                );
+              });
 
-                  {/* Page 8: Scope Page 2 */}
-                  <div id={`page-${pNumber2}-scope-combined-2`} className="proposal-page relative flex flex-col justify-between overflow-hidden" style={{ boxSizing: 'border-box' }}>
+              // Add the Going Live & Launch Blueprint Page
+              const livePNum = getPageNumberById("scope_going_live");
+              if (livePNum) {
+                renderedPages.push(
+                  <div key="scope_going_live" id={`page-${livePNum}-scope-going-live`} className="proposal-page relative flex flex-col justify-between overflow-hidden" style={{ boxSizing: 'border-box' }}>
                     <ProposalWatermark proposal={proposal} />
                     <ProposalCustomLetterheadBackground proposal={proposal} />
-                    <ProposalPageHeader proposal={proposal} pageNumber={pNumber2} />
-
-                    <div className="my-auto w-full relative z-10 py-1" style={{ padding: '0 24px', boxSizing: 'border-box' }}>
-                      <div className="max-w-2xl mx-auto" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                        
-                        <div style={{ textAlign: 'center', borderBottom: '1px solid #e0ddd5', paddingBottom: '8px', marginBottom: '8px' }}>
-                          <span style={{ display: 'block', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#B8962E', fontWeight: 'bold' }}>
-                            DELIVERABLE TRACK
-                          </span>
-                          <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#1a2744', marginTop: '2px', fontFamily: 'serif' }}>
-                            Advanced Systems, Service Gateways & Analytics
-                          </h2>
-                        </div>
-
-                        {/* SECTION 03 */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                          <div style={{ borderLeft: '3px solid #B8962E', paddingLeft: '10px', marginBottom: '4px', textAlign: 'left' }}>
-                            <span style={{ display: 'block', fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#B8962E', fontWeight: 'bold' }}>
-                              SECTION 03
-                            </span>
-                            <h3 style={{ fontSize: '13px', fontWeight: 'bold', color: '#1a2744', marginTop: '1px', fontFamily: 'serif' }}>
-                              Features & Functionality (Part B)
-                            </h3>
-                          </div>
-
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                            <div style={{ backgroundColor: '#ffffff', border: '1px solid #e0ddd5', borderRadius: '8px', padding: '14px 16px', display: 'flex', flexDirection: 'column', boxSizing: 'border-box', gridColumn: 'span 2' }}>
-                              <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#1a2744', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                <span style={{ color: '#B8962E', fontWeight: 'bold' }}>✓</span> Targeted Promotions & Promo Code Engine
-                              </h4>
-                              <p style={{ fontSize: '11.5px', color: '#4b5563', lineHeight: '1.55', margin: '0' }}>
-                                Promo code management module supporting fixed discounts, percentages, first-order incentives, category-specific offers, and time-bound flash sale activations.
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* SECTION 04 */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                          <div style={{ borderLeft: '3px solid #B8962E', paddingLeft: '10px', marginBottom: '4px', textAlign: 'left' }}>
-                            <span style={{ display: 'block', fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#B8962E', fontWeight: 'bold' }}>
-                              SECTION 04
-                            </span>
-                            <h3 style={{ fontSize: '13px', fontWeight: 'bold', color: '#1a2744', marginTop: '1px', fontFamily: 'serif' }}>
-                              Integrations & APIs
-                            </h3>
-                          </div>
-
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                            <div style={{ backgroundColor: '#ffffff', border: '1px solid #e0ddd5', borderRadius: '8px', padding: '14px 16px', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
-                              <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#1a2744', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                <span style={{ color: '#B8962E', fontWeight: 'bold' }}>✓</span> Odoo ERP API Integration Gateway
-                              </h4>
-                              <p style={{ fontSize: '11.5px', color: '#4b5563', lineHeight: '1.55', margin: '0' }}>
-                                API-based bidirectional integration between E-Commerce engines and the Client's existing Odoo ERP system, syncing product data, inventory levels, sales orders, and customer profiles in real time.
-                              </p>
-                            </div>
-
-                            <div style={{ backgroundColor: '#ffffff', border: '1px solid #e0ddd5', borderRadius: '8px', padding: '14px 16px', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
-                              <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#1a2744', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                <span style={{ color: '#B8962E', fontWeight: 'bold' }}>✓</span> Integrated Payment Processor & COD
-                              </h4>
-                              <p style={{ fontSize: '11.5px', color: '#4b5563', lineHeight: '1.55', margin: '0' }}>
-                                Secure integration of approved credit/debit card payment gateways and optional Cash on Delivery (COD) logic with automated order confirmation and receipt generation.
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* SECTION 05 */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                          <div style={{ borderLeft: '3px solid #B8962E', paddingLeft: '10px', marginBottom: '4px', textAlign: 'left' }}>
-                            <span style={{ display: 'block', fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#B8962E', fontWeight: 'bold' }}>
-                              SECTION 05
-                            </span>
-                            <h3 style={{ fontSize: '13px', fontWeight: 'bold', color: '#1a2744', marginTop: '1px', fontFamily: 'serif' }}>
-                              Analytics & Tracking
-                            </h3>
-                          </div>
-
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                            <div style={{ backgroundColor: '#ffffff', border: '1px solid #e0ddd5', borderRadius: '8px', padding: '14px 16px', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
-                              <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#1a2744', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                <span style={{ color: '#B8962E', fontWeight: 'bold' }}>✓</span> Enterprise-Grade Security & Audit Suite
-                              </h4>
-                              <p style={{ fontSize: '11.5px', color: '#4b5563', lineHeight: '1.55', margin: '0' }}>
-                                Implementation of secure protocol architectures (SSL, JWT auth tokens, granular RBAC permissions, client data encryption) and a compliance audit trail module.
-                              </p>
-                            </div>
-
-                            <div style={{ backgroundColor: '#ffffff', border: '1px solid #e0ddd5', borderRadius: '8px', padding: '14px 16px', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
-                              <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#1a2744', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                <span style={{ color: '#B8962E', fontWeight: 'bold' }}>✓</span> High-Availability Database & Cloud Hosting
-                              </h4>
-                              <p style={{ fontSize: '11.5px', color: '#4b5563', lineHeight: '1.55', margin: '0' }}>
-                                Staging and production deployment of Node.js backend pipelines and PostgreSQL/MySQL databases on high-availability AWS or equivalent cloud infrastructure.
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-
-                      </div>
-                    </div>
-
-                    {/* Footer Footnote */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '9px', fontFamily: 'monospace', color: '#9ca3af', borderTop: '1px solid #e0ddd5', padding: '8px 24px 0 24px', marginTop: 'auto', width: '100%', boxSizing: 'border-box' }}>
-                      <span>* Fully authorised work package modules</span>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        Continued on Page 9 <ChevronRight style={{ width: '10px', height: '10px' }} />
-                      </span>
-                    </div>
-
-                    <ProposalPageFooter proposal={proposal} pageNumber={pNumber2} />
-                  </div>
-
-                  {/* Page 9: Scope Page 3 - Going Live */}
-                  <div id={`page-${pNumber3}-scope-combined-3`} className="proposal-page relative flex flex-col justify-between overflow-hidden" style={{ boxSizing: 'border-box' }}>
-                    <ProposalWatermark proposal={proposal} />
-                    <ProposalCustomLetterheadBackground proposal={proposal} />
-                    <ProposalPageHeader proposal={proposal} pageNumber={pNumber3} />
+                    <ProposalPageHeader proposal={proposal} pageNumber={livePNum} />
 
                     <div className="my-auto w-full relative z-10 py-1" style={{ padding: '0 24px', boxSizing: 'border-box' }}>
                       <div className="max-w-2xl mx-auto" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                         
-                        {/* Header */}
                         <div style={{ textAlign: 'center', borderBottom: '1px solid #e0ddd5', paddingBottom: '6px', marginBottom: '2px' }}>
                           <span style={{ display: 'block', fontSize: '9px', letterSpacing: '0.15em', textTransform: 'uppercase', color: '#B8962E', fontWeight: 'bold' }}>
                             DEPLOYMENT & LAUNCH
                           </span>
                           <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#1a2744', marginTop: '1px', fontFamily: 'serif' }}>
-                            Going Live
+                            Deployment & Launch Blueprint
                           </h2>
                           <p style={{ fontSize: '11px', fontWeight: '600', color: '#4b5563', margin: '2px 0 0 0' }}>
-                            Deployment & Launch
+                            Quality assurance, cross-browser validation, and live server migration protocols
                           </p>
                         </div>
 
-                        {/* Intro paragraph */}
                         <div style={{ backgroundColor: '#fafaf8', border: '1px solid #e0ddd5', borderRadius: '8px', padding: '10px 14px' }}>
                           <p style={{ fontSize: '10.5px', color: '#374151', lineHeight: '1.5', margin: 0, textAlign: 'left' }}>
-                            The final phase of the website development process involves thorough testing, deployment, and the official launch of the website. Astra follows a structured approach to ensure the website performs seamlessly, maintains technical stability, and delivers an optimal user experience across platforms.
+                            The final phase of the website development process involves thorough testing, deployment, and official launch. We follow a structured approach to ensure optimal performance, technical stability, and a seamless user experience across platforms.
                           </p>
                         </div>
 
-                        {/* 2-Column Grid for Testing & QA and Website Launch */}
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', textAlign: 'left' }}>
                           
-                          {/* Testing & QA Card */}
                           <div style={{ backgroundColor: '#ffffff', border: '1px solid #e0ddd5', borderRadius: '8px', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                             <div style={{ borderLeft: '3px solid #B8962E', paddingLeft: '8px' }}>
                               <h3 style={{ fontSize: '12.5px', fontWeight: 'bold', color: '#1a2744', margin: 0, fontFamily: 'serif' }}>
@@ -3136,25 +2986,25 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
                               </h3>
                             </div>
                             <p style={{ fontSize: '10px', color: '#4b5563', lineHeight: '1.45', margin: 0 }}>
-                              Testing is a critical component of the final stages of the project. Astra will conduct comprehensive quality assurance checks to ensure the website meets the required standards for performance, functionality, compatibility, and accuracy.
+                              Comprehensive quality assurance checks ensuring the website meets performance, functionality, compatibility, and accuracy standards.
                             </p>
 
                             <div>
                               <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#1a2744', display: 'block', marginBottom: '4px' }}>
-                                The testing process will include:
+                                The testing process includes:
                               </span>
                               <ul style={{ margin: 0, paddingLeft: '14px', fontSize: '9.5px', color: '#4b5563', lineHeight: '1.45', listStyleType: 'disc' }}>
-                                <li>Browser compatibility testing across major platforms</li>
-                                <li>HTML and CSS validation</li>
-                                <li>Functional testing of all website features, forms, links, and interactive elements</li>
-                                <li>Performance and usability checks</li>
-                                <li>Verification of content accuracy and overall website behaviour</li>
+                                <li>Cross-browser compatibility testing</li>
+                                <li>HTML, CSS, and API endpoint validation</li>
+                                <li>Functional testing of features, forms, links, and gateways</li>
+                                <li>Performance, speed, and usability checks</li>
+                                <li>Verification of content accuracy and security protocols</li>
                               </ul>
                             </div>
 
                             <div style={{ paddingTop: '6px', borderTop: '1px dashed #e0ddd5' }}>
                               <span style={{ fontSize: '9.5px', fontWeight: 'bold', color: '#1a2744', display: 'block', marginBottom: '4px' }}>
-                                We optimize for major browsers:
+                                Optimization targets:
                               </span>
                               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px' }}>
                                 {['Google Chrome', 'Mozilla Firefox', 'Safari', 'Microsoft Edge'].map((browser, idx) => (
@@ -3166,26 +3016,25 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
                             </div>
                           </div>
 
-                          {/* Website Launch Card */}
                           <div style={{ backgroundColor: '#ffffff', border: '1px solid #e0ddd5', borderRadius: '8px', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                             <div style={{ borderLeft: '3px solid #1a2744', paddingLeft: '8px' }}>
                               <h3 style={{ fontSize: '12.5px', fontWeight: 'bold', color: '#1a2744', margin: 0, fontFamily: 'serif' }}>
-                                Website Launch
+                                Live Production Launch
                               </h3>
                             </div>
                             <p style={{ fontSize: '10px', color: '#4b5563', lineHeight: '1.45', margin: 0 }}>
-                              Once all testing and quality assurance procedures are successfully completed, the website will be migrated from the staging environment to the live production server.
+                              Once testing and QA procedures are successfully completed, the website will be migrated from the staging environment to the live production server.
                             </p>
 
                             <div>
                               <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#1a2744', display: 'block', marginBottom: '4px' }}>
-                                The launch process will include:
+                                The launch process includes:
                               </span>
                               <ul style={{ margin: 0, paddingLeft: '14px', fontSize: '9.5px', color: '#4b5563', lineHeight: '1.5', listStyleType: 'disc' }}>
-                                <li style={{ marginBottom: '3px' }}>Final approval and pre-launch checklist review</li>
-                                <li style={{ marginBottom: '3px' }}>Deployment of website files and database to the live server</li>
-                                <li style={{ marginBottom: '3px' }}>Configuration of required settings and integrations</li>
-                                <li>Final verification after going live</li>
+                                <li style={{ marginBottom: '3px' }}>Final client approval and pre-launch checklist review</li>
+                                <li style={{ marginBottom: '3px' }}>Deployment of code and database to live environment</li>
+                                <li style={{ marginBottom: '3px' }}>Configuration of SSL, domain routing, and integrations</li>
+                                <li>Post-launch monitoring and verification</li>
                               </ul>
                             </div>
                           </div>
@@ -3195,16 +3044,17 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
                       </div>
                     </div>
 
-                    {/* Footer Footnote */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '9px', fontFamily: 'monospace', color: '#9ca3af', borderTop: '1px solid #e0ddd5', padding: '8px 24px 0 24px', marginTop: 'auto', width: '100%', boxSizing: 'border-box' }}>
                       <span>* Fully authorised work package modules</span>
-                      <span>End of Scope Sprints list</span>
+                      <span>Deployment & Launch Blueprint</span>
                     </div>
 
-                    <ProposalPageFooter proposal={proposal} pageNumber={pNumber3} />
+                    <ProposalPageFooter proposal={proposal} pageNumber={livePNum} />
                   </div>
-                </>
-              );
+                );
+              }
+
+              return renderedPages;
             })()}
 
             {/* 3. Dedicated Visual Sitemap Blueprint Page */}

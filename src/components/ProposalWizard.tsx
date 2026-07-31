@@ -2687,7 +2687,7 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
                                   title: item.title,
                                   description: item.description,
                                   isSelected: item.isSelected,
-                                  isCustom: false
+                                  isCustom: !!item.isCustom
                                 }));
 
                             const catItems = allScopeItems.filter(i => getScopeCategory(i.title, i.isCustom) === cat);
@@ -2707,10 +2707,10 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
                                 }`}
                               >
                                 <span className="text-[9.5px] font-bold truncate tracking-tight block">
-                                  {catLabel}
+                                  {catLabel} ({selectedCount}/{totalCount})
                                 </span>
                                 <span className={`text-[8.5px] mt-1 font-mono font-bold block ${isActive ? 'text-blue-200' : 'text-slate-400'}`}>
-                                  {selectedCount} / {totalCount} select
+                                  {selectedCount} / {totalCount} selected
                                 </span>
                               </button>
                             );
@@ -2727,7 +2727,7 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
                                   title: item.title,
                                   description: item.description,
                                   isSelected: item.isSelected,
-                                  isCustom: false
+                                  isCustom: !!item.isCustom
                                 }));
 
                             const filteredItems = allScopeItems.filter(item => getScopeCategory(item.title, item.isCustom) === activeScopeTab);
@@ -2738,6 +2738,78 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
 
                             return (
                               <>
+                                {/* Manual Entry Column Input Bar */}
+                                <div className="p-3 bg-blue-50/50 border border-blue-150 rounded-xl space-y-2 mb-3">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-[10.5px] font-bold font-sans text-blue-900 uppercase tracking-wider flex items-center gap-1.5">
+                                      <Plus className="h-3.5 w-3.5 text-blue-600" />
+                                      Manual Entry Column ({
+                                        activeScopeTab === 'core' ? '1. Core Structure' :
+                                        activeScopeTab === 'features' ? '2. Features' :
+                                        activeScopeTab === 'integrations' ? '3. Integrations' :
+                                        activeScopeTab === 'analytics' ? '4. Analytics' : '5. Custom Info'
+                                      })
+                                    </span>
+                                    <span className="text-[9.5px] font-sans text-blue-600/70">
+                                      Add custom data directly to this section
+                                    </span>
+                                  </div>
+                                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
+                                    <div className="sm:col-span-5">
+                                      <input
+                                        type="text"
+                                        placeholder="Feature / Item Name (Manual Entry)"
+                                        value={customItemTitle}
+                                        onChange={(e) => setCustomItemTitle(e.target.value)}
+                                        className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold focus:ring-2 focus:ring-blue-200 focus:outline-hidden"
+                                      />
+                                    </div>
+                                    <div className="sm:col-span-5">
+                                      <input
+                                        type="text"
+                                        placeholder="Manual Data / Specification Details"
+                                        value={customItemDesc}
+                                        onChange={(e) => setCustomItemDesc(e.target.value)}
+                                        className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-normal focus:ring-2 focus:ring-blue-200 focus:outline-hidden"
+                                      />
+                                    </div>
+                                    <div className="sm:col-span-2">
+                                      <button
+                                        type="button"
+                                        disabled={!customItemTitle.trim()}
+                                        onClick={() => {
+                                          if (!customItemTitle.trim()) return;
+                                          const newItem = {
+                                            id: `scope_manual_${Date.now()}_${Math.random().toString(36).substring(2,5)}`,
+                                            title: customItemTitle.trim(),
+                                            description: customItemDesc.trim() || "Manual entry deliverable specification.",
+                                            isSelected: true,
+                                            isCustom: activeScopeTab === 'custom' || activeScopeTab !== 'core'
+                                          };
+                                          
+                                          setProposal(prev => ({
+                                            ...prev,
+                                            websiteScope: {
+                                              ...prev.websiteScope,
+                                              scopeItems: [...allScopeItems, newItem]
+                                            }
+                                          }));
+                                          setCustomItemTitle('');
+                                          setCustomItemDesc('');
+                                        }}
+                                        className={`w-full py-1.5 px-3 font-sans font-bold text-xs rounded-lg flex items-center justify-center gap-1 cursor-pointer transition-colors ${
+                                          customItemTitle.trim()
+                                            ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                                            : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                                        }`}
+                                      >
+                                        <Plus className="h-3.5 w-3.5" />
+                                        <span>Add</span>
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+
                                 {exceedsThreshold && (
                                   <div className="p-2.5 bg-blue-50/50 border border-blue-100 text-[10px] text-blue-800 rounded-xl leading-normal font-sans flex items-center gap-2 select-none">
                                     <Sparkles className="h-3.5 w-3.5 shrink-0 text-blue-600" />
@@ -2961,321 +3033,6 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
                         </div>
                       </div>
                     </div>
-                  </div>
-
-                  {/* Part C: Predefined Additional Modules & Custom Scope Builder */}
-                  <div className="border border-slate-200 rounded-2xl p-5 bg-white space-y-4">
-                    <div>
-                      <h4 className="font-sans font-bold text-slate-800 text-xs tracking-wider uppercase mb-1">
-                        3. Custom Scope Builder
-                      </h4>
-                      <p className="text-[11px] text-slate-400 leading-normal font-sans">
-                        Add completely new deliverables, or inject high-demand functional feature modules into the scope stack instantly.
-                      </p>
-                    </div>
-
-                    {/* Predefined Addables list */}
-                    <div className="space-y-2">
-                      <span className="text-[10px] font-bold font-sans text-slate-400 uppercase tracking-wider block">
-                        Quick Add Baseline Feature Modules
-                      </span>
-                      <div className="flex flex-wrap gap-2">
-                        {(() => {
-                          const currentScopeItems = (proposal.websiteScope.scopeItems && proposal.websiteScope.scopeItems.length > 0)
-                            ? proposal.websiteScope.scopeItems
-                            : DEFAULT_SCOPE_TEMPLATES[proposal.websiteScope.websiteType || 'static'].map((item, idx) => ({
-                                id: `scope_${proposal.websiteScope.websiteType || 'static'}_${idx}`,
-                                title: item.title,
-                                description: item.description,
-                                isSelected: item.isSelected,
-                                isCustom: false
-                              }));
-
-                          return [
-                            { 
-                              name: "Blog system", 
-                              title: "Blog & CMS Article Publication Hub", 
-                              desc: "Fully built-in articles section with categorized archives, keyword semantic post-tagging, dynamic readers comment loops, and search engine friendliness." 
-                            },
-                            { 
-                              name: "Multi-language support", 
-                              title: "Multilingual Language Routing & Translation", 
-                              desc: "Comprehensive dual-language subfolder routing containing a clean visual menu language switcher to accommodate diverse consumer profiles." 
-                            },
-                            { 
-                              name: "Third-party integrations", 
-                              title: "HubSpot CRM Sync & WhatsApp Live Support", 
-                              desc: "Dynamic live chat popups linking direct with localized client WhatsApp triggers, paired with secure custom webhooks updating lead CRMs automatically." 
-                            },
-                            { 
-                              name: "Analytics & tracking setup", 
-                              title: "Google Analytics 4 & Conversion Event Mapping", 
-                              desc: "Technical deployment of unified Google Tag Manager scripts configuring custom telemetry events tracking click funnels or key goal checkouts." 
-                            },
-                            { 
-                              name: "Custom API development", 
-                              title: "Custom Secured Backend Webhook & Service APIs", 
-                              desc: "Architecting dedicated serverless microservice APIs to query structured database records, execute webhooks, or query business software." 
-                            }
-                          ].map((mod) => {
-                            // Find if this module is already active in currentScopeItems
-                            const existingItem = currentScopeItems.find(i => i.title.toLowerCase() === mod.title.toLowerCase());
-                            const isActive = !!(existingItem && existingItem.isSelected);
-
-                            return (
-                              <button
-                                type="button"
-                                key={mod.name}
-                                onClick={() => {
-                                  let updated;
-                                  if (existingItem) {
-                                    // Toggle isSelected
-                                    updated = currentScopeItems.map(i => 
-                                      i.id === existingItem.id ? { ...i, isSelected: !i.isSelected } : i
-                                    );
-                                  } else {
-                                    // Add as new item
-                                    const newItem = {
-                                      id: `scope_custom_${Date.now()}_${Math.random().toString(36).substring(2,5)}`,
-                                      title: mod.title,
-                                      description: mod.desc,
-                                      isSelected: true,
-                                      isCustom: true
-                                    };
-                                    updated = [...currentScopeItems, newItem];
-                                  }
-
-                                  setProposal(prev => ({
-                                    ...prev,
-                                    websiteScope: {
-                                      ...prev.websiteScope,
-                                      scopeItems: updated
-                                    }
-                                  }));
-                                }}
-                                className={`rounded-full px-3 py-1 font-sans font-semibold text-[10.5px] transition-all cursor-pointer inline-flex items-center gap-1 shrink-0 border ${
-                                  isActive 
-                                    ? 'bg-blue-600 border-blue-600 text-white shadow-xs' 
-                                    : 'bg-slate-50 border-slate-200 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 text-slate-600'
-                                }`}
-                              >
-                                {isActive ? <Check className="h-2.5 w-2.5 animate-pulse" /> : <Plus className="h-2.5 w-2.5" />}
-                                <span>{mod.name}</span>
-                              </button>
-                            );
-                          });
-                        })()}
-                      </div>
-                    </div>
-
-                    {/* Custom Form entry */}
-                    <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl space-y-3">
-                      <span className="text-[10.5px] font-bold text-slate-700 block uppercase font-mono tracking-wider">Define Customized Deliverable</span>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <input
-                          type="text"
-                          placeholder="Deliverable Title (e.g. Video Showcase Board)"
-                          value={customItemTitle}
-                          onChange={(e) => setCustomItemTitle(e.target.value)}
-                          className="w-full px-3.5 py-2 border border-slate-250 bg-white rounded-lg text-xs font-sans"
-                        />
-                        <input
-                          type="text"
-                          placeholder="Description explaining scope boundary details..."
-                          value={customItemDesc}
-                          onChange={(e) => setCustomItemDesc(e.target.value)}
-                          className="w-full px-3.5 py-2 border border-slate-250 bg-white rounded-lg text-xs font-sans"
-                        />
-                      </div>
-                      <div className="flex justify-end">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (!customItemTitle.trim()) return;
-                            const currentScopeItems = (proposal.websiteScope.scopeItems && proposal.websiteScope.scopeItems.length > 0)
-                              ? proposal.websiteScope.scopeItems
-                              : DEFAULT_SCOPE_TEMPLATES[proposal.websiteScope.websiteType || 'static'].map((item, idx) => ({
-                                  id: `scope_${proposal.websiteScope.websiteType || 'static'}_${idx}`,
-                                  title: item.title,
-                                  description: item.description,
-                                  isSelected: item.isSelected,
-                                  isCustom: false
-                                }));
-
-                            const newItem = {
-                              id: `scope_custom_user_${Date.now()}`,
-                              title: customItemTitle.trim(),
-                              description: customItemDesc.trim() || "Custom development deliverable as defined by project requirements.",
-                              isSelected: true,
-                              isCustom: true
-                            };
-                            
-                            setProposal(prev => ({
-                              ...prev,
-                              websiteScope: {
-                                ...prev.websiteScope,
-                                scopeItems: [...currentScopeItems, newItem]
-                              }
-                            }));
-                            setCustomItemTitle('');
-                            setCustomItemDesc('');
-                          }}
-                          disabled={!customItemTitle.trim()}
-                          className={`px-4 py-1.5 font-sans font-bold text-xs rounded-lg inline-flex items-center gap-1.5 transition-all ${
-                            customItemTitle.trim() 
-                              ? 'bg-blue-600 hover:bg-blue-700 text-white cursor-pointer hover:shadow-sm' 
-                              : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                          }`}
-                        >
-                          <Plus className="h-3.5 w-3.5" />
-                          <span>Add Direct Deliverable</span>
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Live interactive Custom Scope Items Management Box */}
-                    {(() => {
-                      const currentScopeItems = (proposal.websiteScope.scopeItems && proposal.websiteScope.scopeItems.length > 0)
-                        ? proposal.websiteScope.scopeItems
-                        : DEFAULT_SCOPE_TEMPLATES[proposal.websiteScope.websiteType || 'static'].map((item, idx) => ({
-                            id: `scope_${proposal.websiteScope.websiteType || 'static'}_${idx}`,
-                            title: item.title,
-                            description: item.description,
-                            isSelected: item.isSelected,
-                            isCustom: false
-                          }));
-
-                      const customItems = currentScopeItems.filter(i => i.isCustom || getScopeCategory(i.title, i.isCustom) === 'custom');
-
-                      if (customItems.length === 0) return null;
-
-                      return (
-                        <div className="border border-slate-150 rounded-xl overflow-hidden mt-2 bg-slate-50/40">
-                          <div className="bg-slate-100 px-4 py-2 border-b border-slate-200 flex justify-between items-center">
-                            <span className="text-[10px] font-bold text-slate-600 uppercase font-mono tracking-wider flex items-center gap-1.5">
-                              <span className="h-2 w-2 rounded-full bg-blue-500"></span>
-                              Active Custom Deliverables ({customItems.length})
-                            </span>
-                            <span className="text-[9px] text-slate-400 font-mono">Changes sync instantly</span>
-                          </div>
-                          
-                          <div className="divide-y divide-slate-150 max-h-[250px] overflow-y-auto">
-                            {customItems.map((item) => {
-                              const isEditingThis = editingItemId === item.id;
-                              return (
-                                <div key={item.id} className="p-3 bg-white hover:bg-slate-50/50 transition-colors">
-                                  {isEditingThis ? (
-                                    <div className="space-y-2.5">
-                                      <div className="flex justify-between items-center">
-                                        <span className="text-[9px] font-bold text-blue-600 font-mono uppercase">Editing Custom Item</span>
-                                        <button 
-                                          type="button"
-                                          onClick={() => setEditingItemId(null)}
-                                          className="text-slate-400 hover:text-slate-650"
-                                        >
-                                          <X className="h-3.5 w-3.5" />
-                                        </button>
-                                      </div>
-                                      <input 
-                                        type="text"
-                                        value={editingItemTitle}
-                                        onChange={(e) => setEditingItemTitle(e.target.value)}
-                                        className="w-full px-3 py-1 border border-slate-300 rounded text-xs font-bold font-sans"
-                                      />
-                                      <textarea 
-                                        value={editingItemDesc}
-                                        onChange={(e) => setEditingItemDesc(e.target.value)}
-                                        className="w-full px-3 py-1 border border-slate-300 rounded text-xs font-sans resize-y min-h-[45px]"
-                                      ></textarea>
-                                      <div className="flex gap-2 justify-end">
-                                        <button
-                                          type="button"
-                                          onClick={() => setEditingItemId(null)}
-                                          className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10.5px] font-semibold rounded"
-                                        >
-                                          Cancel
-                                        </button>
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            if (!editingItemTitle.trim()) return;
-                                            const updated = currentScopeItems.map(i => 
-                                              i.id === item.id ? { ...i, title: editingItemTitle, description: editingItemDesc } : i
-                                            );
-                                            setProposal(prev => ({
-                                              ...prev,
-                                              websiteScope: { ...prev.websiteScope, scopeItems: updated }
-                                            }));
-                                            setEditingItemId(null);
-                                          }}
-                                          className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white text-[10.5px] font-semibold rounded"
-                                        >
-                                          Save
-                                        </button>
-                                      </div>
-                                    </div>
-                                  ) : (
-                                    <div className="flex items-start justify-between gap-3">
-                                      <div className="flex items-start gap-2.5 min-w-0">
-                                        <input 
-                                          type="checkbox"
-                                          checked={!!item.isSelected}
-                                          onChange={(e) => {
-                                            const updated = currentScopeItems.map(i => 
-                                              i.id === item.id ? { ...i, isSelected: e.target.checked } : i
-                                            );
-                                            setProposal(prev => ({
-                                              ...prev,
-                                              websiteScope: { ...prev.websiteScope, scopeItems: updated }
-                                            }));
-                                          }}
-                                          className="h-3.5 w-3.5 text-blue-600 border-slate-300 rounded focus:ring-blue-500 cursor-pointer mt-0.5 shrink-0"
-                                        />
-                                        <div className="min-w-0">
-                                          <span className={`text-[11.5px] font-bold block ${item.isSelected ? 'text-slate-800' : 'text-slate-400 line-through'}`}>
-                                            {item.title}
-                                          </span>
-                                          <p className={`text-[10.5px] font-sans mt-0.5 leading-normal ${item.isSelected ? 'text-slate-500' : 'text-slate-400'}`}>
-                                            {item.description}
-                                          </p>
-                                        </div>
-                                      </div>
-
-                                      <div className="flex items-center gap-1 shrink-0">
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            setEditingItemId(item.id);
-                                            setEditingItemTitle(item.title);
-                                            setEditingItemDesc(item.description);
-                                          }}
-                                          className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-650"
-                                        >
-                                          <Edit3 className="h-3 w-3" />
-                                        </button>
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            const updated = currentScopeItems.filter(i => i.id !== item.id);
-                                            setProposal(prev => ({
-                                              ...prev,
-                                              websiteScope: { ...prev.websiteScope, scopeItems: updated }
-                                            }));
-                                          }}
-                                          className="p-1 hover:bg-red-50 hover:text-red-500 rounded text-slate-404"
-                                        >
-                                          <Trash2 className="h-3 w-3" />
-                                        </button>
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      );
-                    })()}
                   </div>
 
                   {/* Omnichannel E-Commerce System Settings (Only shown for ecommerce type) */}
