@@ -2674,6 +2674,97 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
                     </div>
                   </div>
 
+                  {/* PREMIUM WORDPRESS PLUGINS & LICENSING SECTION */}
+                  {proposal.type === 'website' && 
+                   (proposal.websiteScope.cmsType || '').toLowerCase().includes('wordpress') && 
+                   proposal.websiteScope.includeWordpressPlugins !== false && (
+                    <div style={{ backgroundColor: '#ffffff', border: '1.5px solid #1a2744', borderRadius: '8px', padding: '14px', textAlign: 'left' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyBetween: 'space-between', borderBottom: '1px solid #e0ddd5', pb: '6px', marginBottom: '10px' }}>
+                        <div>
+                          <span style={{ display: 'block', fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#B8962E', fontWeight: 'bold' }}>
+                            LICENSED INFRASTRUCTURE & EXTENSIONS
+                          </span>
+                          <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#1a2744', margin: '2px 0 0 0', fontFamily: 'serif' }}>
+                            Premium WordPress Plugins & Licensing
+                          </h3>
+                        </div>
+                      </div>
+
+                      <div style={{ backgroundColor: '#fafaf8', border: '1px solid #e0ddd5', borderRadius: '6px', padding: '8px 12px', marginBottom: '10px' }}>
+                        <span style={{ fontSize: '10.5px', fontWeight: 'bold', color: '#1a2744', display: 'block' }}>
+                          Plugin Usage – Licensed (Annual Renewal)
+                        </span>
+                        <p style={{ fontSize: '10px', color: '#4b5563', margin: '2px 0 0 0', italic: 'true' }}>
+                          Pricing for all licensed plugins will be detailed separately in the Financial Section of this proposal.
+                        </p>
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {/* Plugin 1 */}
+                        <div style={{ borderLeft: '3px solid #B8962E', paddingLeft: '10px' }}>
+                          <h4 style={{ fontSize: '11.5px', fontWeight: 'bold', color: '#1a2744', margin: '0' }}>
+                            1. Yoast SEO (Premium)
+                          </h4>
+                          <p style={{ fontSize: '10px', color: '#4b5563', margin: '2px 0 0 0', lineHeight: '1.45' }}>
+                            Integrated to optimize on-page SEO, improve search engine visibility, generate XML sitemaps, manage metadata, and enhance overall website performance.
+                          </p>
+                        </div>
+
+                        {/* Plugin 2 */}
+                        <div style={{ borderLeft: '3px solid #1a2744', paddingLeft: '10px' }}>
+                          <h4 style={{ fontSize: '11.5px', fontWeight: 'bold', color: '#1a2744', margin: '0' }}>
+                            2. WP Rocket
+                          </h4>
+                          <p style={{ fontSize: '10px', color: '#4b5563', margin: '2px 0 0 0', lineHeight: '1.45' }}>
+                            A premium performance optimization and caching plugin that significantly improves website loading speed, Core Web Vitals, and overall user experience.
+                          </p>
+                        </div>
+
+                        {/* Plugin 3 */}
+                        <div style={{ borderLeft: '3px solid #B8962E', paddingLeft: '10px' }}>
+                          <h4 style={{ fontSize: '11.5px', fontWeight: 'bold', color: '#1a2744', margin: '0' }}>
+                            3. Wordfence Security (Premium)
+                          </h4>
+                          <p style={{ fontSize: '10px', color: '#4b5563', margin: '2px 0 0 0', lineHeight: '1.45' }}>
+                            Provides enterprise-grade website security, including firewall protection, malware scanning, brute-force attack prevention, and continuous threat monitoring.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* NOTES & ASSUMPTIONS SECTION */}
+                  {proposal.type === 'website' && proposal.websiteScope.includeNotesAssumptions !== false && (
+                    <div style={{ backgroundColor: '#fafaf8', border: '1px solid #e0ddd5', borderRadius: '8px', padding: '14px', textAlign: 'left' }}>
+                      <span style={{ display: 'block', fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#B8962E', fontWeight: 'bold', marginBottom: '4px' }}>
+                        TERMS & SCOPE BOUNDARIES
+                      </span>
+                      <h3 style={{ fontSize: '13px', fontWeight: 'bold', color: '#1a2744', margin: '0 0 8px 0', fontFamily: 'serif' }}>
+                        Notes & Assumptions
+                      </h3>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
+                          <span style={{ color: '#B8962E', fontWeight: 'bold', fontSize: '11px', marginTop: '1px' }}>•</span>
+                          <span style={{ fontSize: '10px', color: '#4b5563', lineHeight: '1.45' }}>
+                            Any additional requirements, features, or functionality not explicitly mentioned in this proposal shall be considered out of scope.
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
+                          <span style={{ color: '#B8962E', fontWeight: 'bold', fontSize: '11px', marginTop: '1px' }}>•</span>
+                          <span style={{ fontSize: '10px', color: '#4b5563', lineHeight: '1.45' }}>
+                            Any out-of-scope work may only be undertaken after receiving written authorization and approval from <strong style={{ color: '#1a2744' }}>{proposal.clientName || 'the client'}</strong>, and will be covered under a separate Statement of Work (SOW) and commercial agreement.
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
+                          <span style={{ color: '#B8962E', fontWeight: 'bold', fontSize: '11px', marginTop: '1px' }}>•</span>
+                          <span style={{ fontSize: '10px', color: '#4b5563', lineHeight: '1.45' }}>
+                            The client is responsible for providing the latest approved Brand Guidelines, including logos, fonts, colour palette, imagery, and brand assets before the design phase commences.
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Section-Level Notes & Boundaries Grid */}
                   {proposal.websiteScope.scopeNotes && (
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>

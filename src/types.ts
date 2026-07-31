@@ -231,6 +231,8 @@ export interface WebsiteScope {
   websiteType?: WebsiteType;
   scopeItems?: ScopeOfWorkItem[];
   scopeNotes?: ScopeOfWorkNotes;
+  includeWordpressPlugins?: boolean;
+  includeNotesAssumptions?: boolean;
   ecommerceOdooSyncModules?: string[];
   ecommercePaymentGateways?: string[];
   ecommerceTechStack?: {

@@ -2536,6 +2536,61 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
                         </div>
                       </div>
 
+                      {/* Optional WordPress Plugins & Licensing Section Toggle (When WordPress selected) */}
+                      {proposal.type === 'website' && (proposal.websiteScope.cmsType || '').toLowerCase().includes('wordpress') && (
+                        <div className="bg-gradient-to-r from-blue-50/80 to-indigo-50/50 border border-blue-200 p-4 rounded-xl space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Sparkles className="h-4 w-4 text-blue-600 shrink-0" />
+                              <label htmlFor="toggle-wp-plugins" className="text-xs font-bold font-sans text-slate-800 cursor-pointer">
+                                Premium WordPress Plugins & Licensing Section
+                              </label>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                              <input
+                                id="toggle-wp-plugins"
+                                type="checkbox"
+                                checked={proposal.websiteScope.includeWordpressPlugins !== false}
+                                onChange={(e) => updateWebsiteScope('includeWordpressPlugins', e.target.checked)}
+                                className="sr-only peer"
+                              />
+                              <div className="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                            </label>
+                          </div>
+                          <p className="text-[11px] text-slate-600 leading-relaxed font-sans">
+                            {proposal.websiteScope.includeWordpressPlugins !== false
+                              ? 'Enabled: Includes Yoast SEO (Premium), WP Rocket, and Wordfence Security (Premium) with licensing renewal terms.'
+                              : 'Disabled: Omits the licensed plugins specification from this proposal.'}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Notes & Assumptions Section Toggle */}
+                      {proposal.type === 'website' && (
+                        <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl space-y-3">
+                          <div className="flex items-center justify-between">
+                            <label htmlFor="toggle-notes-assumptions" className="text-xs font-bold font-sans text-slate-800 cursor-pointer">
+                              Include "Notes & Assumptions" Scope Section
+                            </label>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                              <input
+                                id="toggle-notes-assumptions"
+                                type="checkbox"
+                                checked={proposal.websiteScope.includeNotesAssumptions !== false}
+                                onChange={(e) => updateWebsiteScope('includeNotesAssumptions', e.target.checked)}
+                                className="sr-only peer"
+                              />
+                              <div className="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                            </label>
+                          </div>
+                          <p className="text-[11px] text-slate-500 leading-relaxed font-sans">
+                            {proposal.websiteScope.includeNotesAssumptions !== false
+                              ? `Enabled: Includes dynamic out-of-scope SOW terms and client brand guidelines obligations for ${proposal.clientName || 'the client'}.`
+                              : 'Disabled: Omits the Notes & Assumptions section.'}
+                          </p>
+                        </div>
+                      )}
+
                       {/* Launch Maintenance Support */}
                       <div className="flex flex-col gap-1.5 p-3.5 bg-white border border-slate-200/60 rounded-xl">
                         <div className="flex justify-between items-center mb-1">

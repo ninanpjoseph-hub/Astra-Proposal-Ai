@@ -296,6 +296,82 @@ export async function exportProposalToDocx(proposal: Proposal) {
       }
     }
 
+    // WordPress Plugins & Licensing DOCX Export
+    if ((wScope.cmsType || '').toLowerCase().includes('wordpress') && wScope.includeWordpressPlugins !== false) {
+      children.push(createSpacer(100));
+      children.push(
+        new Paragraph({
+          children: [new TextRun({ text: 'Premium WordPress Plugins & Licensing', bold: true, color: COLOR_PRIMARY, size: 22 })],
+          spacing: { before: 120, after: 60 },
+        })
+      );
+      children.push(
+        new Paragraph({
+          children: [
+            new TextRun({ text: 'Plugin Usage – Licensed (Annual Renewal)', bold: true, color: COLOR_GOLD, size: 20 }),
+          ],
+          spacing: { after: 40 },
+        })
+      );
+      children.push(
+        new Paragraph({
+          children: [
+            new TextRun({ text: 'Pricing for all licensed plugins will be detailed separately in the Financial Section of this proposal.', italics: true, color: COLOR_SLATE_MUTED, size: 18 }),
+          ],
+          spacing: { after: 100 },
+        })
+      );
+      
+      // Plugin list items
+      const wpPlugins = [
+        { name: '1. Yoast SEO (Premium)', desc: 'Integrated to optimize on-page SEO, improve search engine visibility, generate XML sitemaps, manage metadata, and enhance overall website performance.' },
+        { name: '2. WP Rocket', desc: 'A premium performance optimization and caching plugin that significantly improves website loading speed, Core Web Vitals, and overall user experience.' },
+        { name: '3. Wordfence Security (Premium)', desc: 'Provides enterprise-grade website security, including firewall protection, malware scanning, brute-force attack prevention, and continuous threat monitoring.' },
+      ];
+
+      wpPlugins.forEach(p => {
+        children.push(
+          new Paragraph({
+            children: [
+              new TextRun({ text: `${p.name}: `, bold: true, color: COLOR_PRIMARY, size: 20 }),
+              new TextRun({ text: p.desc, color: COLOR_SLATE_DARK, size: 20 }),
+            ],
+            spacing: { after: 60 },
+          })
+        );
+      });
+    }
+
+    // Notes & Assumptions DOCX Export
+    if (wScope.includeNotesAssumptions !== false) {
+      children.push(createSpacer(100));
+      children.push(
+        new Paragraph({
+          children: [new TextRun({ text: 'Notes & Assumptions', bold: true, color: COLOR_PRIMARY, size: 22 })],
+          spacing: { before: 120, after: 60 },
+        })
+      );
+      
+      const clientName = proposal.clientName || 'the client';
+      const notesList = [
+        'Any additional requirements, features, or functionality not explicitly mentioned in this proposal shall be considered out of scope.',
+        `Any out-of-scope work may only be undertaken after receiving written authorization and approval from ${clientName}, and will be covered under a separate Statement of Work (SOW) and commercial agreement.`,
+        'The client is responsible for providing the latest approved Brand Guidelines, including logos, fonts, colour palette, imagery, and brand assets before the design phase commences.'
+      ];
+
+      notesList.forEach(noteText => {
+        children.push(
+          new Paragraph({
+            bullet: { level: 0 },
+            children: [
+              new TextRun({ text: noteText, color: COLOR_SLATE_DARK, size: 20 }),
+            ],
+            spacing: { after: 60 },
+          })
+        );
+      });
+    }
+
     children.push(createSpacer(200));
   }
 
