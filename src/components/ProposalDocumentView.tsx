@@ -2806,48 +2806,7 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
                     </div>
                   )}
 
-                  {/* Section-Level Notes & Boundaries Grid */}
-                  {proposal.websiteScope.includeSectionLevelDetails !== false && proposal.websiteScope.scopeNotes && (
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                      {/* Project Notes & Client Requirements side by side */}
-                      {(proposal.websiteScope.scopeNotes.notes || proposal.websiteScope.scopeNotes.requirements) && (
-                        <div style={{ backgroundColor: '#fafaf8', border: '1px solid #e0ddd5', borderRadius: '8px', padding: '14px', textAlign: 'left' }}>
-                          <span style={{ display: 'block', fontSize: '10px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#B8962E', fontWeight: 'bold', marginBottom: '6px' }}>
-                            Specific Deliverables & Directions
-                          </span>
-                          {proposal.websiteScope.scopeNotes.notes && (
-                            <p style={{ fontSize: '10px', color: '#4b5563', lineHeight: '1.4', margin: '0 0 6px 0' }}>
-                              <strong style={{ color: '#1a2744' }}>Notes:</strong> {proposal.websiteScope.scopeNotes.notes}
-                            </p>
-                          )}
-                          {proposal.websiteScope.scopeNotes.requirements && (
-                            <p style={{ fontSize: '10px', color: '#4b5563', lineHeight: '1.4', margin: '0' }}>
-                              <strong style={{ color: '#1a2744' }}>Client Directs:</strong> {proposal.websiteScope.scopeNotes.requirements}
-                            </p>
-                          )}
-                        </div>
-                      )}
 
-                      {/* Exclusions & Technical Clarifications side by side */}
-                      {(proposal.websiteScope.scopeNotes.exclusions || proposal.websiteScope.scopeNotes.clarifications) && (
-                        <div style={{ backgroundColor: '#fafaf8', border: '1px solid #e0ddd5', borderRadius: '8px', padding: '14px', textAlign: 'left' }}>
-                          <span style={{ display: 'block', fontSize: '10px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#B8962E', fontWeight: 'bold', marginBottom: '6px' }}>
-                            Technical Constraints & Boundaries
-                          </span>
-                          {proposal.websiteScope.scopeNotes.exclusions && (
-                            <p style={{ fontSize: '10px', color: '#4b5563', lineHeight: '1.4', margin: '0 0 6px 0' }}>
-                              <strong style={{ color: '#B8962E' }}>Exclusions:</strong> {proposal.websiteScope.scopeNotes.exclusions}
-                            </p>
-                          )}
-                          {proposal.websiteScope.scopeNotes.clarifications && (
-                            <p style={{ fontSize: '10px', color: '#4b5563', lineHeight: '1.4', margin: '0' }}>
-                              <strong style={{ color: '#1a2744' }}>Clarifications:</strong> {proposal.websiteScope.scopeNotes.clarifications}
-                            </p>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )}
                 </div>
               </div>
 

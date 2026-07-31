@@ -16,7 +16,8 @@ export interface ScopePage {
   items: ScopeOfWorkItem[];
 }
 
-export function getScopeCategory(title: string, isCustom?: boolean): ScopeCategory {
+export function getScopeCategory(title: string, isCustom?: boolean, category?: ScopeCategory): ScopeCategory {
+  if (category) return category;
   if (isCustom) return 'custom';
   
   const t = title.toLowerCase();
@@ -178,7 +179,7 @@ export function groupScopeIntoPages(items: ScopeOfWorkItem[], threshold = 3): Sc
   };
   
   items.forEach(item => {
-    const category = getScopeCategory(item.title, item.isCustom);
+    const category = getScopeCategory(item.title, item.isCustom, item.category);
     categorized[category].push(item);
   });
   

@@ -372,64 +372,7 @@ export async function exportProposalToDocx(proposal: Proposal) {
       });
     }
 
-    // Section-Level Details & Boundaries DOCX Export
-    if (wScope.includeSectionLevelDetails !== false && wScope.scopeNotes) {
-      const { notes, exclusions, requirements, clarifications } = wScope.scopeNotes;
-      if (notes || exclusions || requirements || clarifications) {
-        children.push(createSpacer(100));
-        children.push(
-          new Paragraph({
-            children: [new TextRun({ text: 'Section-Level Details & Boundaries', bold: true, color: COLOR_PRIMARY, size: 22 })],
-            spacing: { before: 120, after: 60 },
-          })
-        );
 
-        if (notes) {
-          children.push(
-            new Paragraph({
-              children: [
-                new TextRun({ text: 'Project Notes: ', bold: true, color: COLOR_PRIMARY, size: 20 }),
-                new TextRun({ text: notes, color: COLOR_SLATE_DARK, size: 20 }),
-              ],
-              spacing: { after: 60 },
-            })
-          );
-        }
-        if (exclusions) {
-          children.push(
-            new Paragraph({
-              children: [
-                new TextRun({ text: 'Exclusions: ', bold: true, color: COLOR_GOLD, size: 20 }),
-                new TextRun({ text: exclusions, color: COLOR_SLATE_DARK, size: 20 }),
-              ],
-              spacing: { after: 60 },
-            })
-          );
-        }
-        if (requirements) {
-          children.push(
-            new Paragraph({
-              children: [
-                new TextRun({ text: 'Client Requirements: ', bold: true, color: COLOR_PRIMARY, size: 20 }),
-                new TextRun({ text: requirements, color: COLOR_SLATE_DARK, size: 20 }),
-              ],
-              spacing: { after: 60 },
-            })
-          );
-        }
-        if (clarifications) {
-          children.push(
-            new Paragraph({
-              children: [
-                new TextRun({ text: 'Technical Clarifications: ', bold: true, color: COLOR_PRIMARY, size: 20 }),
-                new TextRun({ text: clarifications, color: COLOR_SLATE_DARK, size: 20 }),
-              ],
-              spacing: { after: 60 },
-            })
-          );
-        }
-      }
-    }
 
     children.push(createSpacer(200));
   }

@@ -198,6 +198,7 @@ export interface ScopeOfWorkItem {
   description: string;
   isSelected: boolean;
   isCustom?: boolean;
+  category?: 'core' | 'features' | 'integrations' | 'analytics' | 'custom';
 }
 
 export interface ScopeOfWorkNotes {
