@@ -2727,7 +2727,7 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
 
                   {/* PREMIUM WORDPRESS PLUGINS & LICENSING SECTION */}
                   {proposal.type === 'website' && 
-                   (proposal.websiteScope.cmsType || '').toLowerCase().includes('wordpress') && 
+                   ((proposal.websiteScope.cmsType || '').toLowerCase().includes('wordpress') || (proposal.websiteScope.cmsType || '').toLowerCase().includes('woocommerce')) && 
                    proposal.websiteScope.includeWordpressPlugins !== false && (
                     <div style={{ backgroundColor: '#ffffff', border: '1.5px solid #1a2744', borderRadius: '8px', padding: '14px', textAlign: 'left' }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyBetween: 'space-between', borderBottom: '1px solid #e0ddd5', pb: '6px', marginBottom: '10px' }}>

@@ -2527,17 +2527,17 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
                             onChange={(e) => updateWebsiteScope('cmsType', e.target.value)}
                             className="w-full px-3 py-1 border border-slate-300 rounded-lg text-xs font-sans focus:outline-hidden bg-white"
                           >
-                            <option value="WordPress">WordPress Core (Yoast Setup)</option>
-                            <option value="headless-strapi">Headless CMS (Strapi + Next.js)</option>
-                            <option value="Shopify Engine">Shopify eCommerce Framework</option>
-                            <option value="Custom API Hub">Custom Node/Express Engine</option>
-                            <option value="Static HTML5/SPA">Pure Static HTML5 / React SPA</option>
+                            <option value="Basic HTML5">Basic HTML5</option>
+                            <option value="WordPress">WordPress</option>
+                            <option value="WooCommerce">WooCommerce</option>
+                            <option value="Shopify Framework">Shopify Framework</option>
+                            <option value="Custom PHP/Node.js Backend">Custom PHP/Node.js Backend</option>
                           </select>
                         </div>
                       </div>
 
-                      {/* Optional WordPress Plugins & Licensing Section Toggle (When WordPress selected) */}
-                      {proposal.type === 'website' && (proposal.websiteScope.cmsType || '').toLowerCase().includes('wordpress') && (
+                      {/* Optional WordPress Plugins & Licensing Section Toggle (When WordPress or WooCommerce selected) */}
+                      {proposal.type === 'website' && ((proposal.websiteScope.cmsType || '').toLowerCase().includes('wordpress') || (proposal.websiteScope.cmsType || '').toLowerCase().includes('woocommerce')) && (
                         <div className="bg-gradient-to-r from-blue-50/80 to-indigo-50/50 border border-blue-200 p-4 rounded-xl space-y-3">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">

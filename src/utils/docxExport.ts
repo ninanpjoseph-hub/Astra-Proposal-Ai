@@ -297,7 +297,7 @@ export async function exportProposalToDocx(proposal: Proposal) {
     }
 
     // WordPress Plugins & Licensing DOCX Export
-    if ((wScope.cmsType || '').toLowerCase().includes('wordpress') && wScope.includeWordpressPlugins !== false) {
+    if (((wScope.cmsType || '').toLowerCase().includes('wordpress') || (wScope.cmsType || '').toLowerCase().includes('woocommerce')) && wScope.includeWordpressPlugins !== false) {
       children.push(createSpacer(100));
       children.push(
         new Paragraph({
