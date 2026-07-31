@@ -1549,7 +1549,7 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
           </div>
 
           {/* Bottom details block */}
-          <div className="border-t border-slate-200/80 pt-8 grid grid-cols-2 gap-4 relative z-10 mb-6">
+          <div className="border-t border-slate-200/80 pt-6 grid grid-cols-3 gap-4 relative z-10 mb-6">
             <div>
               <p className="text-[9px] font-sans font-bold text-slate-400 tracking-wider uppercase mb-1">
                 PREPARED BY
@@ -1563,6 +1563,24 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
               {proposal.preparedByTitle && (
                 <p className="text-[10px] font-sans text-slate-400 italic">
                   {proposal.preparedByTitle}
+                </p>
+              )}
+            </div>
+            <div>
+              <p className="text-[9px] font-sans font-bold text-slate-400 tracking-wider uppercase mb-1">
+                CLIENT POC / CONTACT
+              </p>
+              <p className="text-xs font-sans font-bold text-slate-800 truncate">
+                {proposal.clientPocName || proposal.clientName || "[Client Representative]"}
+              </p>
+              {proposal.clientPocDesignation && (
+                <p className="text-[11px] font-sans text-slate-500 font-semibold truncate">
+                  {proposal.clientPocDesignation}
+                </p>
+              )}
+              {proposal.companyName && (
+                <p className="text-[10px] font-sans text-slate-400 truncate">
+                  {proposal.companyName}
                 </p>
               )}
             </div>
@@ -3378,15 +3396,22 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
               <div className="flex flex-col justify-between h-[180px] border border-slate-200/80 p-4 rounded-xl bg-white">
                 <div>
                   <span className="text-[10px] font-mono tracking-wider text-emerald-500 font-bold uppercase mb-0.5 block">Accepted For</span>
-                  <strong className="text-xs text-slate-800 block">{proposal.clientName || "[Client Company]"}</strong>
+                  <strong className="text-xs text-slate-800 block">{proposal.companyName || proposal.clientName || "[Client Company]"}</strong>
+                  {proposal.clientPocName && (
+                    <div className="mt-1 text-[10.5px] font-sans text-slate-600">
+                      <span className="font-bold text-slate-700 block">{proposal.clientPocName}</span>
+                      {proposal.clientPocDesignation && <span className="text-slate-400 text-[9.5px] block">{proposal.clientPocDesignation}</span>}
+                      {proposal.clientPocEmail && <span className="text-slate-400 text-[9px] font-mono block">{proposal.clientPocEmail}</span>}
+                    </div>
+                  )}
                 </div>
 
                 <div className="h-10 border-b border-slate-200/80 border-dashed relative flex items-center justify-center font-mono text-[9px] text-slate-400 select-none">
-                  (Authorized Signature Stamp)
+                  (Authorized Representative Signature Stamp)
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 text-[9px] text-slate-400 uppercase font-mono">
-                  <span>Sign: ________________</span>
+                  <span className="truncate">Sign: {proposal.clientPocName || "________________"}</span>
                   <span className="text-right">Date: ___ / ___ / 2026</span>
                 </div>
               </div>

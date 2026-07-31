@@ -31,6 +31,9 @@ const router = express.Router();
         \`name\` VARCHAR(255) NULL,
         \`company_name\` VARCHAR(255) NULL,
         \`email\` VARCHAR(255) NULL,
+        \`contact_person\` VARCHAR(255) NULL,
+        \`designation\` VARCHAR(255) NULL,
+        \`phone\` VARCHAR(100) NULL,
         \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (\`id\`)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -49,6 +52,10 @@ const router = express.Router();
         \`client_id\` VARCHAR(50) NULL,
         \`client_name\` VARCHAR(255) NULL,
         \`company_name\` VARCHAR(255) NULL,
+        \`client_poc_name\` VARCHAR(255) NULL,
+        \`client_poc_designation\` VARCHAR(255) NULL,
+        \`client_poc_phone\` VARCHAR(100) NULL,
+        \`client_poc_email\` VARCHAR(255) NULL,
         \`proposal_date\` DATE NULL,
         \`brief_description\` TEXT NULL,
         \`branding_scope\` JSON NULL,
@@ -88,6 +95,29 @@ const router = express.Router();
   } catch (err: any) {
     console.error("Migration error creating proposals table:", err);
   }
+
+  try {
+    await query("ALTER TABLE proposals ADD COLUMN client_poc_name VARCHAR(255) NULL");
+  } catch (err: any) {}
+  try {
+    await query("ALTER TABLE proposals ADD COLUMN client_poc_designation VARCHAR(255) NULL");
+  } catch (err: any) {}
+  try {
+    await query("ALTER TABLE proposals ADD COLUMN client_poc_phone VARCHAR(100) NULL");
+  } catch (err: any) {}
+  try {
+    await query("ALTER TABLE proposals ADD COLUMN client_poc_email VARCHAR(255) NULL");
+  } catch (err: any) {}
+
+  try {
+    await query("ALTER TABLE clients ADD COLUMN contact_person VARCHAR(255) NULL");
+  } catch (err: any) {}
+  try {
+    await query("ALTER TABLE clients ADD COLUMN designation VARCHAR(255) NULL");
+  } catch (err: any) {}
+  try {
+    await query("ALTER TABLE clients ADD COLUMN phone VARCHAR(100) NULL");
+  } catch (err: any) {}
 
   try {
     await query("ALTER TABLE proposals ADD COLUMN services_scope JSON NULL");
@@ -387,6 +417,11 @@ router.get('/', async (req, res) => {
       });
 
       records.forEach((rec: any) => {
+        rec.clientPocName = rec.clientPocName || rec.client_poc_name || '';
+        rec.clientPocDesignation = rec.clientPocDesignation || rec.client_poc_designation || '';
+        rec.clientPocPhone = rec.clientPocPhone || rec.client_poc_phone || '';
+        rec.clientPocEmail = rec.clientPocEmail || rec.client_poc_email || '';
+
         if (itemsMap[rec.id]) {
           rec.supplierItems = itemsMap[rec.id];
         } else if (rec.supplier_items) {
@@ -399,6 +434,11 @@ router.get('/', async (req, res) => {
       });
     } catch (err: any) {
       records.forEach((rec: any) => {
+        rec.clientPocName = rec.clientPocName || rec.client_poc_name || '';
+        rec.clientPocDesignation = rec.clientPocDesignation || rec.client_poc_designation || '';
+        rec.clientPocPhone = rec.clientPocPhone || rec.client_poc_phone || '';
+        rec.clientPocEmail = rec.clientPocEmail || rec.client_poc_email || '';
+
         if (rec.supplier_items) {
           rec.supplierItems = typeof rec.supplier_items === 'string'
             ? JSON.parse(rec.supplier_items)
@@ -432,6 +472,10 @@ router.get('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Proposal not found' });
     }
     const rec = records[0];
+    rec.clientPocName = rec.clientPocName || rec.client_poc_name || '';
+    rec.clientPocDesignation = rec.clientPocDesignation || rec.client_poc_designation || '';
+    rec.clientPocPhone = rec.clientPocPhone || rec.client_poc_phone || '';
+    rec.clientPocEmail = rec.clientPocEmail || rec.client_poc_email || '';
 
     // Security Authorization Check: non-admin users cannot view another user's proposal by changing URL or ID
     if (activeUserRole !== 'Admin') {
@@ -512,16 +556,25 @@ router.post('/', async (req, res) => {
         }
       }
     }
-    // 1. Ensure client exists in client registry
+    // 1. Ensure client exists in client registry and update POC details
     let clientId = p.client_id || `client_${Math.random().toString(36).substring(2, 11)}`;
     const clientsFound = await query('SELECT id FROM clients WHERE company_name = ? OR name = ?', [p.companyName, p.clientName]);
     
+    const pocName = p.clientPocName || p.client_poc_name || '';
+    const pocDesignation = p.clientPocDesignation || p.client_poc_designation || '';
+    const pocPhone = p.clientPocPhone || p.client_poc_phone || '';
+    const pocEmail = p.clientPocEmail || p.client_poc_email || '';
+
     if (clientsFound.length > 0) {
       clientId = clientsFound[0].id;
+      await query(
+        'UPDATE clients SET name = ?, company_name = ?, email = IFNULL(NULLIF(?, ""), email), contact_person = IFNULL(NULLIF(?, ""), contact_person), designation = IFNULL(NULLIF(?, ""), designation), phone = IFNULL(NULLIF(?, ""), phone) WHERE id = ?',
+        [p.clientName, p.companyName, pocEmail, pocName, pocDesignation, pocPhone, clientId]
+      );
     } else {
       await query(
-        'INSERT INTO clients (id, name, company_name, email) VALUES (?, ?, ?, ?)',
-        [clientId, p.clientName, p.companyName, `${p.clientName.toLowerCase().replace(/\s+/g, '')}@astra-client.qa`]
+        'INSERT INTO clients (id, name, company_name, email, contact_person, designation, phone) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [clientId, p.clientName, p.companyName, pocEmail || `${p.clientName.toLowerCase().replace(/\s+/g, '')}@astra-client.qa`, pocName || null, pocDesignation || null, pocPhone || null]
       );
     }
 
@@ -559,13 +612,13 @@ router.post('/', async (req, res) => {
     // 2. Perform replacement save inside DB
     const sql = `
       REPLACE INTO proposals (
-        id, type, status, client_id, client_name, company_name, proposal_date, brief_description,
+        id, type, status, client_id, client_name, company_name, client_poc_name, client_poc_designation, client_poc_phone, client_poc_email, proposal_date, brief_description,
         branding_scope, website_scope, services_scope, milestones, resource_costs,
         weeks, development_cost, plugin_cost, maintenance_cost, additional_cost, total_cost, payment_terms,
         prepared_by_name, prepared_by_company, prepared_by_title, prepared_by_user_id, assigned_user_id, assigned_user_name,
         shared_user_ids, custom_letterhead, letterhead_height, letterhead_mode, letterhead_full_page, show_watermark, custom_watermark_text,
         created_at, updated_at, payment_entries
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const sharedUsersJson = JSON.stringify(p.sharedUserIds || []);
@@ -577,7 +630,7 @@ router.post('/', async (req, res) => {
     const paymentEntriesJson = JSON.stringify(p.paymentEntries || []);
 
     const params = [
-      p.id, p.type, p.status || 'Draft', clientId, p.clientName, p.companyName, p.proposalDate, p.briefDescription || '',
+      p.id, p.type, p.status || 'Draft', clientId, p.clientName, p.companyName, pocName || null, pocDesignation || null, pocPhone || null, pocEmail || null, p.proposalDate, p.briefDescription || '',
       brandingScopeJson, websiteScopeJson, servicesScopeJson, milestonesJson, resourceCostsJson,
       p.weeks || 5, p.developmentCost || 0, p.pluginCost || 0, p.maintenanceCost || 0, p.additionalCost || 0, p.totalCost || 0, p.paymentTerms || '',
       p.preparedByName || '', p.preparedByCompany || '', p.preparedByTitle || '', p.preparedByUserId || null, p.assignedUserId || null, p.assignedUserName || '',

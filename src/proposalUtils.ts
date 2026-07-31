@@ -405,6 +405,12 @@ export function createDefaultProposal(type: ProposalType): Proposal {
     companyName: "",
     proposalDate: dateFormatted,
     
+    // Client Point of Contact (POC) Info
+    clientPocName: "",
+    clientPocDesignation: "",
+    clientPocPhone: "",
+    clientPocEmail: "",
+    
     // Executive Summary
     briefDescription: "",
     

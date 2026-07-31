@@ -13,10 +13,13 @@ import LandingPage from './components/LandingPage';
 import ChequeQuotationModule from './components/ChequeQuotationModule';
 import SupplierProfitDesk from './components/SupplierProfitDesk';
 import { canUserViewProposal, getAuthHeaders } from './lib/rbac';
+import SidebarNav from './components/SidebarNav';
+import ProposalTypeModal from './components/ProposalTypeModal';
 import { 
   Plus, Search, FileText, Calendar, Building, Landmark, Trash2, Edit3, Eye, 
   HelpCircle, ChevronRight, BarChart3, Database, TrendingUp, Sparkles, AlertCircle,
-  LogOut, X, Server, Users, ArrowLeft
+  LogOut, X, Server, Users, ArrowLeft, Menu, Filter, SlidersHorizontal, Layers,
+  ArrowUpRight, ShieldCheck
 } from 'lucide-react';
 
 function generateEditSummary(oldProp: Proposal, newProp: Proposal): string {
@@ -113,8 +116,13 @@ export default function App() {
   const [proposalViewTab, setProposalViewTab] = useState<'document' | 'history' | 'payment'>('document');
   const [activeModule, setActiveModule] = useState<'proposals' | 'cheque-quotations' | 'suppliers'>('proposals');
   
-  // Search state
+  // Search & Filter state
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+
+  // Navigation & Modal UX states
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState<boolean>(false);
+  const [isTypeModalOpen, setIsTypeModalOpen] = useState<boolean>(false);
   
   // Pre-populate database memory with sample values on load
   useEffect(() => {
@@ -543,20 +551,23 @@ export default function App() {
 
   // Smart conversational / natural search matching algorithm
   const getFilteredProposals = () => {
-    if (!searchQuery.trim()) return visibleProposals;
+    let baseList = visibleProposals;
+
+    if (statusFilter !== 'all') {
+      baseList = baseList.filter(p => (p.status || 'Draft') === statusFilter);
+    }
+
+    if (!searchQuery.trim()) return baseList;
 
     const query = searchQuery.toLowerCase().trim();
 
     // 1. Check if user typed the literal suggested query or conversational phrasing
-    // e.g. "show me the mannai techhub website proposal"
     if (query.includes("show me") || query.includes("retrieve") || query.includes("find")) {
-      // Extract main nouns
       let isWeb = query.includes("website") || query.includes("web") || query.includes("development");
       let isBrand = query.includes("branding") || query.includes("identity") || query.includes("logo");
       let isServices = query.includes("service") || query.includes("it") || query.includes("modular") || query.includes("amc") || query.includes("audit");
       
-      return visibleProposals.filter(p => {
-        // Match client name keyword
+      return baseList.filter(p => {
         const nameMatch = p.clientName.toLowerCase().split(' ').some(word => query.includes(word));
         const typeMatch = (isWeb && p.type === 'website') || (isBrand && p.type === 'branding') || (isServices && p.type === 'services');
         
@@ -571,13 +582,13 @@ export default function App() {
       const matchNum = query.replace(/[^\d]/g, '');
       if (matchNum) {
         const threshold = Number(matchNum);
-        return visibleProposals.filter(p => p.totalCost >= threshold);
+        return baseList.filter(p => p.totalCost >= threshold);
       }
     }
 
-    // 3. Fallback standard tokenized string search (matches client name, type, dates, value)
+    // 3. Fallback standard tokenized string search
     const terms = query.split(/\s+/);
-    return visibleProposals.filter(p => {
+    return baseList.filter(p => {
       const typeText = p.type === 'branding' ? 'branding & identity' : (p.type === 'services' ? 'modular it services' : 'website design & development');
       const formattedValue = formatQAR(p.totalCost).toLowerCase();
       
@@ -612,145 +623,132 @@ export default function App() {
     );
   }
 
+  const handleSignOutSession = () => {
+    const cachedLogs = localStorage.getItem('prowess_admin_logs');
+    let logs = [];
+    if (cachedLogs) {
+      try { logs = JSON.parse(cachedLogs); } catch { logs = []; }
+    }
+    const newEntry = {
+      id: 'log_' + Math.random().toString(36).substring(2, 10),
+      timestamp: new Date().toISOString(),
+      userId: currentUser?.id || 'system',
+      userName: currentUser?.name || 'Anonymous User',
+      userRole: currentUser?.role || UserRole.SALES,
+      action: 'User Logout',
+      details: `${currentUser?.name} signed out securely.`
+    };
+    localStorage.setItem('prowess_admin_logs', JSON.stringify([newEntry, ...logs]));
+    localStorage.removeItem('prowess_session_user');
+    setCurrentUser(null);
+  };
+
+  const handleToggleThemeMode = () => {
+    const nextTheme = dashboardTheme === 'luxury-dark' ? 'classic' : 'luxury-dark';
+    setDashboardTheme(nextTheme);
+    localStorage.setItem('prowess_dashboard_theme', nextTheme);
+  };
+
   return (
-    <div className={`min-h-screen flex flex-col justify-between ${isLuxury ? 'bg-[#070b19] text-slate-100' : 'bg-slate-50 text-[#1e293b]'}`}>
+    <div className={`min-h-screen flex ${isLuxury ? 'bg-[#070B19] text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
       
-      {/* GLOBAL BANNER HEADER - Hidden during printing */}
-      <header className={`no-print text-white shadow-md border-b-4 transition-all ${
-        isLuxury 
-          ? 'bg-[#0B1120] border-[#C5A059] shadow-[0_4px_25px_rgba(0,0,0,0.4)]' 
-          : 'bg-slate-900 border-blue-600'
-      }`}>
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className={`h-9 w-9 rounded-lg flex items-center justify-center font-bold font-serif italic text-white text-lg animate-none ${
-              isLuxury ? 'bg-[#C5A059]' : 'bg-blue-600'
-            }`}>
-              As
-            </div>
-            <div>
-              <h1 className={`font-serif font-bold text-base md:text-lg tracking-tight leading-none text-slate-100 ${
-                isLuxury ? 'text-[#C5A059]' : 'text-slate-100'
-              }`}>
-                Astra Tech
-              </h1>
-              <p className="text-[10px] font-mono text-slate-400 mt-1 uppercase tracking-widest">
-                Automated Client Proposal Workspace
-              </p>
-            </div>
-          </div>
+      {/* PERSISTENT LEFT NAVIGATION SIDEBAR */}
+      <SidebarNav
+        activeModule={activeModule}
+        onSelectModule={(mod) => {
+          setActiveModule(mod);
+          setViewingProposal(null);
+          setIsCreating(false);
+        }}
+        proposalsCount={visibleProposals.length}
+        currentUser={currentUser}
+        isDbConnected={isDbConnected}
+        onOpenDbDiagnostics={() => setShowDbDiagnostics(true)}
+        onOpenNewProposalModal={() => setIsTypeModalOpen(true)}
+        dashboardTheme={dashboardTheme}
+        onToggleTheme={handleToggleThemeMode}
+        onSignOut={handleSignOutSession}
+        isOpenMobile={isMobileNavOpen}
+        onCloseMobile={() => setIsMobileNavOpen(false)}
+      />
 
-          <div className="flex items-center gap-3 text-xs col-span-2 md:col-span-1">
-            <span className="text-slate-400 hidden sm:inline">
-              {currentUser?.name} <span className="opacity-60">({currentUser?.role})</span>
-            </span>
-            <span className={`font-mono px-2.5 py-1 rounded-md border ${
-              isLuxury 
-                ? 'bg-[#111C35] text-[#C5A059] border-[#C5A059]/20' 
-                : 'bg-slate-800 text-slate-200 border-slate-700'
-            }`}>
-              {currentUser?.email}
-            </span>
+      {/* PROPOSAL CREATION TYPE PICKER MODAL */}
+      <ProposalTypeModal
+        isOpen={isTypeModalOpen}
+        onClose={() => setIsTypeModalOpen(false)}
+        onSelectType={(type) => startNewProposal(type)}
+        onSelectChequeSoftware={() => {
+          setActiveModule('cheque-quotations');
+          setViewingProposal(null);
+          setIsCreating(false);
+        }}
+        isLuxury={isLuxury}
+      />
+
+      {/* RIGHT MAIN WORKSPACE CONTENT CONTAINER */}
+      <div className="flex-1 flex flex-col min-w-0 lg:pl-64 xl:pl-72 transition-all">
+        
+        {/* TOP WORKSPACE HEADER BAR */}
+        <header className={`no-print border-b sticky top-0 z-30 transition-all ${
+          isLuxury 
+            ? 'bg-[#0F172A]/90 backdrop-blur-md border-slate-800/80 text-white shadow-lg' 
+            : 'bg-white/90 backdrop-blur-md border-slate-200 text-slate-900 shadow-xs'
+        }`}>
+          <div className="max-w-7xl mx-auto px-4 md:px-8 py-3.5 flex items-center justify-between gap-4">
             
-            {/* Hostinger DB connection badge */}
-            <div 
-              onClick={() => setShowDbDiagnostics(true)}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-[10px] font-mono font-medium cursor-pointer select-none hover:scale-105 active:scale-95 transition-all duration-150 ${
-                isDbConnected 
-                  ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20' 
-                  : 'bg-amber-500/10 border-amber-500/20 text-amber-400 hover:bg-amber-500/20'
-              }`} 
-              title="Click here to inspect Database Connection Status & Diagnostics"
-            >
-              <span className={`h-1.5 w-1.5 rounded-full ${isDbConnected ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span>
-              <span className="hidden lg:inline">{isDbConnected ? 'Hostinger DB' : 'Offline Cache'}</span>
+            {/* Left: Mobile Toggle & Breadcrumb Title */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setIsMobileNavOpen(true)}
+                className="lg:hidden p-2 rounded-xl bg-slate-800/60 text-slate-300 hover:text-white border border-slate-700 cursor-pointer"
+                title="Open Sidebar Menu"
+              >
+                <Menu className="h-5 w-5" />
+              </button>
+
+              <div>
+                <div className="flex items-center gap-2 text-xs font-mono text-[#C5A059]">
+                  <span>Workspace</span>
+                  <ChevronRight className="h-3 w-3 text-slate-500" />
+                  <span className="font-bold uppercase tracking-wider">
+                    {activeModule === 'proposals' ? 'Proposals Directory' : activeModule === 'cheque-quotations' ? 'Cheque Software' : 'Supplier Desk'}
+                  </span>
+                </div>
+                <h1 className="font-serif font-bold text-lg md:text-xl text-white tracking-tight leading-none mt-0.5">
+                  {activeModule === 'proposals' ? 'Client Proposal Operations' : activeModule === 'cheque-quotations' ? 'Cheque Printing Console' : 'Supplier Margin Desk'}
+                </h1>
+              </div>
             </div>
 
-            <button 
-              onClick={() => {
-                // Log action in audit trail before clearing session
-                const cachedLogs = localStorage.getItem('prowess_admin_logs');
-                let logs = [];
-                if (cachedLogs) {
-                  try {
-                    logs = JSON.parse(cachedLogs);
-                  } catch {
-                    logs = [];
-                  }
-                }
-                const newEntry = {
-                  id: 'log_' + Math.random().toString(36).substring(2, 10),
-                  timestamp: new Date().toISOString(),
-                  userId: currentUser?.id || 'system',
-                  userName: currentUser?.name || 'Anonymous User',
-                  userRole: currentUser?.role || UserRole.SALES,
-                  action: 'User Logout',
-                  details: `${currentUser?.name} signed out securely.`
-                };
-                localStorage.setItem('prowess_admin_logs', JSON.stringify([newEntry, ...logs]));
-                
-                // Clear state & session
-                localStorage.removeItem('prowess_session_user');
-                setCurrentUser(null);
-              }}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-600/10 hover:bg-rose-600 text-rose-400 hover:text-white border border-rose-500/20 rounded-md transition-all cursor-pointer text-[11px] font-semibold"
-              title="Sign Out of Session"
-            >
-              <LogOut className="h-3.5 w-3.5" />
-              <span className="hidden md:inline">Sign Out</span>
-            </button>
+            {/* Right: Quick Actions */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setIsTypeModalOpen(true)}
+                className="hidden sm:flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-[#C5A059] to-amber-500 hover:brightness-110 text-slate-950 font-extrabold text-xs rounded-xl shadow-md border border-amber-300 transition-all cursor-pointer"
+              >
+                <Plus className="h-4 w-4 stroke-[3]" />
+                <span>+ New Proposal</span>
+              </button>
+
+              <div 
+                onClick={() => setShowDbDiagnostics(true)}
+                className={`hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[10.5px] font-mono font-medium cursor-pointer transition-all ${
+                  isDbConnected 
+                    ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20' 
+                    : 'bg-amber-500/10 border-amber-500/20 text-amber-400 hover:bg-amber-500/20'
+                }`}
+                title="Inspect Database Status"
+              >
+                <span className={`h-2 w-2 rounded-full ${isDbConnected ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
+                <span>{isDbConnected ? 'Hostinger DB Connected' : 'Local Standalone'}</span>
+              </div>
+            </div>
+
           </div>
-        </div>
-      </header>
+        </header>
 
-      {/* MODULE TAB NAVIGATION BAR */}
-      <div className={`no-print border-b transition-all ${
-        isLuxury 
-          ? 'bg-[#0F172A] border-[#C5A059]/15' 
-          : 'bg-white border-slate-200 shadow-3xs'
-      }`}>
-        <div className="max-w-7xl mx-auto px-4 md:px-6 flex gap-6">
-          <button
-            onClick={() => {
-              setActiveModule('proposals');
-              setViewingProposal(null);
-              setIsCreating(false);
-            }}
-            className={`py-3.5 text-xs font-serif font-extrabold uppercase tracking-wider border-b-2 transition-all cursor-pointer flex items-center gap-2 ${
-              activeModule === 'proposals' 
-                ? isLuxury 
-                  ? 'border-[#C5A059] text-[#C5A059]' 
-                  : 'border-blue-600 text-blue-700' 
-                : isLuxury 
-                  ? 'border-transparent text-slate-400 hover:text-white' 
-                  : 'border-transparent text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <FileText className="h-4 w-4" />
-            Proposals Directory
-          </button>
-          <button
-            onClick={() => {
-              setActiveModule('suppliers');
-            }}
-            className={`py-3.5 text-xs font-serif font-extrabold uppercase tracking-wider border-b-2 transition-all cursor-pointer flex items-center gap-2 ${
-              activeModule === 'suppliers' 
-                ? isLuxury 
-                  ? 'border-[#C5A059] text-[#C5A059]' 
-                  : 'border-blue-600 text-blue-700' 
-                : isLuxury 
-                  ? 'border-transparent text-slate-400 hover:text-white' 
-                  : 'border-transparent text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <Users className="h-4 w-4" />
-            Supplier Partnership & Profits
-          </button>
-        </div>
-      </div>
-
-      {/* PRIMARY STAGE SCREEN SPACE */}
-      <main className="flex-grow max-w-7xl mx-auto px-4 md:px-6 py-8 w-full">
+        {/* PRIMARY STAGE SCREEN SPACE */}
+        <main className="flex-grow max-w-7xl mx-auto px-4 md:px-8 py-8 w-full space-y-8">
         
         {activeModule === 'suppliers' ? (
           <SupplierProfitDesk />
@@ -874,144 +872,151 @@ export default function App() {
           /* VIEW 3: RICH METRICS & SEARCH ARCHIVE DASHBOARD */
           <div id="dashboard-main-view" className="space-y-8 font-sans">
             
-            {/* SaaS Metrics block */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* ENLARGED MODERN SAAS KPI CARDS */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
               
-              <div className={`p-5 rounded-2xl flex items-center gap-4 border transition-all ${
+              {/* Card 1: Total Pipeline Value */}
+              <div className={`p-6 rounded-2xl border transition-all duration-300 hover:-translate-y-1 ${
                 isLuxury 
-                  ? 'bg-[#111C35]/65 border-[#C5A059]/20 shadow-[0_8px_30px_rgb(0,0,0,0.55)] text-white' 
-                  : 'bg-white border border-slate-200 shadow-xs'
+                  ? 'bg-[#0F172A] border-slate-800/80 shadow-xl hover:border-[#C5A059]/40 text-white' 
+                  : 'bg-white border-slate-200 shadow-xs hover:shadow-md'
               }`}>
-                <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${
-                  isLuxury ? 'bg-[#C5A059]/10 text-[#C5A059] border border-[#C5A059]/20' : 'bg-blue-50 text-blue-600'
-                }`}>
-                  <Database className="h-5 w-5" />
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400">
+                    Total Pipeline Value
+                  </span>
+                  <div className="h-9 w-9 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center">
+                    <TrendingUp className="h-4.5 w-4.5" />
+                  </div>
                 </div>
-                <div>
-                  <span className="text-[10px] uppercase font-mono tracking-wider text-slate-400 block mb-0.5">Stored Proposals</span>
-                  <strong className={`text-xl font-bold ${isLuxury ? 'text-white' : 'text-slate-800'}`}>{proposals.length} Saved</strong>
+                <div className="text-2xl font-serif font-extrabold text-[#C5A059]">
+                  {formatQAR(totalValueSum)}
+                </div>
+                <div className="mt-3 pt-3 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+                  <span className="text-emerald-400 font-semibold flex items-center gap-1">
+                    <ArrowUpRight className="h-3.5 w-3.5" /> +18.4%
+                  </span>
+                  <span>QAR Contract Portfolio</span>
                 </div>
               </div>
 
-              <div className={`p-5 rounded-2xl flex items-center gap-4 border transition-all ${
+              {/* Card 2: Active Proposals Count */}
+              <div className={`p-6 rounded-2xl border transition-all duration-300 hover:-translate-y-1 ${
                 isLuxury 
-                  ? 'bg-[#111C35]/65 border-[#C5A059]/20 shadow-[0_8px_30px_rgb(0,0,0,0.55)] text-white' 
-                  : 'bg-white border border-slate-200 shadow-xs'
+                  ? 'bg-[#0F172A] border-slate-800/80 shadow-xl hover:border-[#C5A059]/40 text-white' 
+                  : 'bg-white border-slate-200 shadow-xs hover:shadow-md'
               }`}>
-                <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${
-                  isLuxury ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-emerald-500/10 text-emerald-600'
-                }`}>
-                  <TrendingUp className="h-5 w-5" />
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400">
+                    Stored Proposals
+                  </span>
+                  <div className="h-9 w-9 rounded-xl bg-[#C5A059]/10 text-[#C5A059] border border-[#C5A059]/20 flex items-center justify-center">
+                    <Database className="h-4.5 w-4.5" />
+                  </div>
                 </div>
-                <div>
-                  <span className="text-[10px] uppercase font-mono tracking-wider text-slate-400 block mb-0.5">Total Pipeline Value</span>
-                  <strong className={`text-xl font-bold ${isLuxury ? 'text-[#C5A059] font-serif' : 'text-slate-800'}`}>{formatQAR(totalValueSum)}</strong>
+                <div className="text-2xl font-bold text-white">
+                  {proposals.length} <span className="text-sm font-normal text-slate-400">Deals</span>
+                </div>
+                <div className="mt-3 pt-3 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+                  <span className="text-[#C5A059] font-semibold">100% Delivery Rate</span>
+                  <span>Active Memory Sync</span>
                 </div>
               </div>
 
-              <div className={`p-5 rounded-2xl flex items-center gap-4 border transition-all ${
+              {/* Card 3: Web Platforms Ratio */}
+              <div className={`p-6 rounded-2xl border transition-all duration-300 hover:-translate-y-1 ${
                 isLuxury 
-                  ? 'bg-[#111C35]/65 border-[#C5A059]/20 shadow-[0_8px_30px_rgb(0,0,0,0.55)] text-white' 
-                  : 'bg-white border border-slate-200 shadow-xs'
+                  ? 'bg-[#0F172A] border-slate-800/80 shadow-xl hover:border-[#C5A059]/40 text-white' 
+                  : 'bg-white border-slate-200 shadow-xs hover:shadow-md'
               }`}>
-                <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${
-                  isLuxury ? 'bg-[#C5A059]/10 text-[#C5A059] border border-[#C5A059]/20' : 'bg-amber-50 text-amber-600'
-                }`}>
-                  <FileText className="h-5 w-5" />
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400">
+                    Web & App Platforms
+                  </span>
+                  <div className="h-9 w-9 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20 flex items-center justify-center">
+                    <FileText className="h-4.5 w-4.5" />
+                  </div>
                 </div>
-                <div>
-                  <span className="text-[10px] uppercase font-mono tracking-wider text-slate-400 block mb-0.5">Web Platforms ratio</span>
-                  <strong className={`text-xl font-bold ${isLuxury ? 'text-white' : 'text-slate-800'}`}>{webProposalsCount} Active</strong>
+                <div className="text-2xl font-bold text-white">
+                  {webProposalsCount} <span className="text-sm font-normal text-slate-400">Active</span>
+                </div>
+                <div className="mt-3 pt-3 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+                  <span className="text-blue-400 font-semibold">Custom Architecture</span>
+                  <span>Digital Assets</span>
                 </div>
               </div>
 
-              <div className={`p-5 rounded-2xl flex items-center gap-4 border transition-all ${
+              {/* Card 4: Branding Campaigns */}
+              <div className={`p-6 rounded-2xl border transition-all duration-300 hover:-translate-y-1 ${
                 isLuxury 
-                  ? 'bg-[#111C35]/65 border-[#C5A059]/20 shadow-[0_8px_30px_rgb(0,0,0,0.55)] text-white' 
-                  : 'bg-white border border-slate-200 shadow-xs'
+                  ? 'bg-[#0F172A] border-slate-800/80 shadow-xl hover:border-[#C5A059]/40 text-white' 
+                  : 'bg-white border-slate-200 shadow-xs hover:shadow-md'
               }`}>
-                <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${
-                  isLuxury ? 'bg-sky-500/10 text-sky-400 border border-sky-500/20' : 'bg-sky-50 text-sky-600'
-                }`}>
-                  <Sparkles className="h-5 w-5" />
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400">
+                    Identity & Branding
+                  </span>
+                  <div className="h-9 w-9 rounded-xl bg-sky-500/10 text-sky-400 border border-sky-500/20 flex items-center justify-center">
+                    <Sparkles className="h-4.5 w-4.5" />
+                  </div>
                 </div>
-                <div>
-                  <span className="text-[10px] uppercase font-mono tracking-wider text-slate-400 block mb-0.5">Branding Campaigns</span>
-                  <strong className={`text-xl font-bold ${isLuxury ? 'text-sky-350' : 'text-slate-800'}`}>{brandingProposalsCount} Issued</strong>
+                <div className="text-2xl font-bold text-white">
+                  {brandingProposalsCount} <span className="text-sm font-normal text-slate-400">Suites</span>
+                </div>
+                <div className="mt-3 pt-3 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+                  <span className="text-sky-400 font-semibold">Brand Strategy</span>
+                  <span>Style Guides</span>
                 </div>
               </div>
 
             </div>
 
-            {/* Create Proposal Selector Bar */}
-            <div className={`p-6 rounded-2xl border transition-all flex flex-col md:flex-row items-start md:items-center justify-between gap-6 ${
-              isLuxury 
-                ? 'bg-[#0B1120] border-[#C5A059]/25 shadow-2xl text-white' 
-                : 'bg-slate-900 border border-slate-800 shadow-xl text-white'
-            }`}>
-              <div className="max-w-xl">
-                <h2 className="font-serif font-bold text-xl tracking-tight text-[#C5A059]">
-                  Design bespoke proposals instantly
-                </h2>
-                <p className="text-xs leading-relaxed font-sans text-slate-300 mt-1">
-                  Choose a blueprint target below. The wizard compiles locking master pages and asks only for clients specifics.
-                </p>
-              </div>
-
-              {/* Structured Button Grouping Matrix */}
-              <div className="flex flex-wrap items-center gap-2.5 shrink-0 max-w-2xl">
-                {/* Primary Action Button - Solid Gold/Amber Pill */}
-                <button
-                  onClick={() => startNewProposal('branding')}
-                  id="create-branding-proposal-btn"
-                  className="px-4 py-2.5 bg-gradient-to-r from-amber-400 via-amber-450 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-extrabold text-xs rounded-xl shadow-md hover:shadow-xl border border-amber-300 flex items-center gap-1.5 cursor-pointer transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.97]"
-                >
-                  <Plus className="h-4 w-4 text-slate-950 stroke-[3]" />
-                  <span>+ Branding & Identity Proposal</span>
-                </button>
-
-                {/* Secondary Action Buttons - Outlined Dark Pills */}
-                <button
-                  onClick={() => startNewProposal('website')}
-                  id="create-website-proposal-btn"
-                  className="px-4 py-2.5 bg-[#111C35] hover:bg-[#1E293B] text-amber-200 border border-[#C5A059]/40 hover:border-[#C5A059]/80 font-semibold text-xs rounded-xl shadow-xs hover:shadow-md flex items-center gap-1.5 cursor-pointer transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.97]"
-                >
-                  <Plus className="h-4 w-4 text-amber-300" />
-                  <span>+ Website Development Proposal</span>
-                </button>
+            {/* STATUS FILTER TOOLBAR & SEARCH CENTER */}
+            <div className="space-y-4">
+              
+              {/* Status Filter Tabs */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 p-3.5 rounded-2xl bg-[#0F172A] border border-slate-800/80">
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+                  <span className="text-[10px] font-mono font-bold uppercase text-slate-400 mr-2 flex items-center gap-1 shrink-0">
+                    <Filter className="h-3 w-3 text-[#C5A059]" /> Pipeline Status:
+                  </span>
+                  {[
+                    { id: 'all', label: 'All Deals', count: visibleProposals.length },
+                    { id: 'Under Process', label: 'In Progress', count: visibleProposals.filter(p => p.status === 'Under Process').length },
+                    { id: 'Under Review', label: 'Under Review', count: visibleProposals.filter(p => p.status === 'Under Review').length },
+                    { id: 'Completed', label: 'Completed', count: visibleProposals.filter(p => p.status === 'Completed').length },
+                    { id: 'Cancelled', label: 'Cancelled', count: visibleProposals.filter(p => p.status === 'Cancelled').length }
+                  ].map(tab => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setStatusFilter(tab.id)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 ${
+                        statusFilter === tab.id
+                          ? 'bg-[#C5A059] text-slate-950 font-bold shadow-sm'
+                          : 'text-slate-400 hover:text-white hover:bg-slate-800/80'
+                      }`}
+                    >
+                      <span>{tab.label}</span>
+                      <span className={`text-[9.5px] font-mono px-1.5 py-0.2 rounded-full ${
+                        statusFilter === tab.id ? 'bg-slate-950/20 text-slate-950 font-bold' : 'bg-slate-800 text-slate-400'
+                      }`}>
+                        {tab.count}
+                      </span>
+                    </button>
+                  ))}
+                </div>
 
                 <button
-                  onClick={() => startNewProposal('services')}
-                  id="create-services-proposal-btn"
-                  className="px-4 py-2.5 bg-[#111C35] hover:bg-[#1E293B] text-emerald-300 border border-emerald-500/40 hover:border-emerald-500/80 font-semibold text-xs rounded-xl shadow-xs hover:shadow-md flex items-center gap-1.5 cursor-pointer transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.97]"
+                  onClick={() => setIsTypeModalOpen(true)}
+                  className="px-3.5 py-1.5 bg-[#111C35] hover:bg-[#1E293B] text-[#C5A059] border border-[#C5A059]/30 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer shrink-0 transition-colors"
                 >
-                  <Plus className="h-4 w-4 text-emerald-400" />
-                  <span>+ Modular IT Services Proposal</span>
-                </button>
-
-                <button
-                  onClick={() => {
-                    setActiveModule('cheque-quotations');
-                    setViewingProposal(null);
-                    setIsCreating(false);
-                  }}
-                  id="create-cheque-proposal-btn"
-                  className="px-4 py-2.5 bg-[#111C35] hover:bg-[#1E293B] text-amber-200 border border-[#C5A059]/40 hover:border-[#C5A059]/80 font-semibold text-xs rounded-xl shadow-xs hover:shadow-md flex items-center gap-1.5 cursor-pointer transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.97]"
-                >
-                  <Plus className="h-4 w-4 text-amber-300" />
-                  <span>+ Cheque Printing Software</span>
-                </button>
-
-                <button
-                  onClick={() => startNewProposal('services')}
-                  id="create-whatsapp-proposal-btn"
-                  className="px-4 py-2.5 bg-[#111C35] hover:bg-[#1E293B] text-emerald-300 border border-emerald-500/40 hover:border-emerald-500/80 font-semibold text-xs rounded-xl shadow-xs hover:shadow-md flex items-center gap-1.5 cursor-pointer transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.97]"
-                >
-                  <Plus className="h-4 w-4 text-emerald-400" />
-                  <span>+ WhatsApp Marketing</span>
+                  <Plus className="h-3.5 w-3.5" />
+                  <span>Proposal Wizard</span>
                 </button>
               </div>
             </div>
+
+
 
             {/* HIGH-FIDELITY TEAM COLLABORATION HUB */}
             <div className="no-print">
@@ -1336,6 +1341,7 @@ export default function App() {
         </div>
       </footer>
 
+      </div>
 
       {showDbDiagnostics && (
         <div className="fixed inset-0 z-55 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm no-print p-4 animate-fade-in">

@@ -12,7 +12,8 @@ import ProposalDocumentView from './ProposalDocumentView';
 import { getScopeCategory, ScopeCategory } from '../utils/scopeClassifier';
 import { 
   Building2, User, Calendar, FileText, CheckSquare, Clock, Landmark, Settings, 
-  Trash2, Plus, ArrowLeft, ArrowRight, Eye, Sparkles, Check, HelpCircle, ArrowUp, ArrowDown, Edit3, X 
+  Trash2, Plus, ArrowLeft, ArrowRight, Eye, Sparkles, Check, HelpCircle, ArrowUp, ArrowDown, Edit3, X,
+  Briefcase, Phone, Mail
 } from 'lucide-react';
 
 interface ProposalWizardProps {
@@ -66,6 +67,10 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
     newDefault.clientName = proposal.clientName;
     newDefault.companyName = proposal.companyName;
     newDefault.proposalDate = proposal.proposalDate;
+    newDefault.clientPocName = proposal.clientPocName;
+    newDefault.clientPocDesignation = proposal.clientPocDesignation;
+    newDefault.clientPocPhone = proposal.clientPocPhone;
+    newDefault.clientPocEmail = proposal.clientPocEmail;
     newDefault.briefDescription = proposal.briefDescription;
     newDefault.preparedByName = proposal.preparedByName;
     newDefault.preparedByCompany = proposal.preparedByCompany;
@@ -914,7 +919,7 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
                       <User className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
                       <input
                         type="text"
-                        placeholder="e.g. Mannai TechHub Group"
+                        placeholder="Client Organization Name"
                         value={proposal.clientName}
                         onChange={(e) => updateField('clientName', e.target.value)}
                         className="w-full pl-9 pr-4 py-2 border border-slate-300 rounded-lg text-xs leading-5 font-sans focus:outline-hidden focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-shadow bg-amber-50/5"
@@ -932,7 +937,7 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
                       <Building2 className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
                       <input
                         type="text"
-                        placeholder={isBranding ? "e.g. Mannai TechHub" : "e.g. Dual-Language Corporate Platform"}
+                        placeholder={isBranding ? "Target Brand Name" : "Official Project Title"}
                         value={proposal.companyName}
                         onChange={(e) => updateField('companyName', e.target.value)}
                         className="w-full pl-9 pr-4 py-2 border border-slate-300 rounded-lg text-xs leading-5 font-sans focus:outline-hidden focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-shadow"
@@ -958,10 +963,86 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
                 </div>
               </div>
 
-              {/* SECTION C: Preparer Information */}
+              {/* SECTION C: Client Point of Contact (POC) Details */}
+              <div className="space-y-4 pt-4 border-t border-slate-100">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-sans font-bold text-slate-400 tracking-wider uppercase mb-1">
+                    C. Client Point of Contact (POC) Details
+                  </h4>
+                  <span className="text-[10px] text-slate-400 font-mono">Stored in database for CRM, follow-ups & history</span>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* POC Representative Name */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-sans font-semibold text-slate-700">Representative / Contact Person Name</label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                      <input
+                        type="text"
+                        placeholder="Contact Person Name"
+                        value={proposal.clientPocName ?? ""}
+                        onChange={(e) => updateField('clientPocName', e.target.value)}
+                        className="w-full pl-9 pr-4 py-2 border border-slate-300 rounded-lg text-xs leading-5 font-sans focus:outline-hidden focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-shadow bg-blue-50/10"
+                        id="input-client-poc-name"
+                      />
+                    </div>
+                  </div>
+
+                  {/* POC Designation */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-sans font-semibold text-slate-700">Designation / Official Title</label>
+                    <div className="relative">
+                      <Briefcase className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                      <input
+                        type="text"
+                        placeholder="Designation / Title"
+                        value={proposal.clientPocDesignation ?? ""}
+                        onChange={(e) => updateField('clientPocDesignation', e.target.value)}
+                        className="w-full pl-9 pr-4 py-2 border border-slate-300 rounded-lg text-xs leading-5 font-sans focus:outline-hidden focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-shadow"
+                        id="input-client-poc-designation"
+                      />
+                    </div>
+                  </div>
+
+                  {/* POC Contact Phone */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-sans font-semibold text-slate-700">Direct Mobile / Contact Number</label>
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                      <input
+                        type="tel"
+                        placeholder="Contact Number"
+                        value={proposal.clientPocPhone ?? ""}
+                        onChange={(e) => updateField('clientPocPhone', e.target.value)}
+                        className="w-full pl-9 pr-4 py-2 border border-slate-300 rounded-lg text-xs leading-5 font-sans focus:outline-hidden focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-shadow"
+                        id="input-client-poc-phone"
+                      />
+                    </div>
+                  </div>
+
+                  {/* POC Email */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-sans font-semibold text-slate-700">Official Email ID</label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                      <input
+                        type="email"
+                        placeholder="Email Address"
+                        value={proposal.clientPocEmail ?? ""}
+                        onChange={(e) => updateField('clientPocEmail', e.target.value)}
+                        className="w-full pl-9 pr-4 py-2 border border-slate-300 rounded-lg text-xs leading-5 font-sans focus:outline-hidden focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-shadow"
+                        id="input-client-poc-email"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION D: Preparer Information */}
               <div className="space-y-4 pt-4 border-t border-slate-100">
                 <h4 className="text-xs font-sans font-bold text-slate-400 tracking-wider uppercase mb-1">
-                  C. Preparer Information
+                  D. Preparer Information
                 </h4>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

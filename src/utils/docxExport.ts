@@ -86,13 +86,13 @@ export async function exportProposalToDocx(proposal: Proposal) {
     rows: [
       new TableRow({
         children: [
-          createMetaCell('CLIENT NAME', proposal.clientName || 'Valued Client'),
+          createMetaCell('CLIENT ORGANIZATION', proposal.companyName || proposal.clientName || 'Valued Client'),
           createMetaCell('DATE PREPARED', proposal.proposalDate || new Date().toISOString().split('T')[0]),
         ],
       }),
       new TableRow({
         children: [
-          createMetaCell('PROPOSAL REF', `REF-${proposal.id.substring(0, 8).toUpperCase()}`),
+          createMetaCell('CLIENT POC / CONTACT', proposal.clientPocName ? `${proposal.clientPocName}${proposal.clientPocDesignation ? ` (${proposal.clientPocDesignation})` : ''}` : proposal.clientName || 'Valued Client'),
           createMetaCell('PROJECT TYPE', isBranding ? 'Branding & Visual Identity' : isWebsite ? 'Website Design & Development' : 'Modular Digital Services'),
         ],
       }),
@@ -755,8 +755,8 @@ export async function exportProposalToDocx(proposal: Proposal) {
             margins: { top: 150, bottom: 150, left: 150, right: 150 },
             children: [
               new Paragraph({ children: [new TextRun({ text: 'ACCEPTED & APPROVED BY CLIENT:', bold: true, color: COLOR_PRIMARY, size: 18 })], spacing: { after: 120 } }),
-              new Paragraph({ children: [new TextRun({ text: proposal.clientName || 'Client Representative Name', bold: true, size: 20, color: COLOR_SLATE_DARK })], spacing: { after: 60 } }),
-              new Paragraph({ children: [new TextRun({ text: proposal.companyName || 'Client Organization', size: 18, color: COLOR_SLATE_MUTED })], spacing: { after: 200 } }),
+              new Paragraph({ children: [new TextRun({ text: proposal.clientPocName || proposal.clientName || 'Client Representative Name', bold: true, size: 20, color: COLOR_SLATE_DARK })], spacing: { after: 60 } }),
+              new Paragraph({ children: [new TextRun({ text: `${proposal.clientPocDesignation ? proposal.clientPocDesignation + ' | ' : ''}${proposal.companyName || proposal.clientName || 'Client Organization'}`, size: 18, color: COLOR_SLATE_MUTED })], spacing: { after: 200 } }),
               new Paragraph({ children: [new TextRun({ text: 'Signature: __________________________', size: 18, color: COLOR_SLATE_MUTED })] }),
               new Paragraph({ children: [new TextRun({ text: 'Date: ________________________', size: 18, color: COLOR_SLATE_MUTED })], spacing: { before: 60 } }),
             ],

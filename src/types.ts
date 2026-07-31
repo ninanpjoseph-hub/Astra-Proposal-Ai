@@ -256,6 +256,12 @@ export interface Proposal {
   companyName: string; // Also is Project Name for Website
   proposalDate: string;
   
+  // Client Point of Contact (POC) Info
+  clientPocName?: string;
+  clientPocDesignation?: string;
+  clientPocPhone?: string;
+  clientPocEmail?: string;
+  
   // Executive Summary
   briefDescription: string; // Specific project description or business overview
   
