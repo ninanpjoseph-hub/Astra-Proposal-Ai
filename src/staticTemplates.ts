@@ -96,12 +96,11 @@ export const WEBSITE_TEMPLATES: Record<string, StaticPage> = {
     ]
   },
   goingLive: {
-    title: "Deployment & Going Live",
-    subtitle: "Flawless Transitions to Server Production",
+    title: "Going Live",
+    subtitle: "Deployment & Launch",
     content: [
-      "The Migration Checklist: Safe transfers of staging environments to the main DNS host, securely routing live HTTPS credentials.",
-      "Post-Launch Testing: In-place verification of form integrations, analytics events, load indicators, and API validation checks.",
-      "Search Engine Handover: Direct sitemap registration to Google Search Console to ignite direct crawling indexation."
+      "Testing & Quality Assurance — Comprehensive checks including browser compatibility across Google Chrome, Mozilla Firefox, Safari, and Microsoft Edge; HTML/CSS validation; functional testing of features, forms, links, and interactive elements; performance and usability checks; and content accuracy verification.",
+      "Website Launch — Migration from staging to the live production server, including final pre-launch checklist review, deployment of website files and database, configuration of required settings/integrations, and post-launch verification."
     ]
   },
   timelineMethodology: {

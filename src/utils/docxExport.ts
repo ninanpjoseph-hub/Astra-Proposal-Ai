@@ -876,9 +876,159 @@ export async function exportProposalToDocx(proposal: Proposal) {
   children.push(createSpacer(300));
 
   // ==========================================
-  // 6. ACCEPTANCE & SIGNATURES BLOCK
+  // 5. MAINTENANCE AGREEMENT
   // ==========================================
-  children.push(createSectionHeader('5. Agreement & Project Authorization'));
+  children.push(createSectionHeader('5. 1-Year Maintenance Agreement'));
+
+  children.push(
+    new Paragraph({
+      children: [
+        new TextRun({ text: "Here's what is included in your 1 year free maintenance contract:", bold: true, size: 21, color: COLOR_PRIMARY }),
+      ],
+      spacing: { after: 120 },
+    })
+  );
+
+  const includedItems = [
+    "Edit, revise, update or create new textural/minor graphical content.",
+    "Web bug fixes and updates, plugin updates and enhancements.",
+    "Consultation and guidance on using the website.",
+    "Monitoring of website uptime and performance tuning.",
+    "Priority support when downtime or hacking, has been identified.",
+    `${proposal.clientName || 'Mannai TechHub'} web and full and database backup.`
+  ];
+
+  includedItems.forEach(item => {
+    children.push(
+      new Paragraph({
+        children: [
+          new TextRun({ text: '•  ', bold: true, color: COLOR_GOLD, size: 20 }),
+          new TextRun({ text: item, size: 20, color: COLOR_SLATE_DARK }),
+        ],
+        spacing: { after: 80 },
+        indent: { left: 240 },
+      })
+    );
+  });
+
+  children.push(createSpacer(150));
+
+  children.push(
+    new Paragraph({
+      children: [
+        new TextRun({ text: "What is NOT included in this agreement?", bold: true, size: 21, color: "991B1B" }),
+      ],
+      spacing: { after: 120 },
+    })
+  );
+
+  const excludedItems = [
+    "Website redesign, new frameworks or redevelopment equaling more than 50% change to a webpage, website or web graphics.",
+    "New Blogs, syndications, API integration, purchase of third party plugins, mobile applications, or E-Commerce shopping carts that would require a new proposal/agreement.",
+    "Website Marketing – the scope of this contract does not include making or adding any Meta-tags, Alt-tags, Titles, Keywords or Page Descriptions. These tasks fall under the scope of Search Engine Optimization and require a different contract."
+  ];
+
+  excludedItems.forEach(item => {
+    children.push(
+      new Paragraph({
+        children: [
+          new TextRun({ text: '•  ', bold: true, color: "DC2626", size: 20 }),
+          new TextRun({ text: item, size: 20, color: COLOR_SLATE_DARK }),
+        ],
+        spacing: { after: 80 },
+        indent: { left: 240 },
+      })
+    );
+  });
+
+  children.push(createSpacer(300));
+
+  // ==========================================
+  // 6. TERMS & EXCLUSIONS
+  // ==========================================
+  children.push(createSectionHeader('6. Terms & Exclusions'));
+
+  children.push(
+    new Paragraph({
+      children: [
+        new TextRun({ text: "Commercial Terms:", bold: true, size: 21, color: COLOR_PRIMARY }),
+      ],
+      spacing: { after: 100 },
+    })
+  );
+
+  children.push(
+    new Paragraph({
+      children: [
+        new TextRun({ text: '•  ', bold: true, color: COLOR_GOLD, size: 20 }),
+        new TextRun({ text: 'INVOICING: ', bold: true, color: COLOR_PRIMARY, size: 20 }),
+        new TextRun({ text: '50% upfront on proposal approval and 50% on project completion and delivery.', size: 20, color: COLOR_SLATE_DARK }),
+      ],
+      spacing: { after: 80 },
+      indent: { left: 240 },
+    })
+  );
+
+  children.push(
+    new Paragraph({
+      children: [
+        new TextRun({ text: '•  ', bold: true, color: COLOR_GOLD, size: 20 }),
+        new TextRun({ text: 'PAYMENT TERMS: ', bold: true, color: COLOR_PRIMARY, size: 20 }),
+        new TextRun({ text: 'Payment due within 20 days from date of invoice.', size: 20, color: COLOR_SLATE_DARK }),
+      ],
+      spacing: { after: 120 },
+      indent: { left: 240 },
+    })
+  );
+
+  children.push(
+    new Paragraph({
+      children: [
+        new TextRun({ text: "Exclusions:", bold: true, size: 21, color: "991B1B" }),
+      ],
+      spacing: { after: 100 },
+    })
+  );
+
+  const generalExclusions = [
+    "Printing of any item.",
+    "Production management.",
+    "Naming registration.",
+    "Domaine name purchase.",
+    "Hosting purchase.",
+    "Utilizing any third party plugins or purchase of any plugins.",
+    "Content development-detailing / copywriting / proofreading / translation.",
+    "Purchase images from online image libraries.",
+    "Photo-shoot/Video/models.",
+    "Any third party not mentioned in the proposal.",
+    "Deliverables not mentioned in the proposal.",
+    "Search engine optimization (SEO).",
+    "Google search engine site submission.",
+    "Social media management, buying or media buying.",
+    "Font purchase.",
+    "Signage and/or signage way-finding.",
+    "Brand Management."
+  ];
+
+  generalExclusions.forEach(item => {
+    children.push(
+      new Paragraph({
+        children: [
+          new TextRun({ text: '•  ', bold: true, color: "DC2626", size: 20 }),
+          new TextRun({ text: item, size: 20, color: COLOR_SLATE_DARK }),
+        ],
+        spacing: { after: 60 },
+        indent: { left: 240 },
+      })
+    );
+  });
+
+  children.push(createSpacer(300));
+
+  // ==========================================
+  // 7. ACCEPTANCE & SIGNATURES BLOCK
+  // ==========================================
+  children.push(createSectionHeader('7. Agreement & Project Authorization'));
 
   children.push(
     new Paragraph({

@@ -566,11 +566,11 @@ export function createDefaultProposal(type: ProposalType, initialClientName?: st
       ecommerceOdooSyncModules: ["Product Catalog", "Real-Time Inventory Status", "Sales Orders Processing", "Customer Profiles"],
       ecommercePaymentGateways: ["Credit/Debit Cards", "Cash on Delivery (COD)"],
       ecommerceTechStack: {
-        website: "React.js / Next.js",
-        mobile: "Flutter (Android & iOS)",
-        backend: "Node.js",
-        database: "PostgreSQL",
-        hosting: "AWS / Cloud Infrastructure"
+        website: "HTML5 & PHP CMS",
+        mobile: "Responsive Web Design",
+        backend: "WordPress CMS (PHP)",
+        database: "MySQL",
+        hosting: "Web Server Infrastructure"
       }
     },
 

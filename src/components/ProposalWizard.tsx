@@ -3352,11 +3352,11 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
                           </label>
                           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                             {[
-                              { label: "Frontend", key: "website", options: ["React.js / Next.js", "Vue.js / Nuxt.js", "Pure Static SPA"] },
-                              { label: "Mobile Apps", key: "mobile", options: ["Flutter (Android & iOS)", "React Native", "Native iOS/Android"] },
-                              { label: "Backend API", key: "backend", options: ["Node.js", "Laravel", "Python Django"] },
-                              { label: "Database", key: "database", options: ["PostgreSQL", "MySQL", "MongoDB"] },
-                              { label: "Hosting", key: "hosting", options: ["AWS Cloud", "Azure Cloud", "Google Cloud (GCP)"] }
+                              { label: "Frontend", key: "website", options: ["HTML5 & PHP CMS", "React.js / Next.js", "Vue.js / Nuxt.js", "Pure Static SPA"] },
+                              { label: "Mobile Apps", key: "mobile", options: ["Responsive Web Design", "Flutter (Android & iOS)", "React Native", "Native iOS/Android"] },
+                              { label: "Backend API", key: "backend", options: ["WordPress CMS (PHP)", "Node.js", "Laravel", "Python Django"] },
+                              { label: "Database", key: "database", options: ["MySQL", "PostgreSQL", "MongoDB"] },
+                              { label: "Hosting", key: "hosting", options: ["Web Server Infrastructure", "AWS Cloud", "Azure Cloud", "Google Cloud (GCP)"] }
                             ].map((s) => (
                               <div key={s.key} className="flex flex-col gap-1">
                                 <span className="text-[9px] font-bold text-slate-400 uppercase font-sans">{s.label}</span>

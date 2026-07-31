@@ -860,14 +860,7 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
 
       const group3 = scopePages.slice(5);
       if (group3.length > 0) {
-        const titles = group3.map(g => {
-          let label = g.categoryTitle;
-          if (g.subPageLabel) {
-            label += ` (${g.subPageLabel.toUpperCase()})`;
-          }
-          return label.replace(" & Functionality", "").replace(" Structure", "").replace(" & Operational Delivery", "");
-        }).join(" & ");
-        list.push({ id: "scope_combined_3", title: `Scope Sprints: ${titles}`, pageNumStr: String(currentNum).padStart(2, '0') });
+        list.push({ id: "scope_combined_3", title: "Going Live & Deployment", pageNumStr: String(currentNum).padStart(2, '0') });
         currentNum++;
       }
 
@@ -880,6 +873,12 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
     currentNum++;
 
     list.push({ id: "financials", title: "Proposal Financials", pageNumStr: String(currentNum).padStart(2, '0') });
+    currentNum++;
+
+    list.push({ id: "maintenance_terms", title: "1-Year Maintenance Terms", pageNumStr: String(currentNum).padStart(2, '0') });
+    currentNum++;
+
+    list.push({ id: "terms_exclusions", title: "Terms & Exclusions", pageNumStr: String(currentNum).padStart(2, '0') });
     currentNum++;
 
     list.push({ id: "acceptance", title: "Acceptance & Authorization", pageNumStr: String(currentNum).padStart(2, '0') });
@@ -2708,11 +2707,11 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '10px' }}>
                       {[
-                        { label: "Frontend", val: proposal.websiteScope.ecommerceTechStack?.website || "React / Next.js" },
-                        { label: "Mobile Apps", val: proposal.websiteScope.ecommerceTechStack?.mobile || "Flutter (iOS/Android)" },
-                        { label: "Backend API", val: proposal.websiteScope.ecommerceTechStack?.backend || "Node.js" },
-                        { label: "Database", val: proposal.websiteScope.ecommerceTechStack?.database || "PostgreSQL" },
-                        { label: "Hosting", val: proposal.websiteScope.ecommerceTechStack?.hosting || "AWS Cloud" }
+                        { label: "Frontend", val: proposal.websiteScope.ecommerceTechStack?.website || "HTML5 & PHP CMS" },
+                        { label: "Mobile Apps", val: proposal.websiteScope.ecommerceTechStack?.mobile || "Responsive Web Design" },
+                        { label: "Backend API", val: proposal.websiteScope.ecommerceTechStack?.backend || "WordPress CMS (PHP)" },
+                        { label: "Database", val: proposal.websiteScope.ecommerceTechStack?.database || "MySQL" },
+                        { label: "Hosting", val: proposal.websiteScope.ecommerceTechStack?.hosting || "Web Server Infrastructure" }
                       ].map((stackIdx) => (
                         <div key={stackIdx.label} style={{ backgroundColor: '#ffffff', border: '1px solid #e0ddd5', borderRadius: '6px', padding: '8px', textAlign: 'center', boxSizing: 'border-box' }}>
                           <span style={{ display: 'block', fontSize: '8px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#B8962E', fontWeight: 'bold' }}>
@@ -3097,86 +3096,100 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
                     <ProposalPageFooter proposal={proposal} pageNumber={pNumber2} />
                   </div>
 
-                  {/* Page 9: Scope Page 3 */}
+                  {/* Page 9: Scope Page 3 - Going Live */}
                   <div id={`page-${pNumber3}-scope-combined-3`} className="proposal-page relative flex flex-col justify-between overflow-hidden" style={{ boxSizing: 'border-box' }}>
                     <ProposalWatermark proposal={proposal} />
                     <ProposalCustomLetterheadBackground proposal={proposal} />
                     <ProposalPageHeader proposal={proposal} pageNumber={pNumber3} />
 
                     <div className="my-auto w-full relative z-10 py-1" style={{ padding: '0 24px', boxSizing: 'border-box' }}>
-                      <div className="max-w-2xl mx-auto" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                      <div className="max-w-2xl mx-auto" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                         
-                        <div style={{ textAlign: 'center', borderBottom: '1px solid #e0ddd5', paddingBottom: '8px', marginBottom: '8px' }}>
-                          <span style={{ display: 'block', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#B8962E', fontWeight: 'bold' }}>
-                            DELIVERABLE TRACK
+                        {/* Header */}
+                        <div style={{ textAlign: 'center', borderBottom: '1px solid #e0ddd5', paddingBottom: '6px', marginBottom: '2px' }}>
+                          <span style={{ display: 'block', fontSize: '9px', letterSpacing: '0.15em', textTransform: 'uppercase', color: '#B8962E', fontWeight: 'bold' }}>
+                            DEPLOYMENT & LAUNCH
                           </span>
-                          <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#1a2744', marginTop: '2px', fontFamily: 'serif' }}>
-                            Operational Handover & Production Standards
+                          <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#1a2744', marginTop: '1px', fontFamily: 'serif' }}>
+                            Going Live
                           </h2>
+                          <p style={{ fontSize: '11px', fontWeight: '600', color: '#4b5563', margin: '2px 0 0 0' }}>
+                            Deployment & Launch
+                          </p>
                         </div>
 
-                        {/* SECTION 06 */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                          <div style={{ borderLeft: '3px solid #B8962E', paddingLeft: '10px', marginBottom: '4px', textAlign: 'left' }}>
-                            <span style={{ display: 'block', fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#B8962E', fontWeight: 'bold' }}>
-                              SECTION 06
-                            </span>
-                            <h3 style={{ fontSize: '13px', fontWeight: 'bold', color: '#1a2744', marginTop: '1px', fontFamily: 'serif' }}>
-                              Custom & Operational Delivery (Part A)
-                            </h3>
-                          </div>
-
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                            <div style={{ backgroundColor: '#ffffff', border: '1px solid #e0ddd5', borderRadius: '8px', padding: '14px 16px', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
-                              <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#1a2744', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                <span style={{ color: '#B8962E', fontWeight: 'bold' }}>✓</span> User Guides & Technical Documentation
-                              </h4>
-                              <p style={{ fontSize: '11.5px', color: '#4b5563', lineHeight: '1.55', margin: '0' }}>
-                                Publication of operator user onboarding guides, developer system maps, data dictionaries, API path references, and admin panel walkthrough documentation.
-                              </p>
-                            </div>
-
-                            <div style={{ backgroundColor: '#ffffff', border: '1px solid #e0ddd5', borderRadius: '8px', padding: '14px 16px', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
-                              <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#1a2744', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                <span style={{ color: '#B8962E', fontWeight: 'bold' }}>✓</span> Corporate Staff Training & Maintenance Support
-                              </h4>
-                              <p style={{ fontSize: '11.5px', color: '#4b5563', lineHeight: '1.55', margin: '0' }}>
-                                Live interactive training workshops for administrators and branch agents, plus initial post-launch AMC support covering bug resolution and performance monitoring.
-                              </p>
-                            </div>
-
-                            <div style={{ backgroundColor: '#ffffff', border: '1px solid #e0ddd5', borderRadius: '8px', padding: '14px 16px', display: 'flex', flexDirection: 'column', boxSizing: 'border-box', gridColumn: 'span 2' }}>
-                              <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#1a2744', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                <span style={{ color: '#B8962E', fontWeight: 'bold' }}>✓</span> Multilingual Language Routing & Translation
-                              </h4>
-                              <p style={{ fontSize: '11.5px', color: '#4b5563', lineHeight: '1.55', margin: '0' }}>
-                                Comprehensive dual-language subfolder routing containing a clean visual menu language switcher to support full English and Arabic content delivery across all pages.
-                              </p>
-                            </div>
-                          </div>
+                        {/* Intro paragraph */}
+                        <div style={{ backgroundColor: '#fafaf8', border: '1px solid #e0ddd5', borderRadius: '8px', padding: '10px 14px' }}>
+                          <p style={{ fontSize: '10.5px', color: '#374151', lineHeight: '1.5', margin: 0, textAlign: 'left' }}>
+                            The final phase of the website development process involves thorough testing, deployment, and the official launch of the website. Astra follows a structured approach to ensure the website performs seamlessly, maintains technical stability, and delivers an optimal user experience across platforms.
+                          </p>
                         </div>
 
-                        {/* SECTION 07 */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                          <div style={{ borderLeft: '3px solid #B8962E', paddingLeft: '10px', marginBottom: '4px', textAlign: 'left' }}>
-                            <span style={{ display: 'block', fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#B8962E', fontWeight: 'bold' }}>
-                              SECTION 07
-                            </span>
-                            <h3 style={{ fontSize: '13px', fontWeight: 'bold', color: '#1a2744', marginTop: '1px', fontFamily: 'serif' }}>
-                              Custom & Operational Delivery (Part B)
-                            </h3>
-                          </div>
+                        {/* 2-Column Grid for Testing & QA and Website Launch */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', textAlign: 'left' }}>
+                          
+                          {/* Testing & QA Card */}
+                          <div style={{ backgroundColor: '#ffffff', border: '1px solid #e0ddd5', borderRadius: '8px', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <div style={{ borderLeft: '3px solid #B8962E', paddingLeft: '8px' }}>
+                              <h3 style={{ fontSize: '12.5px', fontWeight: 'bold', color: '#1a2744', margin: 0, fontFamily: 'serif' }}>
+                                Testing & Quality Assurance
+                              </h3>
+                            </div>
+                            <p style={{ fontSize: '10px', color: '#4b5563', lineHeight: '1.45', margin: 0 }}>
+                              Testing is a critical component of the final stages of the project. Astra will conduct comprehensive quality assurance checks to ensure the website meets the required standards for performance, functionality, compatibility, and accuracy.
+                            </p>
 
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                            <div style={{ backgroundColor: '#ffffff', border: '1px solid #e0ddd5', borderRadius: '8px', padding: '14px 16px', display: 'flex', flexDirection: 'column', boxSizing: 'border-box', gridColumn: 'span 2' }}>
-                              <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#1a2744', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                <span style={{ color: '#B8962E', fontWeight: 'bold' }}>✓</span> HubSpot CRM Sync & WhatsApp Live Support
-                              </h4>
-                              <p style={{ fontSize: '11.5px', color: '#4b5563', lineHeight: '1.55', margin: '0' }}>
-                                Dynamic live chat popups linking direct with localised client WhatsApp triggers, paired with secure custom HubSpot CRM pipeline integrations for lead capture and client follow-up automation.
-                              </p>
+                            <div>
+                              <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#1a2744', display: 'block', marginBottom: '4px' }}>
+                                The testing process will include:
+                              </span>
+                              <ul style={{ margin: 0, paddingLeft: '14px', fontSize: '9.5px', color: '#4b5563', lineHeight: '1.45', listStyleType: 'disc' }}>
+                                <li>Browser compatibility testing across major platforms</li>
+                                <li>HTML and CSS validation</li>
+                                <li>Functional testing of all website features, forms, links, and interactive elements</li>
+                                <li>Performance and usability checks</li>
+                                <li>Verification of content accuracy and overall website behaviour</li>
+                              </ul>
+                            </div>
+
+                            <div style={{ paddingTop: '6px', borderTop: '1px dashed #e0ddd5' }}>
+                              <span style={{ fontSize: '9.5px', fontWeight: 'bold', color: '#1a2744', display: 'block', marginBottom: '4px' }}>
+                                We optimize for major browsers:
+                              </span>
+                              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px' }}>
+                                {['Google Chrome', 'Mozilla Firefox', 'Safari', 'Microsoft Edge'].map((browser, idx) => (
+                                  <div key={idx} style={{ backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '4px', padding: '3px 6px', fontSize: '9px', fontWeight: '600', color: '#334155', textAlign: 'center' }}>
+                                    {browser}
+                                  </div>
+                                ))}
+                              </div>
                             </div>
                           </div>
+
+                          {/* Website Launch Card */}
+                          <div style={{ backgroundColor: '#ffffff', border: '1px solid #e0ddd5', borderRadius: '8px', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <div style={{ borderLeft: '3px solid #1a2744', paddingLeft: '8px' }}>
+                              <h3 style={{ fontSize: '12.5px', fontWeight: 'bold', color: '#1a2744', margin: 0, fontFamily: 'serif' }}>
+                                Website Launch
+                              </h3>
+                            </div>
+                            <p style={{ fontSize: '10px', color: '#4b5563', lineHeight: '1.45', margin: 0 }}>
+                              Once all testing and quality assurance procedures are successfully completed, the website will be migrated from the staging environment to the live production server.
+                            </p>
+
+                            <div>
+                              <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#1a2744', display: 'block', marginBottom: '4px' }}>
+                                The launch process will include:
+                              </span>
+                              <ul style={{ margin: 0, paddingLeft: '14px', fontSize: '9.5px', color: '#4b5563', lineHeight: '1.5', listStyleType: 'disc' }}>
+                                <li style={{ marginBottom: '3px' }}>Final approval and pre-launch checklist review</li>
+                                <li style={{ marginBottom: '3px' }}>Deployment of website files and database to the live server</li>
+                                <li style={{ marginBottom: '3px' }}>Configuration of required settings and integrations</li>
+                                <li>Final verification after going live</li>
+                              </ul>
+                            </div>
+                          </div>
+
                         </div>
 
                       </div>
@@ -3727,7 +3740,190 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
           <ProposalPageFooter proposal={proposal} pageNumber={getPageNumberById("financials")} />
         </div>
 
-        {/* --- PAGE 9: ACCEPTANCE PAGE --- */}
+        {/* --- PAGE: MAINTENANCE TERMS PAGE --- */}
+        <div id={`page-${getPageNumberById("maintenance_terms")}-maintenance-terms`} className="proposal-page relative flex flex-col justify-between overflow-hidden">
+          {/* Background Watermark */}
+          <ProposalWatermark proposal={proposal} />
+          <ProposalCustomLetterheadBackground proposal={proposal} />
+
+          {/* Top Letterhead Header */}
+          <ProposalPageHeader proposal={proposal} pageNumber={getPageNumberById("maintenance_terms")} />
+
+          <div className="my-auto w-full max-w-xl mx-auto font-sans relative z-10 px-1">
+            <div className="mb-3.5">
+              <span className="text-[10px] font-sans tracking-widest text-[#B8962E] font-bold uppercase mb-1 block">
+                POST-LAUNCH SUPPORT & COVERAGE
+              </span>
+              <h2 className="font-serif text-2xl font-bold text-[#1a2744]">
+                Maintenance Agreement
+              </h2>
+              <p className="text-xs font-semibold text-slate-700 mt-1">
+                Here's what is included in your 1 year free maintenance contract:
+              </p>
+            </div>
+
+            {/* Included in 1-Year Free Maintenance */}
+            <div className="bg-[#fafaf8] border border-[#e0ddd5] rounded-xl p-3.5 mb-3.5">
+              <div className="space-y-2 text-[10.5px] text-slate-700">
+                <div className="flex items-start gap-2">
+                  <span className="text-[#B8962E] font-bold mt-0.5">•</span>
+                  <p className="leading-relaxed">
+                    Edit, revise, update or create new textural/minor graphical content.
+                  </p>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-[#B8962E] font-bold mt-0.5">•</span>
+                  <p className="leading-relaxed">
+                    Web bug fixes and updates, plugin updates and enhancements.
+                  </p>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-[#B8962E] font-bold mt-0.5">•</span>
+                  <p className="leading-relaxed">
+                    Consultation and guidance on using the website.
+                  </p>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-[#B8962E] font-bold mt-0.5">•</span>
+                  <p className="leading-relaxed">
+                    Monitoring of website uptime and performance tuning.
+                  </p>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-[#B8962E] font-bold mt-0.5">•</span>
+                  <p className="leading-relaxed">
+                    Priority support when downtime or hacking, has been identified.
+                  </p>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-[#B8962E] font-bold mt-0.5">•</span>
+                  <p className="leading-relaxed">
+                    <strong className="text-[#1a2744]">{proposal.clientName || 'Mannai TechHub'}</strong> web and full and database backup.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* What is NOT included */}
+            <div className="bg-white border border-slate-200 rounded-xl p-3.5 shadow-2xs">
+              <div className="flex items-center gap-2 mb-2 border-b border-slate-100 pb-1.5">
+                <div className="h-2 w-2 rounded-full bg-rose-500"></div>
+                <h3 className="text-xs font-sans font-bold text-rose-900 uppercase tracking-wider">
+                  What is NOT included in this agreement?
+                </h3>
+              </div>
+              <div className="space-y-2 text-[10.5px] text-slate-700">
+                <div className="flex items-start gap-2">
+                  <span className="text-rose-500 font-bold mt-0.5">•</span>
+                  <p className="leading-relaxed">
+                    Website redesign, new frameworks or redevelopment equaling more than 50% change to a webpage, website or web graphics.
+                  </p>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-rose-500 font-bold mt-0.5">•</span>
+                  <p className="leading-relaxed">
+                    New Blogs, syndications, API integration, purchase of third party plugins, mobile applications, or E-Commerce shopping carts that would require a new proposal/agreement.
+                  </p>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-rose-500 font-bold mt-0.5">•</span>
+                  <p className="leading-relaxed">
+                    <strong className="text-slate-900">Website Marketing</strong> – the scope of this contract does not include making or adding any Meta-tags, Alt-tags, Titles, Keywords or Page Descriptions. These tasks fall under the scope of Search Engine Optimization and require a different contract.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <ProposalPageFooter proposal={proposal} pageNumber={getPageNumberById("maintenance_terms")} />
+        </div>
+
+        {/* --- PAGE: TERMS & EXCLUSIONS PAGE --- */}
+        <div id={`page-${getPageNumberById("terms_exclusions")}-terms-exclusions`} className="proposal-page relative flex flex-col justify-between overflow-hidden">
+          {/* Background Watermark */}
+          <ProposalWatermark proposal={proposal} />
+          <ProposalCustomLetterheadBackground proposal={proposal} />
+
+          {/* Top Letterhead Header */}
+          <ProposalPageHeader proposal={proposal} pageNumber={getPageNumberById("terms_exclusions")} />
+
+          <div className="my-auto w-full max-w-xl mx-auto font-sans relative z-10 px-1">
+            <div className="mb-3">
+              <span className="text-[10px] font-sans tracking-widest text-[#B8962E] font-bold uppercase mb-1 block">
+                COMMERCIAL CONDITIONS & BOUNDARIES
+              </span>
+              <h2 className="font-serif text-2xl font-bold text-[#1a2744]">
+                Terms & Exclusions
+              </h2>
+            </div>
+
+            {/* Terms Section */}
+            <div className="bg-[#fafaf8] border border-[#e0ddd5] rounded-xl p-3.5 mb-3">
+              <div className="flex items-center gap-2 mb-2 border-b border-[#e0ddd5] pb-1.5">
+                <div className="h-2 w-2 rounded-full bg-[#1a2744]"></div>
+                <h3 className="text-xs font-sans font-bold text-[#1a2744] uppercase tracking-wider">
+                  Commercial Terms
+                </h3>
+              </div>
+              <div className="space-y-2 text-[10.5px] text-slate-700">
+                <div className="flex items-start gap-2">
+                  <span className="text-[#B8962E] font-bold mt-0.5">•</span>
+                  <p className="leading-relaxed">
+                    <strong className="text-[#1a2744]">INVOICING:</strong> 50% upfront on proposal approval and 50% on project completion and delivery.
+                  </p>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-[#B8962E] font-bold mt-0.5">•</span>
+                  <p className="leading-relaxed">
+                    <strong className="text-[#1a2744]">PAYMENT TERMS:</strong> Payment due within 20 days from date of invoice.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Exclusions Section */}
+            <div className="bg-white border border-slate-200 rounded-xl p-3.5 shadow-2xs">
+              <div className="flex items-center gap-2 mb-2 border-b border-slate-100 pb-1.5">
+                <div className="h-2 w-2 rounded-full bg-rose-500"></div>
+                <h3 className="text-xs font-sans font-bold text-rose-900 uppercase tracking-wider">
+                  Exclusions
+                </h3>
+              </div>
+              <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-[10px] text-slate-700">
+                {[
+                  "Printing of any item.",
+                  "Production management.",
+                  "Naming registration.",
+                  "Domaine name purchase.",
+                  "Hosting purchase.",
+                  "Utilizing any third party plugins or purchase of any plugins.",
+                  "Content development-detailing / copywriting / proofreading / translation.",
+                  "Purchase images from online image libraries.",
+                  "Photo-shoot/Video/models.",
+                  "Any third party not mentioned in the proposal.",
+                  "Deliverables not mentioned in the proposal.",
+                  "Search engine optimization (SEO).",
+                  "Google search engine site submission.",
+                  "Social media management, buying or media buying.",
+                  "Font purchase.",
+                  "Signage and/or signage way-finding.",
+                  "Brand Management."
+                ].map((item, idx) => (
+                  <div key={idx} className="flex items-start gap-1.5">
+                    <span className="text-rose-500 font-bold shrink-0">•</span>
+                    <span className="leading-tight">{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <ProposalPageFooter proposal={proposal} pageNumber={getPageNumberById("terms_exclusions")} />
+        </div>
+
+        {/* --- PAGE: ACCEPTANCE PAGE --- */}
         <div id={`page-${getPageNumberById("acceptance")}-acceptance`} className="proposal-page relative flex flex-col justify-between overflow-hidden">
           {/* Background Watermark */}
           <ProposalWatermark proposal={proposal} />
