@@ -562,6 +562,7 @@ export function createDefaultProposal(type: ProposalType, initialClientName?: st
       },
       includeWordpressPlugins: true,
       includeNotesAssumptions: true,
+      includeSectionLevelDetails: true,
       ecommerceOdooSyncModules: ["Product Catalog", "Real-Time Inventory Status", "Sales Orders Processing", "Customer Profiles"],
       ecommercePaymentGateways: ["Credit/Debit Cards", "Cash on Delivery (COD)"],
       ecommerceTechStack: {

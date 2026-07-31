@@ -78,22 +78,21 @@ export const WEBSITE_TEMPLATES: Record<string, StaticPage> = {
     ]
   },
   approach: {
-    title: "Our Tactical Approach",
-    subtitle: "Performance, Accessibility, and Design Craft",
+    title: "Our Approach",
+    subtitle: "Creating a Scalable Digital Platform",
     content: [
-      "Responsive Fluidity: Designing with percentage-based dynamic models ensuring optimal viewport experiences on mobile, tablet, and widescreen layouts.",
-      "Technical Hygiene: Clean index semantic HTML, optimized WebP graphics, lazy-loading strategies, and localized caching setups.",
-      "Search and Discovery Prep: Native semantic metadata, automatic sitemaps, structured local schema marks, and index crawling setups."
+      "Our website development approach focuses on creating a digital platform that meets your immediate business requirements while being strategically prepared for future growth. We consider your organisation’s evolving needs, industry trends, changing digital landscapes, and long-term business objectives to ensure the website remains relevant, scalable, and effective.",
+      "Our goal is to build a digital experience that not only represents your brand today but also supports its future expansion and continued success."
     ]
   },
   process: {
-    title: "The Development Process",
-    subtitle: "Iterative Construction of Premium Software",
+    title: "Our Process",
+    subtitle: "Strategic Delivery Phases",
     content: [
-      "Phase 1: Design & Sitemap (Sprint 1) — High-fidelity wireframes, responsive component mockups, page hierarchy, and copy formulation.",
-      "Phase 2: Development & Alpha (Sprint 2) — Writing clean custom React/TypeScript code, component structures, asset pipelines, and basic database endpoints.",
-      "Phase 3: Integrations & Plugins (Sprint 3) — Deploying forms, CMS, tracking hooks, blog layouts, search engine features, and caching profiles.",
-      "Phase 4: QA & Deploy (Sprint 4) — Cross-browser responsiveness checks, speed benchmarks, security verification, DNS swap, and go-live launch."
+      "Discovery — We begin by understanding your business, operations, objectives, target audience, and challenges. Through detailed discovery, we identify key opportunities and insights that help shape the right digital strategy, messaging, and user experience for your website.",
+      "Strategy — A strong digital presence begins with a clear brand and content strategy. We evaluate your existing brand positioning, architecture, and communication approach to ensure consistency across all touchpoints. Where required, we help establish a stronger digital foundation that aligns your brand identity with your business goals and customer expectations.",
+      "Design — Our design approach combines creativity, usability, and industry best practices to deliver a visually engaging and intuitive website experience. Every design decision is carefully considered — from visual style and user behaviour to market trends and audience expectations — ensuring a digital presence that reflects your brand personality while creating meaningful engagement with your customers.",
+      "Delivery — We transform strategy and design into a high-performing digital solution that supports your business growth. With our expertise, attention to detail, and commitment to quality, we deliver a website that exceeds expectations, enhances customer experience, and provides a strong foundation for long-term digital success."
     ]
   },
   goingLive: {

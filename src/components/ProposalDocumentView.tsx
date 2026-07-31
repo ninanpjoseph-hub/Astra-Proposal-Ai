@@ -1798,44 +1798,96 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
           {/* Top Letterhead Header */}
           <ProposalPageHeader proposal={proposal} pageNumber="05" />
 
-          <div className="my-auto max-w-xl mx-auto w-full relative z-10">
-            <span className="text-xs font-sans tracking-widest text-blue-600 font-bold uppercase mb-2 block">
-              HOW WE DELIVER
-            </span>
-            <h2 className="font-serif text-3xl font-bold text-slate-900 mb-2">
-              Our Process & Approach
-            </h2>
-            <p className="font-serif italic text-slate-800 mb-8 border-b border-blue-105 pb-4 text-sm">
-              {templates.approach.subtitle}
-            </p>
+          <div className="my-auto max-w-xl mx-auto w-full relative z-10 px-1">
+            <div className="mb-3">
+              <span className="text-[10px] font-sans tracking-widest text-[#B8962E] font-bold uppercase mb-1 block">
+                HOW WE DELIVER
+              </span>
+              <h2 className="font-serif text-2xl font-bold text-[#1a2744]">
+                Our Process & Approach
+              </h2>
+            </div>
 
-            <div className="grid grid-cols-1 gap-6 mb-8">
-              <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                <h4 className="text-xs font-sans font-bold text-slate-800 uppercase mb-2">
-                  Our core approach values:
-                </h4>
-                <ul className="text-xs text-slate-600 space-y-2 pl-4 list-disc font-sans leading-relaxed">
-                  {templates.approach.content.map((point, i) => (
-                    <li key={i}>{point}</li>
-                  ))}
-                </ul>
+            {/* OUR APPROACH SECTION */}
+            <div className="bg-[#fafaf8] p-3.5 rounded-xl border border-[#e0ddd5] mb-3.5">
+              <div className="flex items-center gap-2 mb-1.5">
+                <div className="h-2 w-2 rounded-full bg-[#B8962E]"></div>
+                <h3 className="text-xs font-sans font-bold text-[#1a2744] uppercase tracking-wider">
+                  Our Approach
+                </h3>
+              </div>
+              <div className="text-[10.5px] text-slate-700 font-sans leading-relaxed space-y-1.5">
+                <p>
+                  Our website development approach focuses on creating a digital platform that meets your immediate business requirements while being strategically prepared for future growth. We consider your organisation’s evolving needs, industry trends, changing digital landscapes, and long-term business objectives to ensure the website remains relevant, scalable, and effective.
+                </p>
+                <p>
+                  Our goal is to build a digital experience that not only represents your brand today but also supports its future expansion and continued success.
+                </p>
               </div>
             </div>
 
-            <h3 className="font-serif font-bold text-slate-800 text-lg mb-4">
-              Structural Phase Mapping:
-            </h3>
-            <div className="space-y-4">
-              {templates.process.content.map((ph, index) => (
-                <div key={index} className="flex gap-4 items-start">
-                  <div className="h-6 w-12 bg-blue-50 border border-blue-100 text-blue-600 font-mono text-[10px] font-bold rounded-md flex items-center justify-center shrink-0">
-                    PH {index + 1}
+            {/* OUR PROCESS SECTION */}
+            <div>
+              <div className="flex items-center gap-2 mb-2 border-b border-[#e0ddd5] pb-1.5">
+                <div className="h-2 w-2 rounded-full bg-[#1a2744]"></div>
+                <h3 className="text-xs font-sans font-bold text-[#1a2744] uppercase tracking-wider">
+                  Our Process
+                </h3>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5">
+                {/* 1. Discovery */}
+                <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-2xs flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[11px] font-bold text-[#1a2744] font-serif">Discovery</span>
+                      <span className="text-[8.5px] font-mono font-bold px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded border border-blue-100">01</span>
+                    </div>
+                    <p className="text-[9.5px] text-slate-600 font-sans leading-relaxed">
+                      We begin by understanding your business, operations, objectives, target audience, and challenges. Through detailed discovery, we identify key opportunities and insights that help shape the right digital strategy, messaging, and user experience for your website.
+                    </p>
                   </div>
-                  <p className="text-xs text-slate-600 leading-relaxed font-sans">
-                    <strong>{ph.split(' — ')[0]}:</strong> {ph.split(' — ')[1] || ""}
-                  </p>
                 </div>
-              ))}
+
+                {/* 2. Strategy */}
+                <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-2xs flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[11px] font-bold text-[#1a2744] font-serif">Strategy</span>
+                      <span className="text-[8.5px] font-mono font-bold px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded border border-blue-100">02</span>
+                    </div>
+                    <p className="text-[9.5px] text-slate-600 font-sans leading-relaxed">
+                      A strong digital presence begins with a clear brand and content strategy. We evaluate your existing brand positioning, architecture, and communication approach to ensure consistency across all touchpoints. Where required, we help establish a stronger digital foundation that aligns your brand identity with your business goals and customer expectations.
+                    </p>
+                  </div>
+                </div>
+
+                {/* 3. Design */}
+                <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-2xs flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[11px] font-bold text-[#1a2744] font-serif">Design</span>
+                      <span className="text-[8.5px] font-mono font-bold px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded border border-blue-100">03</span>
+                    </div>
+                    <p className="text-[9.5px] text-slate-600 font-sans leading-relaxed">
+                      Our design approach combines creativity, usability, and industry best practices to deliver a visually engaging and intuitive website experience. Every design decision is carefully considered — from visual style and user behaviour to market trends and audience expectations — ensuring a digital presence that reflects your brand personality while creating meaningful engagement with your customers.
+                    </p>
+                  </div>
+                </div>
+
+                {/* 4. Delivery */}
+                <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-2xs flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[11px] font-bold text-[#1a2744] font-serif">Delivery</span>
+                      <span className="text-[8.5px] font-mono font-bold px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded border border-blue-100">04</span>
+                    </div>
+                    <p className="text-[9.5px] text-slate-600 font-sans leading-relaxed">
+                      We transform strategy and design into a high-performing digital solution that supports your business growth. With our expertise, attention to detail, and commitment to quality, we deliver a website that exceeds expectations, enhances customer experience, and provides a strong foundation for long-term digital success.
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -2766,7 +2818,7 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
                   )}
 
                   {/* Section-Level Notes & Boundaries Grid */}
-                  {proposal.websiteScope.scopeNotes && (
+                  {proposal.websiteScope.includeSectionLevelDetails !== false && proposal.websiteScope.scopeNotes && (
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                       {/* Project Notes & Client Requirements side by side */}
                       {(proposal.websiteScope.scopeNotes.notes || proposal.websiteScope.scopeNotes.requirements) && (

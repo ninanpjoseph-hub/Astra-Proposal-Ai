@@ -233,6 +233,7 @@ export interface WebsiteScope {
   scopeNotes?: ScopeOfWorkNotes;
   includeWordpressPlugins?: boolean;
   includeNotesAssumptions?: boolean;
+  includeSectionLevelDetails?: boolean;
   ecommerceOdooSyncModules?: string[];
   ecommercePaymentGateways?: string[];
   ecommerceTechStack?: {

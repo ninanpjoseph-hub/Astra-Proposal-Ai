@@ -3386,72 +3386,95 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
 
                   {/* Part E: Section-Level Notes */}
                   <div className="border border-slate-200 rounded-2xl p-5 bg-white space-y-4">
-                    <div>
-                      <h4 className="font-sans font-bold text-slate-800 text-xs tracking-wider uppercase mb-1">
-                        5. Section-Level Details & Boundaries
-                      </h4>
-                      <p className="text-[11px] text-slate-400 leading-normal font-sans">
-                        Control technical clarity and boundary definitions under separate heads. Unpopulated fields are omitted back-end automatically.
-                      </p>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* Projects scope notes */}
-                      <div className="flex flex-col gap-1">
-                        <label className="text-xs font-sans font-bold text-slate-700">Project-Specific Notes</label>
-                        <textarea
-                          placeholder="Add detail notes e.g., 'Weekly sync calls will review prototype links; Figma specs provided first.'"
-                          value={proposal.websiteScope.scopeNotes?.notes || ''}
-                          onChange={(e) => {
-                            const newNotes = { ...(proposal.websiteScope.scopeNotes || {}), notes: e.target.value };
-                            setProposal(prev => ({ ...prev, websiteScope: { ...prev.websiteScope, scopeNotes: newNotes } }));
-                          }}
-                          className="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-sans focus:outline-hidden min-h-[70px] resize-y"
-                        />
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                      <div>
+                        <h4 className="font-sans font-bold text-slate-800 text-xs tracking-wider uppercase mb-1">
+                          5. Section-Level Details & Boundaries
+                        </h4>
+                        <p className="text-[11px] text-slate-400 leading-normal font-sans">
+                          Control technical clarity and boundary definitions under separate heads. Unpopulated fields are omitted back-end automatically.
+                        </p>
                       </div>
 
-                      {/* Exclusions */}
-                      <div className="flex flex-col gap-1">
-                        <label className="text-xs font-sans font-bold text-slate-700 font-sans">Define Exclusions</label>
-                        <textarea
-                          placeholder="Add boundary items e.g., 'Writing copy assets, specialized drone video capturing, or server bills are client obligations.'"
-                          value={proposal.websiteScope.scopeNotes?.exclusions || ''}
-                          onChange={(e) => {
-                            const newNotes = { ...(proposal.websiteScope.scopeNotes || {}), exclusions: e.target.value };
-                            setProposal(prev => ({ ...prev, websiteScope: { ...prev.websiteScope, scopeNotes: newNotes } }));
-                          }}
-                          className="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-sans focus:outline-hidden min-h-[70px] resize-y"
-                        />
-                      </div>
-
-                      {/* Client Requirements */}
-                      <div className="flex flex-col gap-1">
-                        <label className="text-xs font-sans font-bold text-slate-700">Client-Specific Requirements</label>
-                        <textarea
-                          placeholder="Add requirements e.g., 'All assets shared via central OneDrive; site must comply with government accessibility metrics WCAG 2.1.'"
-                          value={proposal.websiteScope.scopeNotes?.requirements || ''}
-                          onChange={(e) => {
-                            const newNotes = { ...(proposal.websiteScope.scopeNotes || {}), requirements: e.target.value };
-                            setProposal(prev => ({ ...prev, websiteScope: { ...prev.websiteScope, scopeNotes: newNotes } }));
-                          }}
-                          className="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-sans focus:outline-hidden min-h-[70px] resize-y"
-                        />
-                      </div>
-
-                      {/* Technical Clarifications */}
-                      <div className="flex flex-col gap-1">
-                        <label className="text-xs font-sans font-bold text-slate-700">Technical Clarifications</label>
-                        <textarea
-                          placeholder="Add technical constraints e.g., 'WordPress requires MySQL v8.0 and safe PHP 8.2 active setups. Target API uses JSON via REST endpoints.'"
-                          value={proposal.websiteScope.scopeNotes?.clarifications || ''}
-                          onChange={(e) => {
-                            const newNotes = { ...(proposal.websiteScope.scopeNotes || {}), clarifications: e.target.value };
-                            setProposal(prev => ({ ...prev, websiteScope: { ...prev.websiteScope, scopeNotes: newNotes } }));
-                          }}
-                          className="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-sans focus:outline-hidden min-h-[70px] resize-y"
-                        />
+                      <div className="flex items-center gap-2 shrink-0 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200/80">
+                        <span className="text-[11px] font-bold text-slate-700 font-sans">Include Module</span>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={proposal.websiteScope.includeSectionLevelDetails !== false}
+                            onChange={(e) => updateWebsiteScope('includeSectionLevelDetails', e.target.checked)}
+                            className="sr-only peer"
+                          />
+                          <div className="w-8 h-4.5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
                       </div>
                     </div>
+
+                    {proposal.websiteScope.includeSectionLevelDetails === false ? (
+                      <div className="bg-amber-50/60 border border-amber-200/80 rounded-xl p-3 text-center">
+                        <p className="text-xs font-medium text-amber-800 font-sans">
+                          Module Disabled: Section-level details and technical boundary definitions will be omitted from this proposal document.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Projects scope notes */}
+                        <div className="flex flex-col gap-1">
+                          <label className="text-xs font-sans font-bold text-slate-700">Project-Specific Notes</label>
+                          <textarea
+                            placeholder="Add detail notes e.g., 'Weekly sync calls will review prototype links; Figma specs provided first.'"
+                            value={proposal.websiteScope.scopeNotes?.notes || ''}
+                            onChange={(e) => {
+                              const newNotes = { ...(proposal.websiteScope.scopeNotes || {}), notes: e.target.value };
+                              setProposal(prev => ({ ...prev, websiteScope: { ...prev.websiteScope, scopeNotes: newNotes } }));
+                            }}
+                            className="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-sans focus:outline-hidden min-h-[70px] resize-y"
+                          />
+                        </div>
+
+                        {/* Exclusions */}
+                        <div className="flex flex-col gap-1">
+                          <label className="text-xs font-sans font-bold text-slate-700 font-sans">Define Exclusions</label>
+                          <textarea
+                            placeholder="Add boundary items e.g., 'Writing copy assets, specialized drone video capturing, or server bills are client obligations.'"
+                            value={proposal.websiteScope.scopeNotes?.exclusions || ''}
+                            onChange={(e) => {
+                              const newNotes = { ...(proposal.websiteScope.scopeNotes || {}), exclusions: e.target.value };
+                              setProposal(prev => ({ ...prev, websiteScope: { ...prev.websiteScope, scopeNotes: newNotes } }));
+                            }}
+                            className="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-sans focus:outline-hidden min-h-[70px] resize-y"
+                          />
+                        </div>
+
+                        {/* Client Requirements */}
+                        <div className="flex flex-col gap-1">
+                          <label className="text-xs font-sans font-bold text-slate-700">Client-Specific Requirements</label>
+                          <textarea
+                            placeholder="Add requirements e.g., 'All assets shared via central OneDrive; site must comply with government accessibility metrics WCAG 2.1.'"
+                            value={proposal.websiteScope.scopeNotes?.requirements || ''}
+                            onChange={(e) => {
+                              const newNotes = { ...(proposal.websiteScope.scopeNotes || {}), requirements: e.target.value };
+                              setProposal(prev => ({ ...prev, websiteScope: { ...prev.websiteScope, scopeNotes: newNotes } }));
+                            }}
+                            className="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-sans focus:outline-hidden min-h-[70px] resize-y"
+                          />
+                        </div>
+
+                        {/* Technical Clarifications */}
+                        <div className="flex flex-col gap-1">
+                          <label className="text-xs font-sans font-bold text-slate-700">Technical Clarifications</label>
+                          <textarea
+                            placeholder="Add technical constraints e.g., 'WordPress requires MySQL v8.0 and safe PHP 8.2 active setups. Target API uses JSON via REST endpoints.'"
+                            value={proposal.websiteScope.scopeNotes?.clarifications || ''}
+                            onChange={(e) => {
+                              const newNotes = { ...(proposal.websiteScope.scopeNotes || {}), clarifications: e.target.value };
+                              setProposal(prev => ({ ...prev, websiteScope: { ...prev.websiteScope, scopeNotes: newNotes } }));
+                            }}
+                            className="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-sans focus:outline-hidden min-h-[70px] resize-y"
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Built sitemap visual representation preview */}
