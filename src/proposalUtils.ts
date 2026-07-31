@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Proposal, ProposalType, Milestone, ResourceCost, ProposalStatus, Reminder, ModularServicesScope, ModularServiceId } from './types';
+import { Proposal, ProposalType, Milestone, ResourceCost, ProposalStatus, Reminder, ModularServicesScope, ModularServiceId, WhatsappScope } from './types';
 import { DEFAULT_SCOPE_TEMPLATES } from './staticTemplates';
 
 export interface ModularDeliverableLineItem {
@@ -55,6 +55,61 @@ export const DEFAULT_SERVICES_MILESTONES: Omit<Milestone, 'id'>[] = [
   { week: "Week 2", title: "Audit Execution & Infrastructure Configuration", description: "Deep security/SEO scanning, hosting renewal processing, and SSL handshake testing." },
   { week: "Week 3", title: "Deliverables Handover & Maintenance Activation", description: "Presentation of comprehensive audit report, activation of 24/7 SLA monitoring, and AMC support onboarding." }
 ];
+
+export const DEFAULT_WHATSAPP_MILESTONES: Omit<Milestone, 'id'>[] = [
+  { week: "Week 1", title: "Meta Business Manager Verification", description: "Meta Business Manager verification assistance and WhatsApp Cloud API app setup." },
+  { week: "Week 1 - 2", title: "API Integration & Phone Number Linking", description: "Configuring official phone number, webhook listeners, and backend API integration." },
+  { week: "Week 2 - 3", title: "Chatbots & Broadcast Campaign Setup", description: "Building up to 5 interactive chatbots and configuring message templates for Meta approval." },
+  { week: "Week 3", title: "Mobile App & eCommerce Configuration", description: "Configuring Android/iOS chat apps, payment link collection, and product/order catalog sync." },
+  { week: "Week 3 - 4", title: "Testing, Go-Live & Staff Training", description: "End-to-end messaging verification, user access setup, and operational deployment." }
+];
+
+export function createDefaultWhatsappScope(): WhatsappScope {
+  return {
+    planType: 'startup',
+    portalYearlyCharge: 2200,
+    apiConfigCharge: 500,
+    utilityMessageRate: 0.05,
+    marketingMessageRate: 0.13,
+    platformName: "Taswiq Intelligent Chat Solution",
+    version: "1.0",
+    maxChatbots: 5,
+    maxStepsPerChatbot: 50,
+    objectives: [
+      "Connect client system with official WhatsApp Business Cloud API.",
+      "Enable automated OTP and notification delivery to customers.",
+      "Maintain direct integration with Meta, eliminating third-party dependencies.",
+      "Ensure full data security, message reliability, and Meta compliance.",
+      "Build a scalable and future-proof communication channel."
+    ],
+    scopeOfWorkItems: [
+      { id: "sow_1", title: "Meta Verification", description: "Assistance in getting verified via Meta Business Manager (Facebook).", isSelected: true },
+      { id: "sow_2", title: "Cloud API Setup", description: "Setup of phone number and Meta app for WhatsApp Cloud API.", isSelected: true },
+      { id: "sow_3", title: "Software Support", description: "Technical support for software bugs and API connectivity.", isSelected: true },
+      { id: "sow_4", title: "Chatbot Development", description: "Assistance in building up to 5 chatbots (max 50 steps per chatbot).", isSelected: true }
+    ],
+    featuresIncluded: [
+      { id: "feat_1", title: "Bulk Contact Groups", description: "Contact groups with bulk import/export via Excel.", isSelected: true },
+      { id: "feat_2", title: "Broadcast Campaigns", description: "WhatsApp broadcast campaigns with group filters.", isSelected: true },
+      { id: "feat_3", title: "Campaign Reports & Templates", description: "Campaign reports and Meta-approved message templates.", isSelected: true },
+      { id: "feat_4", title: "Mobile Chat Apps", description: "Android & iOS mobile apps for managing multi-agent chats.", isSelected: true },
+      { id: "feat_5", title: "In-Chat Payments", description: "Payment link generation and in-chat payment collection.", isSelected: true },
+      { id: "feat_6", title: "WhatsApp eCommerce Store", description: "WhatsApp eCommerce functionality and product sharing.", isSelected: true },
+      { id: "feat_7", title: "eCommerce Backend", description: "eCommerce backend to manage products, categories, and orders.", isSelected: true }
+    ],
+    includeTierComparisonMatrix: true,
+    termsConditionsList: [
+      "Fees Payable for Service: Taswiq reserves the right not to begin implementation until full payment is received. Payment is non-refundable once implementation starts.",
+      "Supply of Materials: The Client must provide all necessary materials, APIs, credentials, and documentation.",
+      "Payment Schedule: 100% Advance yearly payment required upon contract signing.",
+      "Remedies for Overdue Payment: Overdue accounts by 30+ days may have service licenses suspended or revoked.",
+      "Third-Party Subscriptions: Any third-party tools or usage-based APIs must be purchased directly by the Client.",
+      "Message Payment: Utility (.05 QR) and Marketing (.13 QR) message charges are paid directly to META based on actual usage.",
+      "Custom Features: Custom feature updates beyond standard release updates are quoted separately.",
+      "Meta/WhatsApp Policy Compliance: The Client agrees to comply with all existing and future Meta policies applicable to Cloud API users."
+    ]
+  };
+}
 
 export const DEFAULT_RESOURCE_COSTS: Omit<ResourceCost, 'id'>[] = [
   { role: "Brand Lead / Creative Director", hours: 25, rate: 250 },
@@ -469,14 +524,20 @@ export function createDefaultProposal(type: ProposalType): Proposal {
 
     // Modular Services scope
     servicesScope: defaultServicesScope,
+
+    // WhatsApp scope
+    whatsappScope: createDefaultWhatsappScope(),
     
     // Timeline
-    weeks: type === 'branding' ? 5 : (type === 'services' ? 3 : 8),
+    weeks: type === 'branding' ? 5 : (type === 'services' ? 3 : (type === 'whatsapp' ? 4 : 8)),
     milestones: type === 'branding' 
       ? DEFAULT_BRANDING_MILESTONES.map((m, i) => ({ ...m, id: `${id}_m_${i}` }))
       : (type === 'services'
           ? DEFAULT_SERVICES_MILESTONES.map((m, i) => ({ ...m, id: `${id}_m_${i}` }))
-          : DEFAULT_WEBSITE_MILESTONES.map((m, i) => ({ ...m, id: `${id}_m_${i}` }))
+          : (type === 'whatsapp'
+              ? DEFAULT_WHATSAPP_MILESTONES.map((m, i) => ({ ...m, id: `${id}_m_${i}` }))
+              : DEFAULT_WEBSITE_MILESTONES.map((m, i) => ({ ...m, id: `${id}_m_${i}` }))
+            )
         ),
     
     // Financials
@@ -490,9 +551,11 @@ export function createDefaultProposal(type: ProposalType): Proposal {
     
     totalCost: type === 'branding'
       ? DEFAULT_RESOURCE_COSTS.reduce((acc, curr) => acc + (curr.hours * curr.rate), 0)
-      : (type === 'services' ? servicesTotal : 16200),
+      : (type === 'services' ? servicesTotal : (type === 'whatsapp' ? 2700 : 16200)),
       
-    paymentTerms: "50% Advanced Payment upon Agreement sign-off, 25% upon Design Approval, and 25% upon final assets delivery and Launch.",
+    paymentTerms: type === 'whatsapp' 
+      ? "100% Advance Yearly Payment for Taswiq WhatsApp Business API Portal and Setup. Message usage charges paid directly to Meta."
+      : "50% Advanced Payment upon Agreement sign-off, 25% upon Design Approval, and 25% upon final assets delivery and Launch.",
     preparedByName: "Ninan P Joseph",
     preparedByCompany: "Astra Technologies",
     preparedByTitle: "Astra Technologies"

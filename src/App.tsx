@@ -1173,9 +1173,11 @@ export default function App() {
                               ? isLuxury ? 'bg-[#C5A059]/15 text-[#C5A059]' : 'bg-sky-50 text-sky-700'
                               : prop.type === 'services'
                               ? isLuxury ? 'bg-amber-500/15 text-amber-400' : 'bg-indigo-50 text-indigo-700'
+                              : prop.type === 'whatsapp'
+                              ? isLuxury ? 'bg-teal-500/15 text-teal-400' : 'bg-teal-50 text-teal-700'
                               : isLuxury ? 'bg-emerald-500/15 text-emerald-400' : 'bg-emerald-50 text-emerald-700'
                           }`}>
-                            {prop.type === 'branding' ? "Identity" : prop.type === 'services' ? "IT Services" : "Website"}
+                            {prop.type === 'branding' ? "Identity" : prop.type === 'services' ? "IT Services" : prop.type === 'whatsapp' ? "WhatsApp API" : "Website"}
                           </span>
                           <span className={`text-[8.5px] font-sans font-bold px-2 py-0.5 border rounded-full leading-none uppercase ${
                             prop.status === 'Completed' ? 'bg-emerald-500/10 text-emerald-450 border-emerald-500/20' :
@@ -1214,7 +1216,7 @@ export default function App() {
                           <p className={`font-sans text-[11px] mt-1 lines-clamp-2 leading-relaxed ${
                             isLuxury ? 'text-slate-300' : 'text-slate-500'
                           }`}>
-                            {prop.companyName || (prop.type === 'branding' ? "Branding Strategy Suite" : prop.type === 'services' ? "Modular IT Services" : "Custom Web Project")}
+                            {prop.companyName || (prop.type === 'branding' ? "Branding Strategy Suite" : prop.type === 'services' ? "Modular IT Services" : prop.type === 'whatsapp' ? "Taswiq WhatsApp Business API" : "Custom Web Project")}
                           </p>
                           
                           <p className={`text-[10px] italic font-sans mt-3 line-clamp-2 border-l-2 pl-2 ${

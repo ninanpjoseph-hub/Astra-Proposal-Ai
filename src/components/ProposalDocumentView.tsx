@@ -305,6 +305,7 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
 
   const isBranding = proposal.type === 'branding';
   const isServices = proposal.type === 'services';
+  const isWhatsapp = proposal.type === 'whatsapp';
   const templates = isBranding ? BRANDING_TEMPLATES : WEBSITE_TEMPLATES;
   
   const [allUsers, setAllUsers] = React.useState<any[]>([]);
@@ -786,7 +787,14 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
 
     let currentNum = 6;
 
-    if (isServices) {
+    if (isWhatsapp) {
+      list.push({ id: "whatsapp_scope", title: "Cloud API Scope & Key Features", pageNumStr: String(currentNum).padStart(2, '0') });
+      currentNum++;
+      if (proposal.whatsappScope?.includeTierComparisonMatrix !== false) {
+        list.push({ id: "whatsapp_matrix", title: "Taswiq Solution Tier Comparison", pageNumStr: String(currentNum).padStart(2, '0') });
+        currentNum++;
+      }
+    } else if (isServices) {
       const selected = proposal.servicesScope?.selectedServices || ['website_audit', 'hosting_domain', 'ssl_renewal', 'amc'];
       if (selected.includes('website_audit')) {
         list.push({ id: "service_website_audit", title: "Website Audit & Health Report", pageNumStr: String(currentNum).padStart(2, '0') });
@@ -1835,7 +1843,159 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
           <ProposalPageFooter proposal={proposal} pageNumber="05" />
         </div>
 
-        {isServices ? (
+        {isWhatsapp ? (
+          /* WHATSAPP MARKETING PAGES */
+          <>
+            {/* WHATSAPP SCOPE & FEATURES PAGE */}
+            <div id={`page-${getPageNumberById("whatsapp_scope")}-whatsapp-scope`} className="proposal-page relative flex flex-col justify-between overflow-hidden">
+              <ProposalWatermark proposal={proposal} />
+              <ProposalCustomLetterheadBackground proposal={proposal} />
+              <ProposalPageHeader proposal={proposal} pageNumber={getPageNumberById("whatsapp_scope")} />
+
+              <div className="my-auto w-full relative z-10 max-w-xl mx-auto font-sans">
+                <div className="text-center border-b border-slate-200 pb-3 mb-4">
+                  <span className="text-xs tracking-widest text-[#B8962E] font-bold uppercase mb-1 block">
+                    CLOUD API INTEGRATION & CAPABILITIES
+                  </span>
+                  <h2 className="font-serif text-2xl font-bold text-[#1a2744]">
+                    Taswiq WhatsApp Business Solution
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Version 1.0 — Direct Meta Integration, Automated Workflows & Omnichannel Chatbot Architecture
+                  </p>
+                </div>
+
+                {/* Scope of Work Grid */}
+                <div className="mb-4">
+                  <h3 className="text-xs font-bold text-[#1a2744] uppercase tracking-wider mb-2 border-l-2 border-[#B8962E] pl-2">
+                    Scope of Work
+                  </h3>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    {(proposal.whatsappScope?.scopeOfWorkItems || []).filter(i => i.isSelected).map((item) => (
+                      <div key={item.id} className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                        <div className="font-bold text-xs text-[#1a2744] flex items-center gap-1.5">
+                          <span className="text-[#B8962E] font-bold">✓</span> {item.title}
+                        </div>
+                        <div className="text-[11px] text-slate-600 mt-1 leading-snug">{item.description}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Included Features */}
+                <div>
+                  <h3 className="text-xs font-bold text-[#1a2744] uppercase tracking-wider mb-2 border-l-2 border-[#B8962E] pl-2">
+                    Key Features Included
+                  </h3>
+                  <div className="grid grid-cols-2 gap-2">
+                    {(proposal.whatsappScope?.featuresIncluded || []).filter(f => f.isSelected).map((feat) => (
+                      <div key={feat.id} className="p-2.5 bg-white border border-slate-200 rounded-lg flex items-start gap-2">
+                        <span className="text-[#B8962E] font-bold text-xs mt-0.5">✓</span>
+                        <div>
+                          <div className="font-bold text-xs text-slate-800">{feat.title}</div>
+                          <div className="text-[10.5px] text-slate-500 leading-snug">{feat.description}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <ProposalPageFooter proposal={proposal} pageNumber={getPageNumberById("whatsapp_scope")} />
+            </div>
+
+            {/* WHATSAPP TIER COMPARISON MATRIX PAGE */}
+            {proposal.whatsappScope?.includeTierComparisonMatrix !== false && (
+              <div id={`page-${getPageNumberById("whatsapp_matrix")}-whatsapp-matrix`} className="proposal-page relative flex flex-col justify-between overflow-hidden">
+                <ProposalWatermark proposal={proposal} />
+                <ProposalCustomLetterheadBackground proposal={proposal} />
+                <ProposalPageHeader proposal={proposal} pageNumber={getPageNumberById("whatsapp_matrix")} />
+
+                <div className="my-auto w-full relative z-10 max-w-xl mx-auto font-sans">
+                  <div className="text-center border-b border-slate-200 pb-2 mb-3">
+                    <span className="text-[10px] tracking-widest text-[#B8962E] font-bold uppercase block">
+                      SOLUTION TIER COMPARISON
+                    </span>
+                    <h2 className="font-serif text-xl font-bold text-[#1a2744]">
+                      Taswiq Intelligent Chat Solution Matrix
+                    </h2>
+                  </div>
+
+                  <div className="border border-slate-200 rounded-xl overflow-hidden bg-white text-[10.5px]">
+                    <table className="w-full text-left font-sans">
+                      <thead>
+                        <tr className="bg-[#1a2744] text-white font-bold text-[10px] uppercase">
+                          <th className="p-2 border-b">Feature / Specification</th>
+                          <th className="p-2 border-b text-center bg-teal-900/40">Startup Plan</th>
+                          <th className="p-2 border-b text-center bg-blue-900/40">Growth Plan</th>
+                          <th className="p-2 border-b text-center bg-amber-900/40">Premium Plan</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200 text-slate-700">
+                        <tr>
+                          <td className="p-2 font-bold bg-slate-50">Portal Charge (Yearly)</td>
+                          <td className="p-2 text-center font-bold text-teal-700 bg-teal-50/20">2,200 QR</td>
+                          <td className="p-2 text-center font-bold text-blue-700 bg-blue-50/20">4,500 QR</td>
+                          <td className="p-2 text-center font-bold text-amber-700 bg-amber-50/20">9,999 QR</td>
+                        </tr>
+                        <tr>
+                          <td className="p-2 font-bold bg-slate-50">API Configuration (One Time)</td>
+                          <td className="p-2 text-center">500 QR</td>
+                          <td className="p-2 text-center">500 QR</td>
+                          <td className="p-2 text-center font-semibold text-emerald-600">FREE</td>
+                        </tr>
+                        <tr>
+                          <td className="p-2 font-semibold">User Agents</td>
+                          <td className="p-2 text-center">3</td>
+                          <td className="p-2 text-center">10</td>
+                          <td className="p-2 text-center font-bold">UNLIMITED</td>
+                        </tr>
+                        <tr>
+                          <td className="p-2 font-semibold">Contacts Limit</td>
+                          <td className="p-2 text-center">5,000</td>
+                          <td className="p-2 text-center">25,000</td>
+                          <td className="p-2 text-center font-bold">UNLIMITED</td>
+                        </tr>
+                        <tr>
+                          <td className="p-2 font-semibold">Interactive Chatbots</td>
+                          <td className="p-2 text-center">Up to 5 (50 steps)</td>
+                          <td className="p-2 text-center">Up to 15 (150 steps)</td>
+                          <td className="p-2 text-center font-bold">UNLIMITED</td>
+                        </tr>
+                        <tr>
+                          <td className="p-2 font-semibold">Broadcast Campaign Filters</td>
+                          <td className="p-2 text-center">Basic Excel</td>
+                          <td className="p-2 text-center">Advanced Segmentation</td>
+                          <td className="p-2 text-center font-bold">AI Customer Tags</td>
+                        </tr>
+                        <tr>
+                          <td className="p-2 font-semibold">In-Chat Payment Collection</td>
+                          <td className="p-2 text-center">✓ Enabled</td>
+                          <td className="p-2 text-center">✓ Enabled</td>
+                          <td className="p-2 text-center font-bold">✓ Payment Gateway Hooks</td>
+                        </tr>
+                        <tr>
+                          <td className="p-2 font-semibold">WhatsApp eCommerce Store</td>
+                          <td className="p-2 text-center">Catalog Sync</td>
+                          <td className="p-2 text-center">Full Storefront + Orders</td>
+                          <td className="p-2 text-center font-bold">Odoo ERP Live Sync</td>
+                        </tr>
+                        <tr>
+                          <td className="p-2 font-semibold">Support SLA</td>
+                          <td className="p-2 text-center">Email & Chat</td>
+                          <td className="p-2 text-center">Priority Phone</td>
+                          <td className="p-2 text-center font-bold">24/7 Dedicated Account Lead</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <ProposalPageFooter proposal={proposal} pageNumber={getPageNumberById("whatsapp_matrix")} />
+              </div>
+            )}
+          </>
+        ) : isServices ? (
           /* MODULAR SERVICES PAGES */
           <>
             {/* 1. WEBSITE AUDIT PAGE */}
@@ -3132,7 +3292,79 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
               Proposal Financials
             </h2>
 
-            {isServices ? (
+            {isWhatsapp ? (
+              /* WhatsApp Financials Table */
+              <div className="space-y-4 mb-6">
+                <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-xs">
+                  <table className="min-w-full text-xs font-sans">
+                    <thead>
+                      <tr className="bg-[#1a2744] text-white">
+                        <th className="py-2.5 px-4 text-left font-bold">Component / Service Item</th>
+                        <th className="py-2.5 px-4 text-left font-bold">Billing Cycle</th>
+                        <th className="py-2.5 px-4 text-right font-bold">Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200 text-slate-700">
+                      <tr>
+                        <td className="py-3 px-4 font-bold text-slate-800">
+                          Taswiq WhatsApp Business API Portal License
+                          <div className="text-[10.5px] text-slate-500 font-normal">
+                            Multi-agent dashboard, broadcast engine, mobile apps & chatbot platform ({proposal.whatsappScope?.planType?.toUpperCase() || 'STARTUP'} PLAN)
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 font-semibold text-slate-600">Yearly Subscription</td>
+                        <td className="py-3 px-4 text-right font-bold text-slate-900">
+                          {formatQAR(proposal.whatsappScope?.portalYearlyCharge ?? 2200)}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="py-3 px-4 font-bold text-slate-800">
+                          One-Time API Configuration & Phone Linking Charge
+                          <div className="text-[10.5px] text-slate-500 font-normal">
+                            Official phone number registration, Meta Business Manager verification setup & webhook endpoints
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 font-semibold text-slate-600">One Time Charge</td>
+                        <td className="py-3 px-4 text-right font-bold text-slate-900">
+                          {formatQAR(proposal.whatsappScope?.apiConfigCharge ?? 500)}
+                        </td>
+                      </tr>
+                      <tr className="bg-teal-50/40 font-bold">
+                        <td className="py-3 px-4 text-teal-900" colSpan={2}>Total Initial Portal Investment</td>
+                        <td className="py-3 px-4 text-right text-teal-900 text-sm">
+                          {formatQAR((proposal.whatsappScope?.portalYearlyCharge ?? 2200) + (proposal.whatsappScope?.apiConfigCharge ?? 500))}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="border border-slate-200 rounded-xl p-3.5 bg-slate-50">
+                  <h4 className="font-bold text-xs text-slate-800 uppercase tracking-wider mb-2">
+                    Meta Message Usage Charges (Direct to META):
+                  </h4>
+                  <div className="grid grid-cols-2 gap-3 text-xs font-sans">
+                    <div className="p-2 bg-white border border-slate-200 rounded-lg">
+                      <div className="text-[10px] font-mono text-slate-400 uppercase">Utility Messages</div>
+                      <div className="font-bold text-slate-800 text-xs mt-0.5">
+                        {formatQAR(proposal.whatsappScope?.utilityMessageRate ?? 0.05)} / message
+                      </div>
+                      <div className="text-[10px] text-slate-500">OTPs, notifications, order confirmations</div>
+                    </div>
+                    <div className="p-2 bg-white border border-slate-200 rounded-lg">
+                      <div className="text-[10px] font-mono text-slate-400 uppercase">Marketing Messages</div>
+                      <div className="font-bold text-slate-800 text-xs mt-0.5">
+                        {formatQAR(proposal.whatsappScope?.marketingMessageRate ?? 0.13)} / message
+                      </div>
+                      <div className="text-[10px] text-slate-500 font-sans">Promotions, broadcasts, offers</div>
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-slate-500 italic mt-1.5">
+                    * Message fees are paid directly to Meta based on actual consumption via linked credit card on Meta Business Manager.
+                  </p>
+                </div>
+              </div>
+            ) : isServices ? (
               /* Modular IT Services Financials Table */
               <div className="border border-slate-200 rounded-xl overflow-hidden mb-6 bg-white shadow-xs">
                 <table className="min-w-full text-xs font-sans">

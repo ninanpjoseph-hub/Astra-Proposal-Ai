@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Proposal, ProposalType, Milestone, ResourceCost, ProposalStatus, DomainItem, WebsiteAuditScope, HostingDomainEntry, SSLEntry, AMCEntry } from '../types';
-import { createDefaultProposal, generateId, formatQAR, createDefaultModularServicesScope, calculateModularServicesTotal, getModularDeliverableLineItems } from '../proposalUtils';
+import { createDefaultProposal, generateId, formatQAR, createDefaultModularServicesScope, calculateModularServicesTotal, getModularDeliverableLineItems, createDefaultWhatsappScope } from '../proposalUtils';
 import { DEFAULT_SCOPE_TEMPLATES } from '../staticTemplates';
 import SitemapGenerator from './SitemapGenerator';
 import ProposalDocumentView from './ProposalDocumentView';
@@ -13,7 +13,7 @@ import { getScopeCategory, ScopeCategory } from '../utils/scopeClassifier';
 import { 
   Building2, User, Calendar, FileText, CheckSquare, Clock, Landmark, Settings, 
   Trash2, Plus, ArrowLeft, ArrowRight, Eye, Sparkles, Check, HelpCircle, ArrowUp, ArrowDown, Edit3, X,
-  Briefcase, Phone, Mail
+  Briefcase, Phone, Mail, MessageSquare
 } from 'lucide-react';
 
 interface ProposalWizardProps {
@@ -744,12 +744,10 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
       return;
     }
     
-    // Auto populate default project descriptions if blank
+    // Keep brief description clean if left blank
     const sanitizedProposal = { ...proposal };
     if (!sanitizedProposal.briefDescription.trim()) {
-      sanitizedProposal.briefDescription = isBranding 
-        ? "Dynamic visual brand strategy involving specific company layouts, high-fidelity iconography, and coordinate books."
-        : "An interactive, double-language responsive corporate portal built with high speed CMS and custom plugins.";
+      sanitizedProposal.briefDescription = "";
     }
     
     sanitizedProposal.updatedAt = new Date().toISOString();
@@ -840,7 +838,7 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
                 <h4 className="text-xs font-sans font-bold text-slate-400 tracking-wider uppercase mb-3">
                   A. Select Proposal Target Type
                 </h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                   <button
                     onClick={() => handleTypeSelect('branding')}
                     className={`p-4 border rounded-xl text-left transition-all flex flex-col justify-between h-[125px] shadow-sm cursor-pointer ${
@@ -900,6 +898,27 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
                       <h4 className="font-sans font-bold text-sm tracking-tight">Services & Maintenance</h4>
                       <p className="text-[11px] text-slate-500 mt-1 leading-snug">
                         Website Audit, Hosting & Domain, SSL Renewal, and AMC in one document.
+                      </p>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => handleTypeSelect('whatsapp')}
+                    className={`p-4 border rounded-xl text-left transition-all flex flex-col justify-between h-[125px] shadow-sm cursor-pointer ${
+                      proposal.type === 'whatsapp' 
+                        ? 'bg-white border-teal-500 ring-2 ring-teal-50 text-slate-800' 
+                        : 'bg-white border-slate-200 hover:border-slate-300 text-slate-650'
+                    }`}
+                  >
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase leading-none font-mono ${
+                      proposal.type === 'whatsapp' ? 'bg-teal-50 text-teal-700' : 'bg-slate-100 text-slate-500'
+                    }`}>
+                      WhatsApp API
+                    </span>
+                    <div>
+                      <h4 className="font-sans font-bold text-sm tracking-tight">WhatsApp Marketing</h4>
+                      <p className="text-[11px] text-slate-500 mt-1 leading-snug">
+                        Taswiq Cloud API, Meta verification, Chatbots & broadcast campaigns.
                       </p>
                     </div>
                   </button>
@@ -1110,10 +1129,7 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
                   <label className="text-xs font-sans font-semibold text-slate-700">Project Mission & Objectives Brief</label>
                   <textarea
                     rows={6}
-                    placeholder={isBranding 
-                      ? "Describe the corporate persona attributes to capture, competitive gaps, and the ultimate positioning goal of Pearl Capital advisors..." 
-                      : "Describe the primary services Mannai TechHub wants to showcase, the languages to include, lead generation forms, and general CMS requirements..."
-                    }
+                    placeholder=""
                     value={proposal.briefDescription}
                     onChange={(e) => updateField('briefDescription', e.target.value)}
                     className="w-full p-4 border border-slate-300 rounded-lg text-xs leading-relaxed font-sans focus:outline-hidden focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-shadow resize-y"
@@ -1209,7 +1225,247 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
           {step === 3 && (
             <div id="step-3-form" className="space-y-6">
               
-              {proposal.type === 'services' ? (
+              {proposal.type === 'whatsapp' ? (
+                /* WHATSAPP MARKETING CONFIGURATOR FORM */
+                <div className="space-y-6">
+                  <div className="bg-teal-50/70 border border-teal-200 p-4 rounded-xl flex items-start gap-3">
+                    <MessageSquare className="h-5 w-5 text-teal-600 shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="font-sans font-bold text-slate-800 text-xs uppercase tracking-wider">
+                        Taswiq WhatsApp Business API Configurator
+                      </h4>
+                      <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                        Configure the yearly Taswiq portal tier, setup fees, WhatsApp per-message rate parameters, scope of work items, features, and terms.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Part 1: Plan Tier & Financial Baseline */}
+                  <div className="p-5 border border-slate-200 rounded-2xl bg-white space-y-4">
+                    <h4 className="font-sans font-bold text-slate-800 text-xs uppercase tracking-wider border-b border-slate-100 pb-2">
+                      1. Platform Plan & Portal Pricing
+                    </h4>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setProposal(prev => ({
+                            ...prev,
+                            totalCost: 2700,
+                            whatsappScope: {
+                              ...(prev.whatsappScope || createDefaultWhatsappScope()),
+                              planType: 'startup',
+                              portalYearlyCharge: 2200,
+                              apiConfigCharge: 500
+                            }
+                          }));
+                        }}
+                        className={`p-3.5 border rounded-xl text-left transition-all cursor-pointer ${
+                          proposal.whatsappScope?.planType === 'startup'
+                            ? 'border-teal-500 bg-teal-50/50 ring-2 ring-teal-100'
+                            : 'border-slate-200 hover:border-slate-300 bg-slate-50/50'
+                        }`}
+                      >
+                        <div className="text-[10px] font-mono font-bold text-teal-600 uppercase">Startup Plan</div>
+                        <div className="text-sm font-extrabold text-slate-800 mt-0.5">QR 2,200 <span className="text-[10px] text-slate-500 font-normal">/yr</span></div>
+                        <div className="text-[10px] text-slate-500 mt-1">+ QR 500 Setup Fee</div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setProposal(prev => ({
+                            ...prev,
+                            totalCost: 5000,
+                            whatsappScope: {
+                              ...(prev.whatsappScope || createDefaultWhatsappScope()),
+                              planType: 'growth',
+                              portalYearlyCharge: 4500,
+                              apiConfigCharge: 500
+                            }
+                          }));
+                        }}
+                        className={`p-3.5 border rounded-xl text-left transition-all cursor-pointer ${
+                          proposal.whatsappScope?.planType === 'growth'
+                            ? 'border-teal-500 bg-teal-50/50 ring-2 ring-teal-100'
+                            : 'border-slate-200 hover:border-slate-300 bg-slate-50/50'
+                        }`}
+                      >
+                        <div className="text-[10px] font-mono font-bold text-teal-600 uppercase">Growth Plan</div>
+                        <div className="text-sm font-extrabold text-slate-800 mt-0.5">QR 4,500 <span className="text-[10px] text-slate-500 font-normal">/yr</span></div>
+                        <div className="text-[10px] text-slate-500 mt-1">+ QR 500 Setup Fee</div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setProposal(prev => ({
+                            ...prev,
+                            totalCost: 10499,
+                            whatsappScope: {
+                              ...(prev.whatsappScope || createDefaultWhatsappScope()),
+                              planType: 'premium',
+                              portalYearlyCharge: 9999,
+                              apiConfigCharge: 500
+                            }
+                          }));
+                        }}
+                        className={`p-3.5 border rounded-xl text-left transition-all cursor-pointer ${
+                          proposal.whatsappScope?.planType === 'premium'
+                            ? 'border-teal-500 bg-teal-50/50 ring-2 ring-teal-100'
+                            : 'border-slate-200 hover:border-slate-300 bg-slate-50/50'
+                        }`}
+                      >
+                        <div className="text-[10px] font-mono font-bold text-teal-600 uppercase">Premium Plan</div>
+                        <div className="text-sm font-extrabold text-slate-800 mt-0.5">QR 9,999 <span className="text-[10px] text-slate-500 font-normal">/yr</span></div>
+                        <div className="text-[10px] text-slate-500 mt-1">+ QR 500 Setup Fee</div>
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-2">
+                      <div>
+                        <label className="text-xs font-semibold text-slate-700 block mb-1">Portal Yearly Charge (QAR)</label>
+                        <input
+                          type="number"
+                          value={proposal.whatsappScope?.portalYearlyCharge ?? 2200}
+                          onChange={(e) => {
+                            const val = Number(e.target.value);
+                            const setup = proposal.whatsappScope?.apiConfigCharge ?? 500;
+                            setProposal(prev => ({
+                              ...prev,
+                              totalCost: val + setup,
+                              whatsappScope: { ...(prev.whatsappScope || createDefaultWhatsappScope()), portalYearlyCharge: val }
+                            }));
+                          }}
+                          className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-sans"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-semibold text-slate-700 block mb-1">API Setup Charge (QAR)</label>
+                        <input
+                          type="number"
+                          value={proposal.whatsappScope?.apiConfigCharge ?? 500}
+                          onChange={(e) => {
+                            const setup = Number(e.target.value);
+                            const yearly = proposal.whatsappScope?.portalYearlyCharge ?? 2200;
+                            setProposal(prev => ({
+                              ...prev,
+                              totalCost: yearly + setup,
+                              whatsappScope: { ...(prev.whatsappScope || createDefaultWhatsappScope()), apiConfigCharge: setup }
+                            }));
+                          }}
+                          className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-sans"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-semibold text-slate-700 block mb-1">Utility Msg Rate (QAR)</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={proposal.whatsappScope?.utilityMessageRate ?? 0.05}
+                          onChange={(e) => {
+                            const val = Number(e.target.value);
+                            setProposal(prev => ({
+                              ...prev,
+                              whatsappScope: { ...(prev.whatsappScope || createDefaultWhatsappScope()), utilityMessageRate: val }
+                            }));
+                          }}
+                          className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-sans"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-semibold text-slate-700 block mb-1">Marketing Msg Rate (QAR)</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={proposal.whatsappScope?.marketingMessageRate ?? 0.13}
+                          onChange={(e) => {
+                            const val = Number(e.target.value);
+                            setProposal(prev => ({
+                              ...prev,
+                              whatsappScope: { ...(prev.whatsappScope || createDefaultWhatsappScope()), marketingMessageRate: val }
+                            }));
+                          }}
+                          className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-sans"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Part 2: Scope of Work Checklist */}
+                  <div className="p-5 border border-slate-200 rounded-2xl bg-white space-y-3">
+                    <h4 className="font-sans font-bold text-slate-800 text-xs uppercase tracking-wider border-b border-slate-100 pb-2">
+                      2. Scope of Work Items
+                    </h4>
+                    <div className="space-y-2">
+                      {(proposal.whatsappScope?.scopeOfWorkItems || []).map((item) => (
+                        <label key={item.id} className="flex items-start gap-3 p-2.5 bg-slate-50 hover:bg-slate-100/80 rounded-xl cursor-pointer border border-slate-200/60">
+                          <input
+                            type="checkbox"
+                            checked={item.isSelected}
+                            onChange={(e) => {
+                              const updated = (proposal.whatsappScope?.scopeOfWorkItems || []).map(s => s.id === item.id ? { ...s, isSelected: e.target.checked } : s);
+                              setProposal(prev => ({ ...prev, whatsappScope: { ...(prev.whatsappScope || createDefaultWhatsappScope()), scopeOfWorkItems: updated } }));
+                            }}
+                            className="mt-0.5 rounded text-teal-600 focus:ring-teal-500"
+                          />
+                          <div>
+                            <div className="text-xs font-bold text-slate-800">{item.title}</div>
+                            <div className="text-[11px] text-slate-500 leading-normal">{item.description}</div>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Part 3: Key Features Included */}
+                  <div className="p-5 border border-slate-200 rounded-2xl bg-white space-y-3">
+                    <h4 className="font-sans font-bold text-slate-800 text-xs uppercase tracking-wider border-b border-slate-100 pb-2">
+                      3. Features Included Checklist
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                      {(proposal.whatsappScope?.featuresIncluded || []).map((feat) => (
+                        <label key={feat.id} className="flex items-start gap-2.5 p-2.5 bg-slate-50 hover:bg-slate-100/80 rounded-xl cursor-pointer border border-slate-200/60">
+                          <input
+                            type="checkbox"
+                            checked={feat.isSelected}
+                            onChange={(e) => {
+                              const updated = (proposal.whatsappScope?.featuresIncluded || []).map(f => f.id === feat.id ? { ...f, isSelected: e.target.checked } : f);
+                              setProposal(prev => ({ ...prev, whatsappScope: { ...(prev.whatsappScope || createDefaultWhatsappScope()), featuresIncluded: updated } }));
+                            }}
+                            className="mt-0.5 rounded text-teal-600 focus:ring-teal-500"
+                          />
+                          <div>
+                            <div className="text-xs font-bold text-slate-800">{feat.title}</div>
+                            <div className="text-[10.5px] text-slate-500 leading-tight">{feat.description}</div>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Part 4: Display Matrix Option */}
+                  <div className="p-4 border border-slate-200 rounded-xl bg-slate-50 flex items-center justify-between">
+                    <div>
+                      <div className="text-xs font-bold text-slate-800">Include Plan Tier Comparison Matrix</div>
+                      <div className="text-[11px] text-slate-500">Render the Taswiq Startup vs Growth vs Premium feature matrix in the proposal document.</div>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={proposal.whatsappScope?.includeTierComparisonMatrix ?? true}
+                      onChange={(e) => {
+                        const val = e.target.checked;
+                        setProposal(prev => ({ ...prev, whatsappScope: { ...(prev.whatsappScope || createDefaultWhatsappScope()), includeTierComparisonMatrix: val } }));
+                      }}
+                      className="h-4 w-4 rounded text-teal-600 focus:ring-teal-500 cursor-pointer"
+                    />
+                  </div>
+                </div>
+              ) : proposal.type === 'services' ? (
                 /* MODULAR SERVICES CONFIGURATOR FORM */
                 <div className="space-y-6">
                   <div className="bg-blue-50/60 border border-blue-200/80 p-4 rounded-xl flex items-start gap-3">
@@ -3287,6 +3543,50 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
                           </div>
                         </div>
                       ))}
+                    </div>
+                  </div>
+                </div>
+              ) : proposal.type === 'whatsapp' ? (
+                /* WhatsApp Financial Breakdown */
+                <div className="space-y-4">
+                  <div className="p-5 border border-teal-200 bg-teal-50/30 rounded-2xl space-y-4">
+                    <h4 className="font-sans font-bold text-slate-800 text-xs uppercase tracking-wider border-b border-teal-200/60 pb-2">
+                      Taswiq WhatsApp Business API Financial Breakdown
+                    </h4>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
+                        <div className="text-[10px] font-mono font-bold text-teal-600 uppercase">Portal Annual License</div>
+                        <div className="text-xl font-extrabold text-slate-800 mt-1">
+                          {formatQAR(proposal.whatsappScope?.portalYearlyCharge ?? 2200)}
+                        </div>
+                        <div className="text-xs text-slate-500 mt-1">Yearly subscription for Taswiq portal access.</div>
+                      </div>
+
+                      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
+                        <div className="text-[10px] font-mono font-bold text-teal-600 uppercase">One-Time API Setup</div>
+                        <div className="text-xl font-extrabold text-slate-800 mt-1">
+                          {formatQAR(proposal.whatsappScope?.apiConfigCharge ?? 500)}
+                        </div>
+                        <div className="text-xs text-slate-500 mt-1">Phone number, webhook & Meta app configuration.</div>
+                      </div>
+                    </div>
+
+                    <div className="bg-white p-4 rounded-xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div>
+                        <div className="text-xs font-bold text-slate-800">Total Portal & Setup Investment</div>
+                        <div className="text-[11px] text-slate-500">100% advance yearly payment required upon contract signing.</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-2xl font-black text-teal-700">
+                          {formatQAR((proposal.whatsappScope?.portalYearlyCharge ?? 2200) + (proposal.whatsappScope?.apiConfigCharge ?? 500))}
+                        </div>
+                        <div className="text-[10px] text-slate-400 font-mono">1 Year License + Setup Included</div>
+                      </div>
+                    </div>
+
+                    <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 leading-relaxed">
+                      <strong>Meta Message Usage Notice:</strong> Utility messages ({formatQAR(proposal.whatsappScope?.utilityMessageRate ?? 0.05)}/msg) and Marketing messages ({formatQAR(proposal.whatsappScope?.marketingMessageRate ?? 0.13)}/msg) are billed directly by Meta based on actual consumption.
                     </div>
                   </div>
                 </div>

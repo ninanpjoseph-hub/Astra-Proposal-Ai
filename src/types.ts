@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export type ProposalType = 'branding' | 'website' | 'services';
+export type ProposalType = 'branding' | 'website' | 'services' | 'whatsapp';
 
 export type ModularServiceId = 'website_audit' | 'hosting_domain' | 'ssl_renewal' | 'amc' | 'custom_service';
 
@@ -153,6 +153,30 @@ export interface ModularServicesScope {
   customService?: CustomServiceScope;
 }
 
+export interface WhatsappFeatureItem {
+  id: string;
+  title: string;
+  description: string;
+  isSelected: boolean;
+}
+
+export interface WhatsappScope {
+  planType: 'startup' | 'growth' | 'premium' | 'custom';
+  portalYearlyCharge: number;
+  apiConfigCharge: number;
+  utilityMessageRate: number;
+  marketingMessageRate: number;
+  platformName: string; // e.g. "Taswiq"
+  version: string; // e.g. "1.0"
+  maxChatbots: number;
+  maxStepsPerChatbot: number;
+  objectives?: string[];
+  scopeOfWorkItems: WhatsappFeatureItem[];
+  featuresIncluded: WhatsappFeatureItem[];
+  includeTierComparisonMatrix: boolean;
+  termsConditionsList?: string[];
+}
+
 export interface BrandingScope {
   logoDesign: boolean;
   brandGuidelines: boolean;
@@ -269,6 +293,7 @@ export interface Proposal {
   brandingScope: BrandingScope;
   websiteScope: WebsiteScope;
   servicesScope?: ModularServicesScope;
+  whatsappScope?: WhatsappScope;
   
   // Timeline
   weeks: number;

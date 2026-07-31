@@ -1,6 +1,6 @@
 import React from 'react';
 import { ProposalType } from '../types';
-import { Globe, Palette, Cpu, Landmark, X, Sparkles, ChevronRight } from 'lucide-react';
+import { Globe, Palette, Cpu, Landmark, X, Sparkles, ChevronRight, MessageSquare } from 'lucide-react';
 
 interface ProposalTypeModalProps {
   isOpen: boolean;
@@ -144,7 +144,37 @@ export default function ProposalTypeModal({
             </div>
           </button>
 
-          {/* Option 4: Cheque Printing Software */}
+          {/* Option 4: WhatsApp Marketing (Taswiq) */}
+          <button
+            onClick={() => {
+              onSelectType('whatsapp');
+              onClose();
+            }}
+            className="p-5 rounded-xl border border-slate-800 bg-[#111C35]/60 hover:bg-[#1E293B] hover:border-teal-500/50 text-left transition-all duration-200 hover:-translate-y-1 hover:shadow-xl group cursor-pointer flex flex-col justify-between"
+          >
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <div className="h-10 w-10 rounded-lg bg-teal-500/10 text-teal-400 border border-teal-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <MessageSquare className="h-5 w-5" />
+                </div>
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-teal-500/10 text-teal-400 border border-teal-500/20 uppercase">
+                  WhatsApp API
+                </span>
+              </div>
+              <h3 className="font-serif font-bold text-sm text-white group-hover:text-teal-300 transition-colors">
+                WhatsApp Marketing
+              </h3>
+              <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                Taswiq WhatsApp Cloud API, Meta verification, chatbots, broadcast campaigns, and eCommerce.
+              </p>
+            </div>
+            <div className="mt-4 pt-3 border-t border-slate-800/60 flex items-center justify-between text-xs font-semibold text-teal-400">
+              <span>Launch Builder</span>
+              <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+            </div>
+          </button>
+
+          {/* Option 5: Cheque Printing Software */}
           <button
             onClick={() => {
               onSelectChequeSoftware();
