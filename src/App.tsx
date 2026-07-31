@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Proposal, ProposalType, ProposalHistoryEntry, User, UserRole } from './types';
-import { formatQAR, createDefaultProposal } from './proposalUtils';
+import { formatQAR, createDefaultProposal, renderProjectMission } from './proposalUtils';
 import ProposalWizard from './components/ProposalWizard';
 import ProposalDocumentView from './components/ProposalDocumentView';
 import AdminPortal from './components/AdminPortal';
@@ -1222,7 +1222,7 @@ export default function App() {
                           <p className={`text-[10px] italic font-sans mt-3 line-clamp-2 border-l-2 pl-2 ${
                             isLuxury ? 'text-slate-400 border-[#C5A059]/40' : 'text-slate-400 border-slate-100'
                           }`}>
-                            "{prop.briefDescription || "Bespoke production strategic deck targeting operational deadlines and conversion metrics."}"
+                            "{renderProjectMission(prop)}"
                           </p>
                         </div>
 

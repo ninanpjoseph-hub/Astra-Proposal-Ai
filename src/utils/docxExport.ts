@@ -18,11 +18,12 @@ import {
   PageBreak
 } from 'docx';
 import { Proposal, ProposalType } from '../types';
-import { formatQAR, getModularDeliverableLineItems } from '../proposalUtils';
+import { formatQAR, getModularDeliverableLineItems, renderExecutiveSummary, renderProjectMission } from '../proposalUtils';
 
 // Color Palette Constants
 const COLOR_PRIMARY = '1A2744'; // Deep Navy
 const COLOR_GOLD = 'B8962E';    // Premium Gold
+const COLOR_WHITE = 'FFFFFF';   // White
 const COLOR_SLATE_DARK = '334155';
 const COLOR_SLATE_MUTED = '64748B';
 const COLOR_BG_LIGHT = 'F8FAFC';
@@ -113,35 +114,64 @@ export async function exportProposalToDocx(proposal: Proposal) {
   // ==========================================
   children.push(createSectionHeader('1. Executive Summary & Project Overview'));
   
-  if (proposal.briefDescription) {
-    children.push(
-      new Paragraph({
-        children: [
-          new TextRun({
-            text: proposal.briefDescription,
-            size: 22,
-            color: COLOR_SLATE_DARK,
-          }),
-        ],
-        spacing: { after: 200 },
-      })
-    );
-  } else {
-    children.push(
-      new Paragraph({
-        children: [
-          new TextRun({
-            text: 'This document presents a comprehensive technical and strategic proposal designed to elevate your brand presence, technological infrastructure, and digital operations. Our approach focuses on delivering seamless design standards, scalable architecture, security compliance, and measured business growth.',
-            size: 22,
-            color: COLOR_SLATE_DARK,
-          }),
-        ],
-        spacing: { after: 200 },
-      })
-    );
-  }
+  children.push(
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: renderExecutiveSummary(proposal),
+          size: 22,
+          color: COLOR_SLATE_DARK,
+        }),
+      ],
+      spacing: { after: 200 },
+    })
+  );
 
-  // Key Value Highlights Callout Box
+  // Key Value Highlights / Mission Callout Box
+  children.push(
+    new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      borders: {
+        top: { style: BorderStyle.SINGLE, size: 2, color: COLOR_GOLD },
+        bottom: { style: BorderStyle.SINGLE, size: 2, color: COLOR_GOLD },
+        left: { style: BorderStyle.NONE },
+        right: { style: BorderStyle.NONE },
+      },
+      rows: [
+        new TableRow({
+          children: [
+            new TableCell({
+              children: [
+                new Paragraph({
+                  children: [
+                    new TextRun({
+                      text: "KEY BUSINESS INTENT & DESIRED OUTCOME",
+                      size: 18,
+                      bold: true,
+                      color: COLOR_GOLD,
+                    }),
+                  ],
+                  spacing: { after: 100 },
+                }),
+                new Paragraph({
+                  children: [
+                    new TextRun({
+                      text: `"${renderProjectMission(proposal)}"`,
+                      size: 20,
+                      italics: true,
+                      color: COLOR_WHITE,
+                    }),
+                  ],
+                }),
+              ],
+              shading: { fill: COLOR_PRIMARY, type: ShadingType.CLEAR },
+              margins: { top: 200, bottom: 200, left: 240, right: 240 },
+            }),
+          ],
+        }),
+      ],
+    })
+  );
   children.push(
     new Table({
       width: { size: 100, type: WidthType.PERCENTAGE },

@@ -558,7 +558,7 @@ router.post('/', async (req, res) => {
     }
     // 1. Ensure client exists in client registry and update POC details
     let clientId = p.client_id || `client_${Math.random().toString(36).substring(2, 11)}`;
-    const clientsFound = await query('SELECT id FROM clients WHERE company_name = ? OR name = ?', [p.companyName, p.clientName]);
+    const clientsFound = await query('SELECT id, email, contact_person, designation, phone FROM clients WHERE company_name = ? OR name = ?', [p.companyName, p.clientName]);
     
     const pocName = p.clientPocName || p.client_poc_name || '';
     const pocDesignation = p.clientPocDesignation || p.client_poc_designation || '';
@@ -567,9 +567,15 @@ router.post('/', async (req, res) => {
 
     if (clientsFound.length > 0) {
       clientId = clientsFound[0].id;
+      const existing = clientsFound[0];
+      const updatedEmail = pocEmail && pocEmail.trim() ? pocEmail.trim() : (existing.email || null);
+      const updatedContactPerson = pocName && pocName.trim() ? pocName.trim() : (existing.contact_person || null);
+      const updatedDesignation = pocDesignation && pocDesignation.trim() ? pocDesignation.trim() : (existing.designation || null);
+      const updatedPhone = pocPhone && pocPhone.trim() ? pocPhone.trim() : (existing.phone || null);
+
       await query(
-        'UPDATE clients SET name = ?, company_name = ?, email = IFNULL(NULLIF(?, ""), email), contact_person = IFNULL(NULLIF(?, ""), contact_person), designation = IFNULL(NULLIF(?, ""), designation), phone = IFNULL(NULLIF(?, ""), phone) WHERE id = ?',
-        [p.clientName, p.companyName, pocEmail, pocName, pocDesignation, pocPhone, clientId]
+        'UPDATE clients SET name = ?, company_name = ?, email = ?, contact_person = ?, designation = ?, phone = ? WHERE id = ?',
+        [p.clientName, p.companyName, updatedEmail, updatedContactPerson, updatedDesignation, updatedPhone, clientId]
       );
     } else {
       await query(

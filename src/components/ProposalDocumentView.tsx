@@ -7,7 +7,7 @@ import React from 'react';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import { BRANDING_TEMPLATES, WEBSITE_TEMPLATES, DEFAULT_SCOPE_TEMPLATES } from '../staticTemplates';
-import { formatQAR, DEFAULT_BRANDING_MILESTONES, DEFAULT_WEBSITE_MILESTONES, triggerAutomatedFollowUp, createDefaultProposal, getModularDeliverableLineItems } from '../proposalUtils';
+import { formatQAR, DEFAULT_BRANDING_MILESTONES, DEFAULT_WEBSITE_MILESTONES, triggerAutomatedFollowUp, createDefaultProposal, getModularDeliverableLineItems, renderExecutiveSummary, renderProjectMission } from '../proposalUtils';
 import SitemapGenerator from './SitemapGenerator';
 import { groupScopeIntoPages } from '../utils/scopeClassifier';
 import { Check, Bookmark, DollarSign, Calendar, Landmark, BookOpen, Signature, Award, ChevronRight, FileText, Printer, Download, History, RotateCcw, Clock, Sliders, Upload, Trash2, Plus, AlertCircle, Coins, CreditCard, Shield, Users, MoreVertical, ChevronDown, Mail } from 'lucide-react';
@@ -1725,7 +1725,7 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
             </h2>
             
             <p className="text-xs text-slate-600 leading-relaxed font-sans mb-6">
-              We appreciate the opportunity to collaborate with <strong>{proposal.clientName}</strong> on this commercial initiative. Guided by your operational boundaries and our high-performance technical frameworks, we have drafted a streamlined strategy designed to create tangible, lasting market differentiation.
+              {renderExecutiveSummary(proposal)}
             </p>
 
             {/* Navy Callout Block */}
@@ -1733,8 +1733,8 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
               <span style={{ display: 'block', fontSize: '10px', letterSpacing: '0.15em', color: '#B8962E', fontWeight: 'bold', marginBottom: '8px' }}>
                 KEY BUSINESS INTENT & DESIRED OUTCOME
               </span>
-              <p style={{ color: '#ffffff', fontSize: '16px', fontStyle: 'italic', margin: '0', lineHeight: '1.5', fontFamily: 'serif' }}>
-                "{proposal.briefDescription || "An interactive, double-language responsive corporate portal built with high speed CMS and custom plugins."}"
+              <p style={{ color: '#ffffff', fontSize: '15px', fontStyle: 'italic', margin: '0', lineHeight: '1.5', fontFamily: 'serif' }}>
+                "{renderProjectMission(proposal)}"
               </p>
             </div>
 

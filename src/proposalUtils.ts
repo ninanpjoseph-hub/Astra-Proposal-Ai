@@ -35,6 +35,51 @@ export function formatQAR(amount: number): string {
   }).format(amount);
 }
 
+// Standard Executive Briefing & Project Mission Templates
+export const DEFAULT_EXECUTIVE_BRIEFING_TEMPLATE = 
+  "We appreciate the opportunity to present this formal commercial proposal to {{client_name}}. Guided by your operational boundaries and technical milestones, our team at Astra Technologies has structured a comprehensive, high-performance solution tailored specifically to elevate {{client_name}}'s digital capabilities and market positioning. This proposal outlines the full scope of work, transparent deliverables, resource allocation, and operational timelines required to achieve your strategic objectives seamlessly.";
+
+export const DEFAULT_PROJECT_MISSION_TEMPLATE = 
+  "To empower {{client_name}} with a robust, scalable, and high-conversion digital ecosystem designed to optimize user engagement, streamline operational workflows, and establish an industry-leading brand presence across key target markets.";
+
+/**
+ * Returns Executive Briefing Details populated with client name.
+ */
+export function getDefaultExecutiveBriefing(clientName?: string): string {
+  const name = clientName && clientName.trim() ? clientName.trim() : "{{client_name}}";
+  return DEFAULT_EXECUTIVE_BRIEFING_TEMPLATE.replace(/\{\{client_name\}\}/g, name);
+}
+
+/**
+ * Returns Project Mission & Objectives Brief populated with client name.
+ */
+export function getDefaultProjectMission(clientName?: string): string {
+  const name = clientName && clientName.trim() ? clientName.trim() : "{{client_name}}";
+  return DEFAULT_PROJECT_MISSION_TEMPLATE.replace(/\{\{client_name\}\}/g, name);
+}
+
+/**
+ * Renders Executive Briefing for document view / exports, replacing {{client_name}} dynamically.
+ */
+export function renderExecutiveSummary(proposal: { executiveSummary?: string; clientName?: string }): string {
+  const rawText = proposal.executiveSummary && proposal.executiveSummary.trim()
+    ? proposal.executiveSummary
+    : getDefaultExecutiveBriefing(proposal.clientName);
+  const clientName = proposal.clientName && proposal.clientName.trim() ? proposal.clientName.trim() : "your organization";
+  return rawText.replace(/\{\{client_name\}\}/g, clientName);
+}
+
+/**
+ * Renders Project Mission Brief for document view / exports, replacing {{client_name}} dynamically.
+ */
+export function renderProjectMission(proposal: { briefDescription?: string; clientName?: string }): string {
+  const rawText = proposal.briefDescription && proposal.briefDescription.trim()
+    ? proposal.briefDescription
+    : getDefaultProjectMission(proposal.clientName);
+  const clientName = proposal.clientName && proposal.clientName.trim() ? proposal.clientName.trim() : "your organization";
+  return rawText.replace(/\{\{client_name\}\}/g, clientName);
+}
+
 // Default items
 export const DEFAULT_BRANDING_MILESTONES: Omit<Milestone, 'id'>[] = [
   { week: "Week 1", title: "Discovery & Mood Boards", description: "Market research, stakeholder alignment, and core design styles formulation." },
@@ -440,13 +485,14 @@ export function calculateModularServicesTotal(servicesScope?: ModularServicesSco
   return items.reduce((sum, item) => sum + (Number(item.totalCost) || 0), 0);
 }
 
-export function createDefaultProposal(type: ProposalType): Proposal {
+export function createDefaultProposal(type: ProposalType, initialClientName?: string): Proposal {
   const fileDate = new Date();
   const dateFormatted = fileDate.toISOString().split('T')[0]; // YYYY-MM-DD
   
   const id = generateId();
   const defaultServicesScope = createDefaultModularServicesScope();
   const servicesTotal = calculateModularServicesTotal(defaultServicesScope);
+  const cName = initialClientName || "";
 
   return {
     id,
@@ -456,7 +502,7 @@ export function createDefaultProposal(type: ProposalType): Proposal {
     status: ProposalStatus.DRAFT,
     
     // Client Info
-    clientName: "",
+    clientName: cName,
     companyName: "",
     proposalDate: dateFormatted,
     
@@ -466,8 +512,11 @@ export function createDefaultProposal(type: ProposalType): Proposal {
     clientPocPhone: "",
     clientPocEmail: "",
     
-    // Executive Summary
-    briefDescription: "",
+    // Executive Summary & Objectives Brief
+    executiveSummary: getDefaultExecutiveBriefing(cName),
+    briefDescription: getDefaultProjectMission(cName),
+    isExecutiveSummaryEdited: false,
+    isBriefDescriptionEdited: false,
     
     // Branding default scope
     brandingScope: {

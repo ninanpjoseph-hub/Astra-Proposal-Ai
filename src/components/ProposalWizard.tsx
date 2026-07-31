@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Proposal, ProposalType, Milestone, ResourceCost, ProposalStatus, DomainItem, WebsiteAuditScope, HostingDomainEntry, SSLEntry, AMCEntry } from '../types';
-import { createDefaultProposal, generateId, formatQAR, createDefaultModularServicesScope, calculateModularServicesTotal, getModularDeliverableLineItems, createDefaultWhatsappScope } from '../proposalUtils';
+import { createDefaultProposal, generateId, formatQAR, createDefaultModularServicesScope, calculateModularServicesTotal, getModularDeliverableLineItems, createDefaultWhatsappScope, getDefaultExecutiveBriefing, getDefaultProjectMission, renderExecutiveSummary, renderProjectMission } from '../proposalUtils';
 import { DEFAULT_SCOPE_TEMPLATES } from '../staticTemplates';
 import SitemapGenerator from './SitemapGenerator';
 import ProposalDocumentView from './ProposalDocumentView';
@@ -13,7 +13,7 @@ import { getScopeCategory, ScopeCategory } from '../utils/scopeClassifier';
 import { 
   Building2, User, Calendar, FileText, CheckSquare, Clock, Landmark, Settings, 
   Trash2, Plus, ArrowLeft, ArrowRight, Eye, Sparkles, Check, HelpCircle, ArrowUp, ArrowDown, Edit3, X,
-  Briefcase, Phone, Mail, MessageSquare
+  Briefcase, Phone, Mail, MessageSquare, RotateCcw
 } from 'lucide-react';
 
 interface ProposalWizardProps {
@@ -27,11 +27,13 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
   const [step, setStep] = useState<number>(1);
   const [proposal, setProposal] = useState<Proposal>(() => {
     const rawP = initialProposal ? JSON.parse(JSON.stringify(initialProposal)) : createDefaultProposal('branding');
-    const defaults = createDefaultProposal(rawP.type || 'branding');
+    const defaults = createDefaultProposal(rawP.type || 'branding', rawP.clientName);
     return {
       ...defaults,
       ...rawP,
       type: rawP.type || defaults.type,
+      executiveSummary: rawP.executiveSummary || getDefaultExecutiveBriefing(rawP.clientName),
+      briefDescription: rawP.briefDescription || getDefaultProjectMission(rawP.clientName),
       brandingScope: {
         ...defaults.brandingScope,
         ...(rawP.brandingScope || {})
@@ -62,8 +64,8 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
   const handleTypeSelect = (type: ProposalType) => {
     if (type === proposal.type) return;
     setProposalType(type);
-    const newDefault = createDefaultProposal(type);
-    // Keep client info and date if already typed
+    const newDefault = createDefaultProposal(type, proposal.clientName);
+    // Keep client info, briefing text, and date if already typed
     newDefault.clientName = proposal.clientName;
     newDefault.companyName = proposal.companyName;
     newDefault.proposalDate = proposal.proposalDate;
@@ -71,7 +73,10 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
     newDefault.clientPocDesignation = proposal.clientPocDesignation;
     newDefault.clientPocPhone = proposal.clientPocPhone;
     newDefault.clientPocEmail = proposal.clientPocEmail;
-    newDefault.briefDescription = proposal.briefDescription;
+    newDefault.executiveSummary = proposal.executiveSummary || getDefaultExecutiveBriefing(proposal.clientName);
+    newDefault.briefDescription = proposal.briefDescription || getDefaultProjectMission(proposal.clientName);
+    newDefault.isExecutiveSummaryEdited = proposal.isExecutiveSummaryEdited;
+    newDefault.isBriefDescriptionEdited = proposal.isBriefDescriptionEdited;
     newDefault.preparedByName = proposal.preparedByName;
     newDefault.preparedByCompany = proposal.preparedByCompany;
     newDefault.preparedByTitle = proposal.preparedByTitle;
@@ -124,6 +129,39 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
         const maintCost = field === 'maintenanceCost' ? Number(value) : Number(prev.maintenanceCost);
         const addCost = field === 'additionalCost' ? Number(value) : Number(prev.additionalCost);
         updated.totalCost = devCost + plugCost + maintCost + addCost;
+      }
+
+      // Automatically replace Client Name in Executive Briefing & Mission Brief
+      if (field === 'clientName') {
+        const newClientName = String(value || "").trim();
+        const oldClientName = (prev.clientName || "").trim();
+
+        let updatedExec = prev.executiveSummary ?? "";
+        if (
+          !prev.isExecutiveSummaryEdited ||
+          !updatedExec ||
+          updatedExec === getDefaultExecutiveBriefing(oldClientName) ||
+          updatedExec.includes("{{client_name}}")
+        ) {
+          updatedExec = getDefaultExecutiveBriefing(newClientName);
+        } else if (oldClientName && updatedExec.includes(oldClientName)) {
+          updatedExec = updatedExec.replaceAll(oldClientName, newClientName || "{{client_name}}");
+        }
+
+        let updatedBrief = prev.briefDescription ?? "";
+        if (
+          !prev.isBriefDescriptionEdited ||
+          !updatedBrief ||
+          updatedBrief === getDefaultProjectMission(oldClientName) ||
+          updatedBrief.includes("{{client_name}}")
+        ) {
+          updatedBrief = getDefaultProjectMission(newClientName);
+        } else if (oldClientName && updatedBrief.includes(oldClientName)) {
+          updatedBrief = updatedBrief.replaceAll(oldClientName, newClientName || "{{client_name}}");
+        }
+
+        updated.executiveSummary = updatedExec;
+        updated.briefDescription = updatedBrief;
       }
       
       return updated;
@@ -1114,32 +1152,100 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
             </div>
           )}
 
-          {/* STEP 2: Project Details (Executive Summary) */}
+          {/* STEP 2: Project Details (Executive Summary & Mission) */}
           {step === 2 && (
-            <div id="step-2-form" className="space-y-5">
+            <div id="step-2-form" className="space-y-6">
               <div>
                 <h3 className="font-sans font-bold text-slate-800 text-sm tracking-tight mb-1">
-                  Executive Briefing details
+                  Executive Briefing & Project Mission Details
                 </h3>
-                <p className="text-xs text-slate-500 leading-normal mb-4 font-sans">
-                  Detail the business opportunities, desired outcome, or particular parameters of this collaboration. This replaces the generic executive summary placeholder block in the final documentation.
+                <p className="text-xs text-slate-500 leading-normal mb-5 font-sans">
+                  Standardized default templates are automatically pre-populated and dynamically linked to the Client Name entered in Step 1.
                 </p>
-                
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-sans font-semibold text-slate-700">Project Mission & Objectives Brief</label>
-                  <textarea
-                    rows={6}
-                    placeholder=""
-                    value={proposal.briefDescription}
-                    onChange={(e) => updateField('briefDescription', e.target.value)}
-                    className="w-full p-4 border border-slate-300 rounded-lg text-xs leading-relaxed font-sans focus:outline-hidden focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-shadow resize-y"
-                    id="input-brief-description"
-                  />
-                  <span className="text-[10px] text-slate-400 italic">
-                    💡 High-quality brief translates into higher customer value perception. Keep it outcome-focused.
-                  </span>
 
-                  <div className="mt-3 p-3 bg-blue-50/50 border border-blue-100 rounded-xl flex flex-col gap-2">
+                <div className="space-y-5">
+                  {/* Executive Briefing Details */}
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex justify-between items-center">
+                      <label className="text-xs font-sans font-semibold text-slate-800">
+                        Executive Briefing Details
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setProposal(prev => ({
+                            ...prev,
+                            executiveSummary: getDefaultExecutiveBriefing(prev.clientName),
+                            isExecutiveSummaryEdited: false
+                          }));
+                        }}
+                        className="text-[10px] text-blue-600 hover:text-blue-800 font-sans font-medium hover:underline flex items-center gap-1 cursor-pointer"
+                        title="Restore standardized template"
+                      >
+                        <RotateCcw className="h-3 w-3" /> Restore Default Template
+                      </button>
+                    </div>
+                    <textarea
+                      rows={5}
+                      value={proposal.executiveSummary ?? getDefaultExecutiveBriefing(proposal.clientName)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setProposal(prev => ({
+                          ...prev,
+                          executiveSummary: val,
+                          isExecutiveSummaryEdited: true
+                        }));
+                      }}
+                      className="w-full p-3.5 border border-slate-300 rounded-lg text-xs leading-relaxed font-sans focus:outline-hidden focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-shadow resize-y text-slate-700 bg-white"
+                      id="input-executive-summary"
+                    />
+                    <span className="text-[10px] text-slate-400 italic">
+                      💡 Standard Executive Briefing section automatically replacing client name placeholder with "{proposal.clientName || 'Client Name'}".
+                    </span>
+                  </div>
+
+                  {/* Project Mission & Objectives Brief */}
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex justify-between items-center">
+                      <label className="text-xs font-sans font-semibold text-slate-800">
+                        Project Mission & Objectives Brief
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setProposal(prev => ({
+                            ...prev,
+                            briefDescription: getDefaultProjectMission(prev.clientName),
+                            isBriefDescriptionEdited: false
+                          }));
+                        }}
+                        className="text-[10px] text-blue-600 hover:text-blue-800 font-sans font-medium hover:underline flex items-center gap-1 cursor-pointer"
+                        title="Restore standardized template"
+                      >
+                        <RotateCcw className="h-3 w-3" /> Restore Default Template
+                      </button>
+                    </div>
+                    <textarea
+                      rows={4}
+                      value={proposal.briefDescription ?? getDefaultProjectMission(proposal.clientName)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setProposal(prev => ({
+                          ...prev,
+                          briefDescription: val,
+                          isBriefDescriptionEdited: true
+                        }));
+                      }}
+                      className="w-full p-3.5 border border-slate-300 rounded-lg text-xs leading-relaxed font-sans focus:outline-hidden focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-shadow resize-y text-slate-700 bg-white"
+                      id="input-brief-description"
+                    />
+                    <span className="text-[10px] text-slate-400 italic">
+                      💡 Standard Project Mission section automatically replacing client name placeholder with "{proposal.clientName || 'Client Name'}".
+                    </span>
+                  </div>
+
+                  {/* Astra AI Copilot Assist */}
+                  <div className="mt-4 p-3.5 bg-blue-50/50 border border-blue-100 rounded-xl flex flex-col gap-2">
                     <div className="flex justify-between items-center sm:flex-row flex-col gap-2">
                       <span className="text-[11px] font-sans font-medium text-blue-800 flex items-center gap-1.5">
                         <Sparkles className="h-3.5 w-3.5 text-blue-600 animate-pulse" />
@@ -1176,6 +1282,7 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
                               setProposal(prev => ({
                                 ...prev,
                                 briefDescription: data.executiveSummary || prev.briefDescription,
+                                isBriefDescriptionEdited: true,
                                 milestones: data.milestones ? data.milestones.map((m: any, idx: number) => ({
                                   id: `${prev.id}_m_ai_${idx}`,
                                   week: m.week,
@@ -1190,12 +1297,12 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
                             console.warn("Gemini connection error: ", err);
                             setAiError(err.message || "Could not link to backend Gemini proxy. Fallback outline loaded.");
                             
-                            // Let's do a mock elegant description in case database/key is missing in workspace
                             setProposal(prev => ({
                               ...prev,
                               briefDescription: isBranding
-                                ? `Our visual brand identity design for ${proposal.companyName} is optimized to maximize positioning for ${proposal.clientName} in Qatar's growing commercial landscape. We will orchestrate premium iconography, typography, layouts, and brand asset guidelines designed to capture attention and promote long-term buyer trust.`
-                                : `Our engineering framework for ${proposal.companyName} delivers a tailored, responsive digital platform optimized for ${proposal.clientName}. It features fluid dual-language support, modern CMS editing dashboards, semantic SEO profiles, and secure cloud layouts to maximize lead capture.`
+                                ? `Our visual brand identity design for ${proposal.companyName} is optimized to maximize positioning for ${proposal.clientName} in Qatar's growing commercial landscape.`
+                                : `Our engineering framework for ${proposal.companyName} delivers a tailored, responsive digital platform optimized for ${proposal.clientName}.`,
+                              isBriefDescriptionEdited: true
                             }));
                           } finally {
                             setIsGeneratingAI(false);
@@ -1212,7 +1319,7 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
                     )}
                     {!aiError && isGeneratingAI && (
                       <span className="text-[10px] text-blue-600 font-sans block animate-pulse">
-                        Analyzing briefing profile, structuring weekly roadmap, and formulating premium copy points on the fly...
+                        Analyzing briefing profile, structuring weekly roadmap, and formulating copy points...
                       </span>
                     )}
                   </div>

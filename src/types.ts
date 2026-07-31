@@ -286,8 +286,11 @@ export interface Proposal {
   clientPocPhone?: string;
   clientPocEmail?: string;
   
-  // Executive Summary
-  briefDescription: string; // Specific project description or business overview
+  // Executive Summary & Objectives Brief
+  briefDescription: string; // Project Mission & Objectives Brief
+  executiveSummary?: string; // Executive Briefing Details
+  isExecutiveSummaryEdited?: boolean;
+  isBriefDescriptionEdited?: boolean;
   
   // Custom scope for the specific type
   brandingScope: BrandingScope;
