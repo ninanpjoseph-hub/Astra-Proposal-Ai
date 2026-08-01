@@ -779,6 +779,50 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
 
   // Pre-calculated page items dynamically computed based on scope configuration
   const getPagesDefinition = () => {
+    if (isBranding) {
+      const bScope = proposal.brandingScope || {};
+      const list: { id: string; title: string; pageNumStr: string }[] = [];
+      let pNum = 1;
+      if (bScope.includeCoverPage !== false) {
+        list.push({ id: "cover", title: "Cover Page", pageNumStr: String(pNum++).padStart(2, '0') });
+      }
+      if (bScope.includeTableOfContents !== false) {
+        list.push({ id: "toc", title: "Table of Contents", pageNumStr: String(pNum++).padStart(2, '0') });
+      }
+      if (bScope.includeExecutiveSummary !== false) {
+        list.push({ id: "exec", title: "Executive Summary", pageNumStr: String(pNum++).padStart(2, '0') });
+      }
+      if (bScope.includeObjectives !== false) {
+        list.push({ id: "objectives", title: "Project Mission & Brand Objectives", pageNumStr: String(pNum++).padStart(2, '0') });
+      }
+      if (bScope.includeKickoffApproach !== false) {
+        list.push({ id: "kickoff", title: "Kick-Off & Strategic Approach", pageNumStr: String(pNum++).padStart(2, '0') });
+      }
+      if (bScope.includeProcess !== false) {
+        list.push({ id: "process", title: "Brand Development Methodology", pageNumStr: String(pNum++).padStart(2, '0') });
+      }
+      if (bScope.includeScopeDeliverables !== false) {
+        list.push({ id: "scope_core", title: "Scope of Work - Core Deliverables", pageNumStr: String(pNum++).padStart(2, '0') });
+        list.push({ id: "scope_ext", title: "Extended Brand Collateral & Touchpoints", pageNumStr: String(pNum++).padStart(2, '0') });
+      }
+      if (bScope.includePhasesOfExecution !== false) {
+        list.push({ id: "phases", title: "Phases of Execution", pageNumStr: String(pNum++).padStart(2, '0') });
+      }
+      if (bScope.includeTimeline !== false) {
+        list.push({ id: "timeline", title: "Project Timeline Schedule", pageNumStr: String(pNum++).padStart(2, '0') });
+      }
+      if (bScope.includeFinancials !== false) {
+        list.push({ id: "financials", title: "Financial Fee Schedule", pageNumStr: String(pNum++).padStart(2, '0') });
+      }
+      if (bScope.includeTermsExclusions !== false) {
+        list.push({ id: "terms", title: "Terms & Scope Exclusions", pageNumStr: String(pNum++).padStart(2, '0') });
+      }
+      if (bScope.includeAcceptance !== false) {
+        list.push({ id: "acceptance", title: "Acceptance of Proposal", pageNumStr: String(pNum++).padStart(2, '0') });
+      }
+      return list;
+    }
+
     const list: { id: string; title: string; pageNumStr: string }[] = [
       { id: "cover", title: "Cover Page", pageNumStr: "01" },
       { id: "toc", title: "Table of Contents", pageNumStr: "02" },
@@ -1510,7 +1554,12 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
       {/* Pages Canvas */}
       <div className={`print-only flex flex-col gap-10 bg-slate-200/40 p-4 rounded-2xl border border-slate-300 no-print:shadow-inner ${activeTab === 'document' ? 'block' : 'hidden print:block'}`}>
         
-        {/* --- PAGE 1: COVER PAGE --- */}
+        {isBranding ? (
+          /* DEDICATED BRANDING PROPOSAL MODULE - COMPLETE STANDALONE DOCUMENT */
+          <BrandingProposalDocument proposal={proposal} />
+        ) : (
+          <>
+            {/* --- PAGE 1: COVER PAGE --- */}
         <div id="page-1-cover" className="proposal-page relative flex flex-col justify-between overflow-hidden">
           {/* Background Watermark */}
           <ProposalWatermark proposal={proposal} />
@@ -3830,6 +3879,8 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
           {/* Footer */}
           <ProposalPageFooter proposal={proposal} pageNumber={getPageNumberById("thank_you")} />
         </div>
+          </>
+        )}
 
       </div>
 

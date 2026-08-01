@@ -74,34 +74,52 @@ export default function BrandingProposalDocument({ proposal }: BrandingProposalD
           <ProposalCustomLetterheadBackground proposal={proposal} />
           <ProposalPageHeader proposal={proposal} pageNumber={String(pageMap['cover'] || 1)} />
 
-          <div className="my-auto w-full relative z-10 font-sans max-w-2xl mx-auto text-center py-6">
-            <span className="inline-block px-3 py-1 bg-[#d3af00]/10 border border-[#d3af00]/30 rounded-full text-[#d3af00] font-mono text-[11px] font-bold uppercase tracking-widest mb-4">
-              COMMERCIAL BRANDING PROPOSAL
+          <div className="my-auto w-full relative z-10 font-sans max-w-2xl mx-auto text-left px-8 py-6">
+            <span className="text-[11px] font-mono font-bold text-slate-500 uppercase tracking-[0.25em] block mb-6">
+              COMMERCIAL PROPOSAL FOR
             </span>
-            <h1 className="font-serif text-3xl md:text-4xl font-bold text-[#1a2744] mb-3 leading-tight">
-              {companyName}
-            </h1>
-            <div className="h-0.5 w-24 bg-[#d3af00] mx-auto mb-4" />
-            <h2 className="text-base md:text-lg font-semibold text-slate-700 tracking-tight mb-8">
-              Branding & Identity Development Proposal
-            </h2>
 
-            <div className="bg-slate-50/90 border border-slate-200 rounded-2xl p-6 text-left max-w-md mx-auto space-y-3.5 text-xs shadow-2xs">
-              <div className="flex justify-between border-b border-slate-200/80 pb-2">
-                <span className="text-slate-500 font-medium">Prepared For:</span>
-                <strong className="text-slate-900 font-bold">{clientName}</strong>
+            <div className="mb-6">
+              <h1 className="font-serif text-4xl sm:text-5xl font-bold text-[#1a2744] leading-[1.1] tracking-tight">
+                Visual Branding &<br />
+                Identity
+              </h1>
+              <div className="h-1.5 w-20 bg-[#d3af00] rounded-full mt-3" />
+            </div>
+
+            <div className="space-y-2 mb-12">
+              <p className="font-serif italic text-xl sm:text-2xl text-[#1a2744] font-medium">
+                Prepared for <span className="not-italic font-semibold">{clientName}</span>
+              </p>
+              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-xl">
+                An elite strategy formulation targeting core design alignment, corporate value communication, and comprehensive asset standardization.
+              </p>
+            </div>
+
+            <div className="pt-8 border-t border-slate-200/90 grid grid-cols-3 gap-6 text-left">
+              <div>
+                <span className="text-[9px] font-mono font-bold text-slate-400 uppercase tracking-widest block mb-1">
+                  PREPARED BY
+                </span>
+                <p className="font-bold text-slate-900 text-xs sm:text-sm">{presenterName}</p>
+                <p className="font-bold text-[#d3af00] text-xs sm:text-sm">{presenterCompany}</p>
+                <p className="text-[11px] text-slate-400 italic">Admin</p>
               </div>
-              <div className="flex justify-between border-b border-slate-200/80 pb-2">
-                <span className="text-slate-500 font-medium">Prepared By:</span>
-                <strong className="text-slate-900 font-bold">{presenterCompany}</strong>
+
+              <div>
+                <span className="text-[9px] font-mono font-bold text-slate-400 uppercase tracking-widest block mb-1">
+                  CLIENT POC / CONTACT
+                </span>
+                <p className="font-bold text-slate-900 text-xs sm:text-sm">{clientName}</p>
+                <p className="font-bold text-[#d3af00] text-xs sm:text-sm">{proposal.clientPocName || clientName}</p>
               </div>
-              <div className="flex justify-between border-b border-slate-200/80 pb-2">
-                <span className="text-slate-500 font-medium">Consultant:</span>
-                <span className="text-slate-800 font-medium">{presenterName}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500 font-medium">Date:</span>
-                <strong className="text-slate-800 font-mono">{proposalDate}</strong>
+
+              <div>
+                <span className="text-[9px] font-mono font-bold text-slate-400 uppercase tracking-widest block mb-1">
+                  DOCUMENT EXCLUSIVES
+                </span>
+                <p className="font-bold text-slate-900 text-xs sm:text-sm">{proposalDate}</p>
+                <p className="text-[10px] font-mono text-slate-500 uppercase tracking-wider mt-0.5">VALID FOR 30 DAYS</p>
               </div>
             </div>
           </div>
@@ -601,54 +619,132 @@ export default function BrandingProposalDocument({ proposal }: BrandingProposalD
         </div>
       )}
 
-      {/* PAGE 10: TIMELINE SCHEDULE */}
+      {/* PAGE 10: TIMELINE SCHEDULE & DELIVERY SPRINTS */}
       {branding.includeTimeline !== false && (
-        <div id="page-branding-timeline" className="proposal-page relative flex flex-col justify-between overflow-hidden">
+        <div id="page-branding-timeline" className="proposal-page relative flex flex-col justify-between overflow-hidden" style={{ boxSizing: 'border-box' }}>
           <ProposalWatermark proposal={proposal} />
           <ProposalCustomLetterheadBackground proposal={proposal} />
           <ProposalPageHeader proposal={proposal} pageNumber={String(pageMap['timeline'] || 10)} />
 
-          <div className="my-auto w-full relative z-10 font-sans max-w-2xl mx-auto space-y-6">
-            <div>
-              <span className="text-[10px] font-mono font-bold tracking-widest text-[#d3af00] uppercase block mb-0.5">
-                SCHEDULE & MILESTONES
-              </span>
-              <h2 className="font-serif text-2xl font-bold text-[#1a2744]">
-                Project Timeline Schedule
-              </h2>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-              <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-2">
-                <div className="w-10 h-10 rounded-full bg-slate-100 text-[#1a2744] font-mono text-xs font-bold flex items-center justify-center mx-auto border border-slate-200">
-                  W1
-                </div>
-                <h4 className="font-serif font-bold text-xs text-[#1a2744]">DISCOVER (1 Week)</h4>
-                <p className="text-xs text-slate-600 font-sans leading-relaxed">Understanding brand core values & research alignment.</p>
+          <div className="my-auto w-full relative z-10" style={{ padding: '0 24px', boxSizing: 'border-box' }}>
+            <div className="max-w-2xl mx-auto space-y-4">
+              
+              {/* Header */}
+              <div style={{ textAlign: 'center', marginBottom: '8px' }}>
+                <span style={{ display: 'block', fontSize: '10px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#B8962E', fontWeight: 'bold' }}>
+                  THE MILESTONE HIGHWAYS
+                </span>
+                <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#1a2744', marginTop: '2px', fontFamily: 'serif' }}>
+                  Timeline & Delivery Sprints
+                </h2>
               </div>
 
-              <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-2">
-                <div className="w-10 h-10 rounded-full bg-slate-100 text-[#1a2744] font-mono text-xs font-bold flex items-center justify-center mx-auto border border-slate-200">
-                  W2-3
-                </div>
-                <h4 className="font-serif font-bold text-xs text-[#1a2744]">DESIGN (2 Weeks)</h4>
-                <p className="text-xs text-slate-600 font-sans leading-relaxed">Creative concepts (2 options) & feedback revisions.</p>
+              {/* Total Duration Stat Banner */}
+              <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+                <span style={{ display: 'block', fontSize: '10px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#9ca3af', fontWeight: 'bold' }}>
+                  TOTAL DURATION
+                </span>
+                <strong style={{ display: 'block', fontSize: '28px', fontWeight: 'bold', color: '#1a2744', marginTop: '2px' }}>
+                  5–6 WEEKS
+                </strong>
               </div>
 
-              <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-2">
-                <div className="w-10 h-10 rounded-full bg-slate-100 text-[#1a2744] font-mono text-xs font-bold flex items-center justify-center mx-auto border border-slate-200">
-                  W4-5
+              {/* Gantt Bar Container */}
+              <div style={{ width: '100%' }}>
+                <div style={{ display: 'flex', width: '100%', height: '32px', borderRadius: '6px', overflow: 'hidden', boxSizing: 'border-box', border: '1px solid #e0ddd5', marginBottom: '6px' }}>
+                  {/* Phase 1 (Week 1 = 16.6%) */}
+                  <div style={{ width: '16.66%', backgroundColor: '#faeeda', borderRight: '1.5px solid #B8962E', display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box' }}>
+                    <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#1a2744' }}>PH 1</span>
+                  </div>
+                  {/* Phase 2 (Weeks 2-3 = 33.3%) */}
+                  <div style={{ width: '33.33%', backgroundColor: '#1a2744', display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box' }}>
+                    <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#ffffff' }}>PH 2</span>
+                  </div>
+                  {/* Phase 3 (Weeks 4-5 = 33.3%) */}
+                  <div style={{ width: '33.33%', backgroundColor: '#B8962E', display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box' }}>
+                    <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#ffffff' }}>PH 3</span>
+                  </div>
+                  {/* Phase 4 (Week 6 = 16.7%) */}
+                  <div style={{ width: '16.68%', backgroundColor: '#0f1f3d', display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box' }}>
+                    <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#ffffff' }}>PH 4</span>
+                  </div>
                 </div>
-                <h4 className="font-serif font-bold text-xs text-[#1a2744]">LAUNCH (2 Weeks)</h4>
-                <p className="text-xs text-slate-600 font-sans leading-relaxed">Brand guidelines & final print artwork delivery.</p>
-              </div>
-            </div>
 
-            <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-700 font-sans text-center">
-              <strong>Total Estimated Execution Window:</strong> 5 to 6 Working Weeks.<br />
-              <span className="text-[11px] text-slate-500 mt-0.5 block">
-                Timeline subject to receipt of client feedback and asset approvals.
-              </span>
+                {/* Week Labels */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', width: '100%', textAlign: 'center', marginBottom: '20px' }}>
+                  <span style={{ fontSize: '9px', color: '#9ca3af', fontWeight: 'bold' }}>Week 1</span>
+                  <span style={{ fontSize: '9px', color: '#9ca3af', fontWeight: 'bold' }}>Week 2</span>
+                  <span style={{ fontSize: '9px', color: '#9ca3af', fontWeight: 'bold' }}>Week 3</span>
+                  <span style={{ fontSize: '9px', color: '#9ca3af', fontWeight: 'bold' }}>Week 4</span>
+                  <span style={{ fontSize: '9px', color: '#9ca3af', fontWeight: 'bold' }}>Week 5</span>
+                  <span style={{ fontSize: '9px', color: '#9ca3af', fontWeight: 'bold' }}>Week 6</span>
+                </div>
+              </div>
+
+              {/* Phase Cards List */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {[
+                  {
+                    ph: "PH 1",
+                    title: "Discover & Brand Strategy",
+                    weeks: "Week 1",
+                    desc: "Understanding brand core values, target audience research, brand positioning, and strategic alignment."
+                  },
+                  {
+                    ph: "PH 2",
+                    title: "Creative Concept & Visual Identity",
+                    weeks: "Weeks 2–3",
+                    desc: "Developing logo design options, visual language, typography & color system, and client revision feedback."
+                  },
+                  {
+                    ph: "PH 3",
+                    title: "Collaterals & Identity Guidelines",
+                    weeks: "Weeks 4–5",
+                    desc: "Executive stationery design (business cards, letterheads), brand guidelines booklet, and touchpoints."
+                  },
+                  {
+                    ph: "PH 4",
+                    title: "Artwork Finalization & Delivery",
+                    weeks: "Week 6",
+                    desc: "Preparing final print-ready PDFs, open vector artwork files (AI/EPS), master asset handoff, and client sign-off."
+                  }
+                ].map((phase) => (
+                  <div 
+                    key={phase.ph}
+                    style={{ 
+                      display: 'flex', 
+                      alignItems: 'flex-start',
+                      gap: '16px', 
+                      backgroundColor: '#fafaf8', 
+                      border: '1px solid #e0ddd5', 
+                      borderRadius: '8px', 
+                      padding: '14px 18px', 
+                      boxSizing: 'border-box' 
+                    }}
+                  >
+                    {/* Left side: gold phase label + bold navy phase name */}
+                    <div style={{ width: '32%', flexShrink: 0, textAlign: 'left' }}>
+                      <span style={{ display: 'block', fontSize: '10px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#B8962E', fontWeight: 'bold' }}>
+                        {phase.ph}
+                      </span>
+                      <h3 style={{ fontSize: '12px', fontWeight: 'bold', color: '#1a2744', marginTop: '2px', lineHeight: '1.3' }}>
+                        {phase.title}
+                      </h3>
+                    </div>
+                    
+                    {/* Right side: week range + description */}
+                    <div style={{ flexGrow: 1, textAlign: 'left' }}>
+                      <span style={{ display: 'block', fontSize: '9.5px', color: '#9ca3af', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '3px' }}>
+                        {phase.weeks}
+                      </span>
+                      <p style={{ fontSize: '11px', color: '#4b5563', lineHeight: '1.4', margin: 0 }}>
+                        {phase.desc}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
             </div>
           </div>
 
