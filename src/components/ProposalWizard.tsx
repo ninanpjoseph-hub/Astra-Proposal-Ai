@@ -2549,39 +2549,34 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
                         {(() => {
                           const currentFw = getCMSFrameworkConfig(proposal.websiteScope.cmsType);
                           return (
-                            <div className="mt-2 p-3.5 bg-slate-50 border border-slate-200 rounded-lg space-y-2.5">
-                              <div className="flex items-center justify-between">
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-blue-700 font-mono bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
+                            <div className="mt-3 p-4 sm:p-5 bg-slate-50/90 border border-slate-200/90 rounded-2xl space-y-3.5 text-left">
+                              <div className="space-y-1">
+                                <span className="inline-block text-[11px] font-bold uppercase tracking-wider text-amber-900 font-mono bg-amber-100/80 px-3 py-1 rounded-md border border-amber-200/90">
                                   {currentFw.stackTitle}
                                 </span>
-                                <span className="text-[10px] text-slate-500 font-medium">System Architecture Stack</span>
+                                <div className="text-xs sm:text-sm text-slate-500 font-medium font-sans">
+                                  System Architecture Stack
+                                </div>
                               </div>
-                              <p className="text-[11px] text-slate-600 leading-relaxed font-sans">
+
+                              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-sans">
                                 {currentFw.description}
                               </p>
 
-                              {/* Tech Stack Pills */}
-                              <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5 pt-1">
-                                <div className="bg-white p-1.5 border border-slate-200 rounded text-center">
-                                  <span className="block text-[8px] font-bold text-slate-400 uppercase">Frontend</span>
-                                  <span className="block text-[9.5px] font-bold text-slate-800 truncate">{proposal.websiteScope.ecommerceTechStack?.website || currentFw.techStack.website}</span>
-                                </div>
-                                <div className="bg-white p-1.5 border border-slate-200 rounded text-center">
-                                  <span className="block text-[8px] font-bold text-slate-400 uppercase">Mobile Apps</span>
-                                  <span className="block text-[9.5px] font-bold text-slate-800 truncate">{proposal.websiteScope.ecommerceTechStack?.mobile || currentFw.techStack.mobile}</span>
-                                </div>
-                                <div className="bg-white p-1.5 border border-slate-200 rounded text-center">
-                                  <span className="block text-[8px] font-bold text-slate-400 uppercase">Backend API</span>
-                                  <span className="block text-[9.5px] font-bold text-slate-800 truncate">{proposal.websiteScope.ecommerceTechStack?.backend || currentFw.techStack.backend}</span>
-                                </div>
-                                <div className="bg-white p-1.5 border border-slate-200 rounded text-center">
-                                  <span className="block text-[8px] font-bold text-slate-400 uppercase">Database</span>
-                                  <span className="block text-[9.5px] font-bold text-slate-800 truncate">{proposal.websiteScope.ecommerceTechStack?.database || currentFw.techStack.database}</span>
-                                </div>
-                                <div className="bg-white p-1.5 border border-slate-200 rounded text-center">
-                                  <span className="block text-[8px] font-bold text-slate-400 uppercase">Hosting</span>
-                                  <span className="block text-[9.5px] font-bold text-slate-800 truncate">{proposal.websiteScope.ecommerceTechStack?.hosting || currentFw.techStack.hosting}</span>
-                                </div>
+                              {/* Stacked Tech Cards (1 column) */}
+                              <div className="flex flex-col gap-2.5 pt-1">
+                                {[
+                                  { label: "FRONTEND", val: proposal.websiteScope.ecommerceTechStack?.website || currentFw.techStack.website },
+                                  { label: "MOBILE APPS", val: proposal.websiteScope.ecommerceTechStack?.mobile || currentFw.techStack.mobile },
+                                  { label: "BACKEND API", val: proposal.websiteScope.ecommerceTechStack?.backend || currentFw.techStack.backend },
+                                  { label: "DATABASE", val: proposal.websiteScope.ecommerceTechStack?.database || currentFw.techStack.database },
+                                  { label: "HOSTING", val: proposal.websiteScope.ecommerceTechStack?.hosting || currentFw.techStack.hosting }
+                                ].map((item, idx) => (
+                                  <div key={idx} className="bg-white p-3.5 sm:p-4 border border-slate-200/90 rounded-xl shadow-2xs text-left">
+                                    <span className="block text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">{item.label}</span>
+                                    <span className="block text-sm sm:text-base font-bold text-slate-800 leading-snug">{item.val}</span>
+                                  </div>
+                                ))}
                               </div>
                             </div>
                           );

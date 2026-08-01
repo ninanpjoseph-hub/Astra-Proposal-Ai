@@ -2687,7 +2687,7 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
                     </div>
                   )}
 
-                  {/* Tech stack: display as a single-row grid of labelled badges + dynamic framework overview */}
+                  {/* Tech stack: display as a single-row grid of labelled badges */}
                   {(() => {
                     const currentFwConfig = getCMSFrameworkConfig(proposal.websiteScope.cmsType);
                     return (
@@ -2698,7 +2698,7 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
                               SYSTEM INFRASTRUCTURE
                             </span>
                             <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#1a2744', marginTop: '2px' }}>
-                              {currentFwConfig.stackTitle}
+                              Provisioned Container Technology Stack
                             </h4>
                           </div>
                           <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#1a2744', backgroundColor: '#eef2ff', border: '1px solid #c7d2fe', padding: '3px 8px', borderRadius: '4px', textTransform: 'uppercase' }}>
@@ -2706,8 +2706,8 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
                           </span>
                         </div>
 
-                        {/* 5-Column Grid for Container Technology Stack */}
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '10px', marginBottom: '12px' }}>
+                        {/* Responsive Grid for Container Technology Stack */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
                           {[
                             { label: "Frontend", val: proposal.websiteScope.ecommerceTechStack?.website || currentFwConfig.techStack.website },
                             { label: "Mobile Apps", val: proposal.websiteScope.ecommerceTechStack?.mobile || currentFwConfig.techStack.mobile },
@@ -2715,52 +2715,15 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
                             { label: "Database", val: proposal.websiteScope.ecommerceTechStack?.database || currentFwConfig.techStack.database },
                             { label: "Hosting", val: proposal.websiteScope.ecommerceTechStack?.hosting || currentFwConfig.techStack.hosting }
                           ].map((stackIdx) => (
-                            <div key={stackIdx.label} style={{ backgroundColor: '#ffffff', border: '1px solid #e0ddd5', borderRadius: '6px', padding: '8px', textAlign: 'center', boxSizing: 'border-box' }}>
-                              <span style={{ display: 'block', fontSize: '8px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#B8962E', fontWeight: 'bold' }}>
+                            <div key={stackIdx.label} style={{ backgroundColor: '#ffffff', border: '1px solid #e0ddd5', borderRadius: '6px', padding: '10px 12px', textAlign: 'left', boxSizing: 'border-box' }} className="min-w-0">
+                              <span style={{ display: 'block', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#B8962E', fontWeight: 'bold' }}>
                                 {stackIdx.label}
                               </span>
-                              <span style={{ display: 'block', fontSize: '10.5px', fontWeight: 'bold', color: '#1a2744', marginTop: '4px', wordBreak: 'break-word', lineHeight: '1.2' }}>
+                              <span style={{ display: 'block', fontSize: '11px', fontWeight: 'bold', color: '#1a2744', marginTop: '4px', wordBreak: 'break-word', lineHeight: '1.3' }}>
                                 {stackIdx.val}
                               </span>
                             </div>
                           ))}
-                        </div>
-
-                        {/* Dynamic Framework Overview & Architecture Specs */}
-                        <div style={{ backgroundColor: '#ffffff', border: '1px solid #e0ddd5', borderRadius: '6px', padding: '10px 12px' }}>
-                          <p style={{ fontSize: '10.5px', color: '#374151', margin: '0 0 10px 0', lineHeight: '1.45', fontWeight: '500' }}>
-                            {currentFwConfig.description}
-                          </p>
-
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', borderTop: '1px solid #f3f4f6', paddingTop: '8px' }}>
-                            <div>
-                              <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#B8962E', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '4px' }}>
-                                Key Framework Advantages
-                              </span>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                {currentFwConfig.advantages.map((adv, idx) => (
-                                  <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '5px', fontSize: '10px', color: '#4b5563' }}>
-                                    <span style={{ color: '#B8962E', fontWeight: 'bold', lineHeight: '1' }}>✓</span>
-                                    <span>{adv}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-
-                            <div>
-                              <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#1a2744', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '4px' }}>
-                                Core Architectural Features
-                              </span>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                {currentFwConfig.features.map((feat, idx) => (
-                                  <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '5px', fontSize: '10px', color: '#4b5563' }}>
-                                    <span style={{ color: '#1a2744', fontWeight: 'bold', lineHeight: '1' }}>•</span>
-                                    <span>{feat}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
                         </div>
                       </div>
                     );
@@ -2825,39 +2788,6 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
                     </div>
                   )}
 
-                  {/* FRAMEWORK EXTENSION & DEPLOYMENT SPECIFICATIONS (for Non-WordPress frameworks) */}
-                  {proposal.type === 'website' && 
-                   !((proposal.websiteScope.cmsType || '').toLowerCase().includes('wordpress') || (proposal.websiteScope.cmsType || '').toLowerCase().includes('woocommerce')) && (
-                    <div style={{ backgroundColor: '#ffffff', border: '1.5px solid #1a2744', borderRadius: '8px', padding: '14px', textAlign: 'left' }}>
-                      <div style={{ borderBottom: '1px solid #e0ddd5', paddingBottom: '6px', marginBottom: '10px' }}>
-                        <span style={{ display: 'block', fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#B8962E', fontWeight: 'bold' }}>
-                          FRAMEWORK SPECIFICATIONS & EXTENSIONS
-                        </span>
-                        <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#1a2744', margin: '2px 0 0 0', fontFamily: 'serif' }}>
-                          {getCMSFrameworkConfig(proposal.websiteScope.cmsType).name} Architecture
-                        </h3>
-                      </div>
-
-                      <div style={{ backgroundColor: '#fafaf8', border: '1px solid #e0ddd5', borderRadius: '6px', padding: '8px 12px', marginBottom: '10px' }}>
-                        <span style={{ fontSize: '10.5px', fontWeight: 'bold', color: '#1a2744', display: 'block' }}>
-                          Framework Deployment & Runtime Parameters
-                        </span>
-                        <p style={{ fontSize: '10px', color: '#4b5563', margin: '2px 0 0 0', fontStyle: 'italic' }}>
-                          Custom production build configurations and API endpoints are optimized specifically for the {getCMSFrameworkConfig(proposal.websiteScope.cmsType).name} runtime stack.
-                        </p>
-                      </div>
-
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        {getCMSFrameworkConfig(proposal.websiteScope.cmsType).advantages.map((adv, idx) => (
-                          <div key={idx} style={{ borderLeft: idx % 2 === 0 ? '3px solid #B8962E' : '3px solid #1a2744', paddingLeft: '10px' }}>
-                            <h4 style={{ fontSize: '11px', fontWeight: 'bold', color: '#1a2744', margin: '0' }}>
-                              {idx + 1}. {adv}
-                            </h4>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
 
                   {/* NOTES & ASSUMPTIONS SECTION */}
                   {proposal.type === 'website' && proposal.websiteScope.includeNotesAssumptions !== false && (
