@@ -1768,7 +1768,7 @@ export default function ChequeQuotationModule() {
                       <div className="text-xs font-extrabold text-slate-900 tracking-tight">
                         REF : {displayedQuotation.refNo}
                       </div>
-                      <div className="text-[11px] text-slate-650 font-mono mt-1">
+                      <div className="text-[11px] text-slate-600 font-mono mt-1">
                         {displayedQuotation.date ? new Date(displayedQuotation.date).toLocaleDateString('en-GB') : "02/06/2026"}
                       </div>
                     </div>
@@ -2045,7 +2045,7 @@ export default function ChequeQuotationModule() {
                         <div className="text-xs font-extrabold text-slate-900 tracking-tight">
                           REF : {displayedQuotation.refNo}
                         </div>
-                        <div className="text-[11px] text-slate-650 font-mono mt-1">
+                        <div className="text-[11px] text-slate-600 font-mono mt-1">
                           {displayedQuotation.date ? new Date(displayedQuotation.date).toLocaleDateString('en-GB') : "02/06/2026"}
                         </div>
                       </div>

@@ -217,3 +217,34 @@ export function groupScopeIntoPages(items: ScopeOfWorkItem[], threshold = 3): Sc
   
   return pages;
 }
+
+/**
+ * Packs category scope pages into physical PDF document pages based on available visual capacity.
+ */
+export function packScopePagesIntoPhysicalPageGroups(scopePages: ScopePage[], maxUnitsPerPage = 8.0): ScopePage[][] {
+  const pageGroups: ScopePage[][] = [];
+  let currentGroup: ScopePage[] = [];
+  let currentGroupUnits = 0;
+
+  scopePages.forEach((sPage) => {
+    const itemsCount = sPage.items ? sPage.items.length : 0;
+    const itemRows = Math.ceil(itemsCount / 2);
+    // Header takes ~0.6 units, item rows take 1 unit each
+    const sPageUnits = 0.6 + (itemRows > 0 ? itemRows : 0.6);
+
+    if (currentGroup.length > 0 && (currentGroupUnits + sPageUnits > maxUnitsPerPage)) {
+      pageGroups.push(currentGroup);
+      currentGroup = [sPage];
+      currentGroupUnits = sPageUnits;
+    } else {
+      currentGroup.push(sPage);
+      currentGroupUnits += sPageUnits;
+    }
+  });
+
+  if (currentGroup.length > 0) {
+    pageGroups.push(currentGroup);
+  }
+
+  return pageGroups;
+}

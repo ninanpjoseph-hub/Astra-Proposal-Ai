@@ -881,18 +881,18 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
                     onClick={() => handleTypeSelect('branding')}
                     className={`p-4 border rounded-xl text-left transition-all flex flex-col justify-between h-[125px] shadow-sm cursor-pointer ${
                       proposal.type === 'branding' 
-                        ? 'bg-white border-blue-500 ring-2 ring-blue-50 text-slate-800' 
-                        : 'bg-white border-slate-200 hover:border-slate-300 text-slate-600'
+                        ? 'bg-white border-blue-500 ring-2 ring-blue-50 text-slate-900' 
+                        : 'bg-white border-slate-200 hover:border-slate-300 text-slate-700'
                     }`}
                   >
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase leading-none font-mono ${
-                      proposal.type === 'branding' ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-500'
+                      proposal.type === 'branding' ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-600'
                     }`}>
                       Brand Identity
                     </span>
                     <div>
-                      <h4 className="font-sans font-bold text-sm tracking-tight">Branding Proposal</h4>
-                      <p className="text-[11px] text-slate-500 mt-1 leading-snug">
+                      <h4 className="font-sans font-bold text-sm text-slate-900 tracking-tight">Branding Proposal</h4>
+                      <p className="text-[11px] text-slate-600 mt-1 leading-snug">
                         Logos, Brand Guidelines, stationery sets, and identity assets.
                       </p>
                     </div>
@@ -902,18 +902,18 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
                     onClick={() => handleTypeSelect('website')}
                     className={`p-4 border rounded-xl text-left transition-all flex flex-col justify-between h-[125px] shadow-sm cursor-pointer ${
                       proposal.type === 'website' 
-                        ? 'bg-white border-blue-500 ring-2 ring-blue-50 text-slate-800' 
-                        : 'bg-white border-slate-200 hover:border-slate-300 text-slate-650'
+                        ? 'bg-white border-blue-500 ring-2 ring-blue-50 text-slate-900' 
+                        : 'bg-white border-slate-200 hover:border-slate-300 text-slate-700'
                     }`}
                   >
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase leading-none font-mono ${
-                      proposal.type === 'website' ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-500'
+                      proposal.type === 'website' ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-600'
                     }`}>
                       Full Web Platform
                     </span>
                     <div>
-                      <h4 className="font-sans font-bold text-sm tracking-tight">Website Proposal</h4>
-                      <p className="text-[11px] text-slate-500 mt-1 leading-snug">
+                      <h4 className="font-sans font-bold text-sm text-slate-900 tracking-tight">Website Proposal</h4>
+                      <p className="text-[11px] text-slate-600 mt-1 leading-snug">
                         Custom pages, languages, CMS engines, plugins, and caching setups.
                       </p>
                     </div>
@@ -923,18 +923,18 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
                     onClick={() => handleTypeSelect('services')}
                     className={`p-4 border rounded-xl text-left transition-all flex flex-col justify-between h-[125px] shadow-sm cursor-pointer ${
                       proposal.type === 'services' 
-                        ? 'bg-white border-blue-500 ring-2 ring-blue-50 text-slate-800' 
-                        : 'bg-white border-slate-200 hover:border-slate-300 text-slate-650'
+                        ? 'bg-white border-blue-500 ring-2 ring-blue-50 text-slate-900' 
+                        : 'bg-white border-slate-200 hover:border-slate-300 text-slate-700'
                     }`}
                   >
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase leading-none font-mono ${
-                      proposal.type === 'services' ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-500'
+                      proposal.type === 'services' ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-600'
                     }`}>
                       Modular IT Services
                     </span>
                     <div>
-                      <h4 className="font-sans font-bold text-sm tracking-tight">Services & Maintenance</h4>
-                      <p className="text-[11px] text-slate-500 mt-1 leading-snug">
+                      <h4 className="font-sans font-bold text-sm text-slate-900 tracking-tight">Services & Maintenance</h4>
+                      <p className="text-[11px] text-slate-600 mt-1 leading-snug">
                         Website Audit, Hosting & Domain, SSL Renewal, and AMC in one document.
                       </p>
                     </div>
@@ -944,18 +944,18 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
                     onClick={() => handleTypeSelect('whatsapp')}
                     className={`p-4 border rounded-xl text-left transition-all flex flex-col justify-between h-[125px] shadow-sm cursor-pointer ${
                       proposal.type === 'whatsapp' 
-                        ? 'bg-white border-teal-500 ring-2 ring-teal-50 text-slate-800' 
-                        : 'bg-white border-slate-200 hover:border-slate-300 text-slate-650'
+                        ? 'bg-white border-blue-500 ring-2 ring-blue-50 text-slate-900' 
+                        : 'bg-white border-slate-200 hover:border-slate-300 text-slate-700'
                     }`}
                   >
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase leading-none font-mono ${
-                      proposal.type === 'whatsapp' ? 'bg-teal-50 text-teal-700' : 'bg-slate-100 text-slate-500'
+                      proposal.type === 'whatsapp' ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-600'
                     }`}>
                       WhatsApp API
                     </span>
                     <div>
-                      <h4 className="font-sans font-bold text-sm tracking-tight">WhatsApp Marketing</h4>
-                      <p className="text-[11px] text-slate-500 mt-1 leading-snug">
+                      <h4 className="font-sans font-bold text-sm text-slate-900 tracking-tight">WhatsApp Marketing</h4>
+                      <p className="text-[11px] text-slate-600 mt-1 leading-snug">
                         Taswiq Cloud API, Meta verification, Chatbots & broadcast campaigns.
                       </p>
                     </div>
@@ -3250,7 +3250,7 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
                         value={m.description}
                         placeholder="Detailed deliverables inside this module scope..."
                         onChange={(e) => updateMilestone(m.id, 'description', e.target.value)}
-                        className="w-full border border-slate-300 px-2.5 py-1 text-xs rounded-md bg-white text-slate-650 resize-none leading-relaxed"
+                        className="w-full border border-slate-300 px-2.5 py-1 text-xs rounded-md bg-white text-slate-700 resize-none leading-relaxed"
                       />
                     </div>
                   </div>

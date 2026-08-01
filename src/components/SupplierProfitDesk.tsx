@@ -1153,7 +1153,7 @@ export default function SupplierProfitDesk() {
                         </thead>
                         <tbody className="divide-y divide-slate-100 font-sans">
                           {activeLedgerSupplier.associatedItems.map((item, idx) => (
-                            <tr key={idx} className="hover:bg-slate-50 text-slate-650">
+                            <tr key={idx} className="hover:bg-slate-50 text-slate-700">
                               <td className="p-2.5 font-mono text-[10.5px] font-bold text-blue-700">{item.refNo}</td>
                               <td className="p-2.5">
                                 <span className="font-bold text-slate-800">{item.clientName}</span>

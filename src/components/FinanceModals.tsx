@@ -235,7 +235,7 @@ export function InvoiceModal({ proposal, onClose, currentUser }: InvoiceModalPro
               </div>
               <button 
                 onClick={onClose} 
-                className="md:hidden text-slate-400 hover:text-slate-650 p-1"
+                className="md:hidden text-slate-400 hover:text-slate-600 p-1"
                 aria-label="Close"
               >
                 <X className="h-5 w-5" />
@@ -932,7 +932,7 @@ export function StatementOfAccountModal({ proposal, onClose, currentUser }: Stat
                     <div className="text-xs font-extrabold text-slate-900 tracking-tight">
                       REF NO: {statementRef}
                     </div>
-                    <div className="text-[11px] text-slate-650 font-mono mt-1">
+                    <div className="text-[11px] text-slate-600 font-mono mt-1">
                       DATE: {statementDate ? new Date(statementDate).toLocaleDateString('en-GB') : "19/06/2026"}
                     </div>
                   </div>

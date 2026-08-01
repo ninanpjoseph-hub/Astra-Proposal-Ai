@@ -2420,7 +2420,7 @@ export default function AdminPortal({
 
                         {/* Progress Bar */}
                         <div className="space-y-1 mb-4">
-                          <div className="flex justify-between items-center text-[10px] font-semibold text-slate-650">
+                          <div className="flex justify-between items-center text-[10px] font-semibold text-slate-600">
                             <span>Payment Completion Progress</span>
                             <span className="text-slate-800 font-mono font-bold">{paidPercent}%</span>
                           </div>
@@ -2511,7 +2511,7 @@ export default function AdminPortal({
               {sortedPayProps.length === 0 && (
                 <div className="p-12 border border-dashed border-slate-200 bg-slate-50/50 rounded-2xl text-center">
                   <Coins className="h-8 w-8 text-slate-300 mx-auto mb-2" />
-                  <strong className="text-xs text-slate-650 block">No matching projects found</strong>
+                  <strong className="text-xs text-slate-600 block">No matching projects found</strong>
                   <span className="text-3xs text-slate-400 block mt-0.5">Try altering the filter query values.</span>
                 </div>
               )}

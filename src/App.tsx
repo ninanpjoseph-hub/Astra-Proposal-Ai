@@ -1367,7 +1367,7 @@ export default function App() {
             </div>
 
             {/* Content */}
-            <div className="p-6 space-y-5 text-xs text-slate-650 dark:text-slate-400 leading-normal max-h-[75vh] overflow-y-auto">
+            <div className="p-6 space-y-5 text-xs text-slate-600 dark:text-slate-400 leading-normal max-h-[75vh] overflow-y-auto">
               
               {/* Badge Status Row */}
               <div className="p-4 rounded-xl border flex items-center gap-3 bg-slate-50 dark:bg-slate-900/30 border-slate-100 dark:border-slate-900">

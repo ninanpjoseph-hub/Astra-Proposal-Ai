@@ -9,7 +9,7 @@ import html2canvas from 'html2canvas';
 import { BRANDING_TEMPLATES, WEBSITE_TEMPLATES, DEFAULT_SCOPE_TEMPLATES } from '../staticTemplates';
 import { formatQAR, DEFAULT_BRANDING_MILESTONES, DEFAULT_WEBSITE_MILESTONES, triggerAutomatedFollowUp, createDefaultProposal, getModularDeliverableLineItems, renderExecutiveSummary, renderProjectMission } from '../proposalUtils';
 import SitemapGenerator from './SitemapGenerator';
-import { groupScopeIntoPages } from '../utils/scopeClassifier';
+import { groupScopeIntoPages, packScopePagesIntoPhysicalPageGroups } from '../utils/scopeClassifier';
 import { Check, Bookmark, DollarSign, Calendar, Landmark, BookOpen, Signature, Award, ChevronRight, FileText, Printer, Download, History, RotateCcw, Clock, Sliders, Upload, Trash2, Plus, AlertCircle, Coins, CreditCard, Shield, Users, MoreVertical, ChevronDown, Mail } from 'lucide-react';
 import { Proposal, ProposalHistoryEntry, ProposalStatus, PaymentEntry, UserRole } from '../types';
 import { exportProposalToDocx } from '../utils/docxExport';
@@ -832,24 +832,17 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
         : DEFAULT_SCOPE_TEMPLATES[proposal.websiteScope.websiteType || 'static'].map(item => ({ ...item, id: Math.random().toString(), isSelected: true }));
       
       const scopePages = groupScopeIntoPages(activeItems, 4);
+      const pageGroups = packScopePagesIntoPhysicalPageGroups(scopePages, 8.0);
 
-      if (scopePages.length <= 2) {
-        list.push({ id: "scope_progressive_1", title: "Progressive Scope Blueprint", pageNumStr: String(currentNum).padStart(2, '0') });
-        currentNum++;
-        if (scopePages.length === 2) {
-          list.push({ id: "scope_progressive_2", title: "Progressive Scope Blueprint (Part 2)", pageNumStr: String(currentNum).padStart(2, '0') });
-          currentNum++;
+      pageGroups.forEach((group, idx) => {
+        const pageId = `scope_progressive_${idx + 1}`;
+        let pageTitle = "Progressive Scope Blueprint";
+        if (pageGroups.length > 1) {
+          pageTitle += ` (Part ${idx + 1})`;
         }
-      } else {
-        list.push({ id: "scope_progressive_1", title: "Progressive Scope Blueprint (Core & Features)", pageNumStr: String(currentNum).padStart(2, '0') });
+        list.push({ id: pageId, title: pageTitle, pageNumStr: String(currentNum).padStart(2, '0') });
         currentNum++;
-        list.push({ id: "scope_progressive_2", title: "Progressive Scope Blueprint (Integrations & Analytics)", pageNumStr: String(currentNum).padStart(2, '0') });
-        currentNum++;
-        if (scopePages.length > 3) {
-          list.push({ id: "scope_progressive_3", title: "Progressive Scope Blueprint (Custom & Operations)", pageNumStr: String(currentNum).padStart(2, '0') });
-          currentNum++;
-        }
-      }
+      });
 
       list.push({ id: "scope_going_live", title: "Deployment & Launch Blueprint", pageNumStr: String(currentNum).padStart(2, '0') });
       currentNum++;
@@ -2841,16 +2834,12 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
                 ? 'Content management, database schema, search, and dynamic publishing features.'
                 : 'Core page architecture, layout templates, lead forms, and analytics setup.';
 
-              // Map scopePages logically into page groups (e.g., 2 scope categories per physical page)
+              // Map scopePages into physical document pages dynamically based on available visual capacity
               const renderedPages: React.ReactNode[] = [];
-
-              const pageGroups: typeof scopePages[] = [];
-              for (let i = 0; i < scopePages.length; i += 2) {
-                pageGroups.push(scopePages.slice(i, i + 2));
-              }
+              const pageGroups = packScopePagesIntoPhysicalPageGroups(scopePages, 8.0);
 
               pageGroups.forEach((group, pageIdx) => {
-                const pageId = pageIdx === 0 ? "scope_progressive_1" : pageIdx === 1 ? "scope_progressive_2" : "scope_progressive_3";
+                const pageId = `scope_progressive_${pageIdx + 1}`;
                 const pNum = getPageNumberById(pageId);
                 if (!pNum) return;
 
