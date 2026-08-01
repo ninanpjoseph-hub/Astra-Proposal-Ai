@@ -9,6 +9,7 @@ import { createDefaultProposal, generateId, formatQAR, createDefaultModularServi
 import { DEFAULT_SCOPE_TEMPLATES } from '../staticTemplates';
 import SitemapGenerator from './SitemapGenerator';
 import ProposalDocumentView from './ProposalDocumentView';
+import BrandingProposalEditor from './BrandingProposalEditor';
 import { getScopeCategory, ScopeCategory } from '../utils/scopeClassifier';
 import { getCMSFrameworkConfig, CMS_FRAMEWORKS } from '../utils/cmsFrameworks';
 import { 
@@ -2419,60 +2420,8 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
                   </div>
                 </div>
               ) : isBranding ? (
-                /* BRANDING SCOPE FORM */
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="font-sans font-bold text-slate-800 text-sm tracking-tight mb-1">
-                      Visual Identity Deliverables
-                    </h3>
-                    <p className="text-xs text-slate-500 leading-normal mb-4 font-sans">
-                      Check each item that needs to be created on behalf of the client. Only checked components will materialize in the deliverables scope sheet.
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {/* Iterate over branding Scope keys */}
-                    {Object.entries(proposal.brandingScope)
-                      .filter(([key]) => key !== 'additionalDeliverables')
-                      .map(([key, val]) => {
-                        const wordFormatted = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
-                        return (
-                          <label 
-                            key={key} 
-                            className={`p-3 border rounded-xl flex items-center gap-3 cursor-pointer select-none transition-all hover:bg-slate-50 ${
-                              val 
-                                ? 'bg-blue-50/50 border-blue-200 text-slate-800 font-semibold' 
-                                : 'bg-white border-slate-200 text-slate-500'
-                            }`}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={val as boolean}
-                              onChange={(e) => updateBrandingScope(key as keyof Proposal['brandingScope'], e.target.checked)}
-                              className="h-4.5 w-4.5 text-blue-600 border-slate-300 rounded-sm focus:ring-blue-500/50"
-                            />
-                            <span className="text-xs leading-none font-sans">
-                              {wordFormatted}
-                            </span>
-                          </label>
-                        );
-                      })
-                    }
-                  </div>
-
-                  {/* Additional text field */}
-                  <div className="flex flex-col gap-1.5 mt-4">
-                    <label className="text-xs font-sans font-semibold text-slate-700">Any Additional Visual Deliverables?</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Scented Packing Tape, Embossed Gold Foil seal, Acrylic Office Wall Sign"
-                      value={proposal.brandingScope.additionalDeliverables}
-                      onChange={(e) => updateBrandingScope('additionalDeliverables', e.target.value)}
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg text-xs font-sans focus:outline-hidden focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-shadow"
-                      id="input-branding-add-scope"
-                    />
-                  </div>
-                </div>
+                /* BRANDING PROPOSAL MODULE EDITOR */
+                <BrandingProposalEditor proposal={proposal} onChange={setProposal} />
               ) : (
                 /* WEBSITE SCOPE FORM WITH ENHANCED MODULE DEFINITIONS */
                 <div className="space-y-8 select-none">

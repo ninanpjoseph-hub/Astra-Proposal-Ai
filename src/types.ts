@@ -177,7 +177,99 @@ export interface WhatsappScope {
   termsConditionsList?: string[];
 }
 
+export interface BrandingDeliverableItem {
+  id: string;
+  category: 'Brand Strategy' | 'Visual Identity' | 'Corporate Stationery' | 'Packaging & Merchandise' | 'Signage & Environmental' | 'Digital & Social Media' | 'Marketing Collateral' | 'Custom';
+  title: string;
+  description: string;
+  isSelected: boolean;
+  quantity?: number;
+  unitPrice?: number;
+  totalCost?: number;
+  notes?: string;
+  isCustom?: boolean;
+}
+
+export interface BrandingProcessStage {
+  id: string;
+  stageName: string;
+  description: string;
+}
+
+export interface BrandingExecutionPhase {
+  id: string;
+  phaseNumber: number;
+  phaseTitle: string;
+  actionPoints: string[];
+}
+
+export interface BrandingFinancialItem {
+  id: string;
+  sl: number;
+  resourceRole: string;
+  detail: string;
+  timeDays: string;
+  amount: number;
+}
+
 export interface BrandingScope {
+  // Section Toggles
+  includeCoverPage?: boolean;
+  includeTableOfContents?: boolean;
+  includeExecutiveSummary?: boolean;
+  includeObjectives?: boolean;
+  includeKickoffApproach?: boolean;
+  includeProcess?: boolean;
+  includeScopeDeliverables?: boolean;
+  includePhasesOfExecution?: boolean;
+  includeTimeline?: boolean;
+  includeFinancials?: boolean;
+  includeTermsExclusions?: boolean;
+  includeAcceptance?: boolean;
+
+  // Custom Content Text Overrides
+  customExecutiveSummaryLead?: string;
+  customExecutiveSummaryProject?: string;
+  objectivesOverview?: string;
+  objectivesList?: string[];
+  
+  // Kick off meeting
+  kickoffAgenda?: string[];
+  kickoffDeliverables?: string[];
+  kickoffTiming?: string;
+
+  // Approach 3 pillars
+  approachIntro?: string;
+  approachStrategy?: string;
+  approachToneVoice?: string;
+  approachMoodboard?: string;
+
+  // Process Stages
+  processStages?: BrandingProcessStage[];
+
+  // Deliverables / Services Scope Items
+  deliverableItems?: BrandingDeliverableItem[];
+
+  // Phases of Execution
+  executionPhases?: BrandingExecutionPhase[];
+
+  // Financial Items
+  financialItems?: BrandingFinancialItem[];
+  financialNotes?: string;
+  paymentTermsText?: string;
+  invoicingScheduleText?: string;
+
+  // Terms & Exclusions
+  termsList?: string[];
+  exclusionsList?: string[];
+
+  // Delivery & Support Section Texts
+  deliveryOverviewText?: string;
+  deliveryDeliverablesText?: string[];
+  supportOverviewText?: string;
+  technicalSupportList?: string[];
+
+  // Legacy boolean flags preserved for backward compatibility
   logoDesign: boolean;
   brandGuidelines: boolean;
   businessCards: boolean;
@@ -187,7 +279,7 @@ export interface BrandingScope {
   officeStamp: boolean;
   employeeIdCards: boolean;
   receiptsVouchers: boolean;
-  additionalDeliverables: string; // Comma separated or text
+  additionalDeliverables: string;
 }
 
 export type WebsiteType = 'static' | 'dynamic' | 'ecommerce';

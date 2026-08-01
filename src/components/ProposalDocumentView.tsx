@@ -9,6 +9,7 @@ import html2canvas from 'html2canvas';
 import { BRANDING_TEMPLATES, WEBSITE_TEMPLATES, DEFAULT_SCOPE_TEMPLATES } from '../staticTemplates';
 import { formatQAR, DEFAULT_BRANDING_MILESTONES, DEFAULT_WEBSITE_MILESTONES, triggerAutomatedFollowUp, createDefaultProposal, getModularDeliverableLineItems, renderExecutiveSummary, renderProjectMission } from '../proposalUtils';
 import SitemapGenerator from './SitemapGenerator';
+import BrandingProposalDocument from './BrandingProposalDocument';
 import { groupScopeIntoPages, packScopePagesIntoPhysicalPageGroups } from '../utils/scopeClassifier';
 import { Check, Bookmark, DollarSign, Calendar, Landmark, BookOpen, Signature, Award, ChevronRight, FileText, Printer, Download, History, RotateCcw, Clock, Sliders, Upload, Trash2, Plus, AlertCircle, Coins, CreditCard, Shield, Users, MoreVertical, ChevronDown, Mail } from 'lucide-react';
 import { Proposal, ProposalHistoryEntry, ProposalStatus, PaymentEntry, UserRole } from '../types';
@@ -2529,72 +2530,9 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
             )}
           </>
         ) : isBranding ? (
-          /* BRANDING SCOPE SHEET - SINGLE COVER-TO-COVER A4 SHEET */
-          <div id={`page-${getPageNumberById("scope_branding")}-scope-branding`} className="proposal-page relative flex flex-col justify-between overflow-hidden">
-            {/* Background Watermark */}
-            <ProposalWatermark proposal={proposal} />
-            <ProposalCustomLetterheadBackground proposal={proposal} />
-
-            {/* Top Letterhead Header */}
-            <ProposalPageHeader proposal={proposal} pageNumber={getPageNumberById("scope_branding")} />
-
-            <div className="my-auto w-full relative z-10">
-              <div className="max-w-2xl mx-auto">
-                <span className="text-xs font-sans tracking-widest text-[#d3af00] font-bold uppercase mb-2 block text-center">
-                  DELIVERABLE DETAILS
-                </span>
-                <h2 className="font-serif text-3xl font-bold text-slate-900 mb-6 tracking-tight text-center">
-                  Scope of Work Definition
-                </h2>
-                
-                <div className="space-y-6">
-                  <p className="text-xs text-slate-500 font-sans text-center max-w-md mx-auto mb-4">
-                    The requested assets below comprise the complete target design delivery sheet. Undisplayed components represent out-of-scope elements.
-                  </p>
-                  <div className="grid grid-cols-2 gap-4">
-                    {Object.entries(proposal.brandingScope)
-                      .filter(([key]) => key !== 'additionalDeliverables')
-                      .map(([key, isSelected]) => {
-                        const wordFormatted = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
-                        return (
-                          <div 
-                            key={key} 
-                            style={{ height: "48px" }}
-                            className={`p-3 border rounded-xl flex items-center gap-3 transition-all ${
-                              isSelected 
-                                ? 'bg-[#d3af00]/10 border-[#d3af00]/30 text-slate-800' 
-                                : 'bg-slate-50/40 border-slate-150 text-slate-400 line-through'
-                            }`}
-                          >
-                            <div className={`h-5 w-5 rounded-full flex items-center justify-center shrink-0 ${
-                              isSelected ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-400'
-                            }`}>
-                              <Check className="h-3 w-3" />
-                            </div>
-                            <span className="font-sans font-semibold text-[12.5px] truncate">
-                              {wordFormatted}
-                            </span>
-                          </div>
-                        );
-                      })
-                    }
-                  </div>
-                  {proposal.brandingScope.additionalDeliverables && (
-                    <div className="mt-4 p-4 bg-slate-50/60 border border-slate-200 rounded-xl">
-                      <h4 className="text-xs font-sans font-bold text-slate-800 uppercase mb-2">
-                        Client Exclusives & Custom Deliverables:
-                      </h4>
-                      <p className="text-xs text-slate-600 font-mono italic pr-4">
-                        {proposal.brandingScope.additionalDeliverables}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Footer */}
-            <ProposalPageFooter proposal={proposal} pageNumber={getPageNumberById("scope_branding")} />
+          /* DEDICATED BRANDING PROPOSAL MODULE - COMPLETE PRESENTATION DECK & SLIDES */
+          <div id="branding-proposal-module-container" className="py-4">
+            <BrandingProposalDocument proposal={proposal} />
           </div>
         ) : (
           /* WEBSITE SCOPE - MULTI-PAGE FLOW WITH AUTOMATED PAGINATION */

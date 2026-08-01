@@ -3,8 +3,371 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Proposal, ProposalType, Milestone, ResourceCost, ProposalStatus, Reminder, ModularServicesScope, ModularServiceId, WhatsappScope } from './types';
+import { Proposal, ProposalType, Milestone, ResourceCost, ProposalStatus, Reminder, ModularServicesScope, ModularServiceId, WhatsappScope, BrandingScope, BrandingDeliverableItem, BrandingProcessStage, BrandingExecutionPhase, BrandingFinancialItem } from './types';
 import { DEFAULT_SCOPE_TEMPLATES } from './staticTemplates';
+
+export function createDefaultBrandingDeliverables(): BrandingDeliverableItem[] {
+  return [
+    // 1. Brand Strategy & Positioning
+    {
+      id: 'bd_strat_1',
+      category: 'Brand Strategy',
+      title: 'Brand Strategy Development',
+      description: 'Comprehensive brand positioning, core values definition, and strategic roadmap.',
+      isSelected: true
+    },
+    {
+      id: 'bd_strat_2',
+      category: 'Brand Strategy',
+      title: 'Brand Positioning & Model',
+      description: 'Defining unique market positioning, Vision, Mission, Values, Essence, Promise, and Benefit framework.',
+      isSelected: true
+    },
+    // 2. Visual Identity
+    {
+      id: 'bd_vis_1',
+      category: 'Visual Identity',
+      title: 'Logo Design & Concept Development',
+      description: 'Vertical & Horizontal lockups, primary, secondary & mono variations with clear space rules.',
+      isSelected: true
+    },
+    {
+      id: 'bd_vis_2',
+      category: 'Visual Identity',
+      title: 'Typography & Colour System',
+      description: 'Primary typeface definition, web font recommendations, Pantone references, CMYK, RGB, and HEX specifications.',
+      isSelected: true
+    },
+    {
+      id: 'bd_vis_3',
+      category: 'Visual Identity',
+      title: 'Brand Identity Guidelines Booklet',
+      description: 'Master 20-page brand guidelines booklet in PDF format for both business entities.',
+      isSelected: true
+    },
+    // 3. Corporate Stationery
+    {
+      id: 'bd_stat_1',
+      category: 'Corporate Stationery',
+      title: 'Stationery Design - Letterhead',
+      description: 'Letterhead and continuation sheet (Ready to Print version & MS Word format).',
+      isSelected: true
+    },
+    {
+      id: 'bd_stat_2',
+      category: 'Corporate Stationery',
+      title: 'Envelopes (A4 & DL)',
+      description: 'A4 and DL size corporate envelopes (Ready to Print version).',
+      isSelected: true
+    },
+    {
+      id: 'bd_stat_3',
+      category: 'Corporate Stationery',
+      title: 'Business Card Template',
+      description: 'Executive double-sided business card templates.',
+      isSelected: true
+    },
+    {
+      id: 'bd_stat_4',
+      category: 'Corporate Stationery',
+      title: 'Email Signature',
+      description: 'HTML & graphic email signature for company personnel.',
+      isSelected: true
+    },
+    {
+      id: 'bd_stat_5',
+      category: 'Corporate Stationery',
+      title: 'Receipts & Vouchers',
+      description: 'Official payment receipt vouchers and invoice headers.',
+      isSelected: true
+    },
+    {
+      id: 'bd_stat_6',
+      category: 'Corporate Stationery',
+      title: 'Employee ID Card & Access Badge',
+      description: 'Employee ID cards, visitor passes, and lanyard badge templates.',
+      isSelected: true
+    },
+    {
+      id: 'bd_stat_7',
+      category: 'Corporate Stationery',
+      title: 'Official Office Stamp',
+      description: 'Vector artwork design for official corporate rubber seal & stamp.',
+      isSelected: true
+    },
+    // 4. Packaging & Merchandise
+    {
+      id: 'bd_pack_1',
+      category: 'Packaging & Merchandise',
+      title: 'Packaging & Label Design',
+      description: 'Custom retail package layout, product labels, and print-ready die-lines.',
+      isSelected: false
+    },
+    {
+      id: 'bd_pack_2',
+      category: 'Packaging & Merchandise',
+      title: 'Product Branding',
+      description: 'Product merchandise application, tissue paper, and shopping bags.',
+      isSelected: false
+    },
+    // 5. Signage & Environmental
+    {
+      id: 'bd_sign_1',
+      category: 'Signage & Environmental',
+      title: 'Signage Design & Wayfinding',
+      description: 'Exterior building signage, reception backdrop, and indoor wayfinding graphics.',
+      isSelected: false
+    },
+    {
+      id: 'bd_sign_2',
+      category: 'Signage & Environmental',
+      title: 'Environmental Office Branding',
+      description: 'Wall graphics, glass film frosting motifs, and interior branding elements.',
+      isSelected: false
+    },
+    // 6. Digital & Social Media
+    {
+      id: 'bd_dig_1',
+      category: 'Digital & Social Media',
+      title: 'Social Media Kit',
+      description: 'Profile pictures, cover banners, and template layouts for Instagram, LinkedIn, and X.',
+      isSelected: false
+    },
+    {
+      id: 'bd_dig_2',
+      category: 'Digital & Social Media',
+      title: 'Website UI/UX Direction',
+      description: 'Brand application guidelines for digital web interfaces and mobile apps.',
+      isSelected: false
+    },
+    // 7. Marketing Collateral
+    {
+      id: 'bd_mkt_1',
+      category: 'Marketing Collateral',
+      title: 'Brochure & Presentation Design',
+      description: 'Corporate brochure layout and 10+ slide master PowerPoint / Keynote presentation deck.',
+      isSelected: false
+    },
+    {
+      id: 'bd_mkt_2',
+      category: 'Marketing Collateral',
+      title: 'Vehicle Branding',
+      description: 'Fleet vehicle graphics, wrap layout, and company delivery van door artwork.',
+      isSelected: false
+    },
+    {
+      id: 'bd_mkt_3',
+      category: 'Marketing Collateral',
+      title: 'Uniform Design',
+      description: 'Staff polo shirts, caps, high-vis vests, and executive wear embroidery artwork.',
+      isSelected: false
+    }
+  ];
+}
+
+export function createDefaultBrandingScope(clientName?: string): BrandingScope {
+  const name = clientName && clientName.trim() ? clientName.trim() : "your organization";
+
+  return {
+    includeCoverPage: true,
+    includeTableOfContents: true,
+    includeExecutiveSummary: true,
+    includeObjectives: true,
+    includeKickoffApproach: true,
+    includeProcess: true,
+    includeScopeDeliverables: true,
+    includePhasesOfExecution: true,
+    includeTimeline: true,
+    includeFinancials: true,
+    includeTermsExclusions: true,
+    includeAcceptance: true,
+
+    customExecutiveSummaryLead: `Thank you very much for this opportunity to present our proposal for your consideration. We are honoured to have the chance in providing you an insight of what we can offer you.\n\nWithin our proposal we have explained our proposed creative services that will support your efforts in launching your brand ideas.\n\nAstra is an agency that has been serving clients since 2010 and has recently restructured our team, strengthened our core strategy and creative offer, and set up in-house media, technology, and digital functions.\n\nWe now offer our clients an unparalleled combination of local and international insight, outstanding talent in strategic thinking and creative output for: Branding, Digital, Technology, and Events.`,
+
+    customExecutiveSummaryProject: `This quotation has been prepared for ${name} to support its brand development and identity enhancement initiative for its business ventures.\n\nExecutive Summary:\nThey aim to create a fresh new brand identity for their venture. Aligned with the organization's future plans and projections, we will craft a clear and cohesive brand rooted in the company's vision.\n\nOur creative development will ensure your brand is always portrayed consistently and accurately, so investors and shareholders have the opportunity to develop trust in the brand and its promise.`,
+
+    objectivesOverview: `The new brand identity has to promote and echo the core principles of their brand with a fresh and modern approach, positioning the brand on local and regional market platforms.`,
+
+    objectivesList: [
+      "In brand building, we focus on increasing the prestige and status of the new brand.",
+      "To ensure the brand message is reproduced correctly, consistently, and in line with company objectives across different departments, communication channels, and suppliers.",
+      "Save marketers time and increase overall team productivity.",
+      "Provide a one-stop source of information about the brand to new employees, marketing agencies, and other service providers.",
+      "Craft a brand identity that can be used globally with high scalability.",
+      "Heavily represent and showcase your brand's ethical and social values to potential investors and partners.",
+      "Provide company employees with clarity, focus, and strategic direction."
+    ],
+
+    kickoffAgenda: [
+      "Agree on project deliverables and key dependencies",
+      "Clarify client final decision makers and approval workflows",
+      "Discuss potentially sensitive areas of engagement",
+      "Agree on presentation dates and milestone review meetings",
+      "Agree billing schedule and finalize payment terms"
+    ],
+    kickoffDeliverables: [
+      "A project plan that finalizes appointed Astra project manager, adjusted proposal (if necessary), detailed project timeline with all key dependencies, delivery, and meeting dates.",
+      "Formalized billing schedule with key financial contacts."
+    ],
+    kickoffTiming: "Timing: 1 Day",
+
+    approachIntro: "The brand identity development will address both the organization's current needs and its future growth, adapting to evolving market conditions. Together, we will keep the changing media landscape and your long-term expansion plans at the forefront, ensuring a strategic approach that delivers a brand with lasting relevance and impact.",
+    approachStrategy: "It's time to create a plan to attract potential clienteles and create a trustful brand so that people think of them when they are willing to engage their product or service.",
+    approachToneVoice: "How is the brand going to communicate with its target audience? Formality, emotional approach, humor, storytelling, etc. Our goal is to find a unique tone that will humanize the brand and connect emotionally.",
+    approachMoodboard: "We set up a mood board to collect visual inspiration that will help us define a visual concept for the brand. This includes images, textures, patterns, colors, typographies, and lockups.",
+
+    processStages: [
+      {
+        id: 'ps_1',
+        stageName: 'Research',
+        description: 'Before any actual creative work begins, we conduct extensive background research. We will meet with you to understand your goals, audience needs, and project expectations.'
+      },
+      {
+        id: 'ps_2',
+        stageName: 'Design',
+        description: 'When analysis is complete, design work begins. We keep your communication needs at the core of every design decision from colors to font styles to layouts.'
+      },
+      {
+        id: 'ps_3',
+        stageName: 'Implementation',
+        description: 'After selecting your preferred creative direction, we begin design execution, producing draft outputs and refined collaterals for your review.'
+      },
+      {
+        id: 'ps_4',
+        stageName: 'Evaluation',
+        description: 'After design completion, we follow up to assess project outcomes and deliver final artwork in print-ready PDF and open vector formats.'
+      }
+    ],
+
+    executionPhases: [
+      {
+        id: 'ep_1',
+        phaseNumber: 1,
+        phaseTitle: 'PHASE 1: DESIGN CONCEPT',
+        actionPoints: [
+          'Develop two logo design concepts for each of your business entities.',
+          'Develop a visual language comprising typography, colors, and graphics.',
+          'Apply the approved identity direction to agreed collaterals.',
+          'Client presentation - review and feedback.',
+          '2 sets of amends on agreed design concept.',
+          'Client presentation and final approval.'
+        ]
+      },
+      {
+        id: 'ep_2',
+        phaseNumber: 2,
+        phaseTitle: 'PHASE 2: DESIGN DEVELOPMENT',
+        actionPoints: [
+          'Design development of the chosen logo and visual language.',
+          'Development of brand language and graphic elements.',
+          'Validation of each element.',
+          'Finalization of visual identity elements & stationery design.'
+        ]
+      },
+      {
+        id: 'ep_3',
+        phaseNumber: 3,
+        phaseTitle: 'PHASE 3: COLLATERALS DEVELOPMENT',
+        actionPoints: [
+          'Letterhead and continuation sheet (Ready to print version).',
+          'Envelopes (A4 and DL).',
+          'Business card template.',
+          'Payment Receipts & Vouchers.',
+          'Email signature artwork.'
+        ]
+      },
+      {
+        id: 'ep_4',
+        phaseNumber: 4,
+        phaseTitle: 'PHASE 4: FINAL ARTWORK',
+        actionPoints: [
+          'Create artwork for applications listed in design development stage.',
+          'Detail collaterals with information provided by client.',
+          'Client presentation - review and feedback.',
+          'Provide client with artwork in PDF and open file format.',
+          'Prepare final artwork files, get client sign-off.'
+        ]
+      }
+    ],
+
+    deliverableItems: createDefaultBrandingDeliverables(),
+
+    financialItems: [
+      {
+        id: 'fin_1',
+        sl: 1,
+        resourceRole: 'Project Management',
+        detail: 'Client Liaison & Quality Assurance',
+        timeDays: '5 Days',
+        amount: 0
+      },
+      {
+        id: 'fin_2',
+        sl: 2,
+        resourceRole: 'Sr. Visualiser',
+        detail: 'Research & Planning, Creative & Art Direction, Approach, Ideation/Concept',
+        timeDays: '12 Days',
+        amount: 12000
+      },
+      {
+        id: 'fin_3',
+        sl: 3,
+        resourceRole: 'Sr. Designer',
+        detail: 'Design Development & Artwork, Print ready templates',
+        timeDays: '15 Days',
+        amount: 10000
+      }
+    ],
+    financialNotes: "Signed proposal and LPO required for Astra to commence work.",
+    paymentTermsText: "PAYMENT TERMS: Payment due within 21 days from date of invoice.",
+    invoicingScheduleText: "INVOICING: 50% upfront on proposal approval and 50% on project completion and delivery.",
+
+    termsList: [
+      "INVOICING: 50% upfront on proposal approval and 50% on project completion and delivery.",
+      "PAYMENT TERMS: Payment due within 21 days from date of invoice."
+    ],
+    exclusionsList: [
+      "Printing of any physical item.",
+      "Production management and manufacturing.",
+      "Naming registration and legal trademarking.",
+      "HTML development or web programming.",
+      "Domain name purchase or web hosting.",
+      "Website or App look and feel / software development.",
+      "Content development, copywriting, proofreading, or translation.",
+      "Purchase of stock images from online image libraries.",
+      "Photo-shoot, video production, or model hire.",
+      "Any third party services not explicitly mentioned in the proposal.",
+      "Deliverables not explicitly listed in the scope of work.",
+      "Social media management, ad spend, or media buying.",
+      "Font license purchases.",
+      "Physical signage fabrication or wayfinding installation.",
+      "Product Flyers or printed catalog distribution."
+    ],
+
+    deliveryOverviewText: "Once any final changes have been made and the product has been approved, we will commence the delivery phase.",
+    deliveryDeliverablesText: [
+      "Print ready files in PDF (CMYK)",
+      "Invoicing - payment terms are explained in the financials"
+    ],
+    supportOverviewText: "Astra does not see the delivery of the project as the end of the process and we enjoy long term relationships with many of our clients. The primary aim of the Support phase is to offer consultative and technical support and additional channels of content distribution.",
+    technicalSupportList: [
+      "Post project review to identify opportunities for further improvement in future",
+      "Digital open vector version of your logo & visual identity package"
+    ],
+
+    // Legacy fallback booleans
+    logoDesign: true,
+    brandGuidelines: true,
+    businessCards: true,
+    letterheads: true,
+    emailSignature: true,
+    envelopes: true,
+    officeStamp: true,
+    employeeIdCards: true,
+    receiptsVouchers: true,
+    additionalDeliverables: ""
+  };
+}
 
 export interface ModularDeliverableLineItem {
   id: string;
@@ -519,18 +882,7 @@ export function createDefaultProposal(type: ProposalType, initialClientName?: st
     isBriefDescriptionEdited: false,
     
     // Branding default scope
-    brandingScope: {
-      logoDesign: true,
-      brandGuidelines: true,
-      businessCards: false,
-      letterheads: false,
-      emailSignature: false,
-      envelopes: false,
-      officeStamp: false,
-      employeeIdCards: false,
-      receiptsVouchers: false,
-      additionalDeliverables: ""
-    },
+    brandingScope: createDefaultBrandingScope(cName),
     
     // Website default scope
     websiteScope: {
@@ -602,7 +954,7 @@ export function createDefaultProposal(type: ProposalType, initialClientName?: st
     additionalCost: type === 'website' ? 1500 : 0,
     
     totalCost: type === 'branding'
-      ? DEFAULT_RESOURCE_COSTS.reduce((acc, curr) => acc + (curr.hours * curr.rate), 0)
+      ? 22000
       : (type === 'services' ? servicesTotal : (type === 'whatsapp' ? 2700 : 16200)),
       
     paymentTerms: type === 'whatsapp' 
