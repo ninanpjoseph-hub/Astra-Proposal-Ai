@@ -803,6 +803,26 @@ router.put('/:id', async (req, res) => {
 });
 
 /**
+ * POST /api/proposals/clear-all
+ * Clear all proposals from memory & database
+ */
+router.post('/clear-all', async (req, res) => {
+  try {
+    try { await query('DELETE FROM crm_pipeline'); } catch (e: any) {}
+    try { await query('DELETE FROM proposal_version_history'); } catch (e: any) {}
+    try { await query('DELETE FROM file_attachments'); } catch (e: any) {}
+    try { await query('DELETE FROM proposal_payments'); } catch (e: any) {}
+    try { await query('DELETE FROM supplier_items'); } catch (e: any) {}
+    try { await query('UPDATE supplier_payments SET proposal_id = NULL'); } catch (e: any) {}
+    try { await query('DELETE FROM proposals'); } catch (e: any) {}
+
+    res.json({ success: true, message: 'All proposals cleared successfully.' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
  * DELETE /api/proposals/:id
  * Only Admin can delete proposals
  */

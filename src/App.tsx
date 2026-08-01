@@ -523,6 +523,40 @@ export default function App() {
     }
   };
 
+  const handleClearAllProposals = async () => {
+    if (confirm("Are you sure you want to clear ALL proposals from active memory directory and the database? This action cannot be undone.")) {
+      setProposals([]);
+      setViewingProposal(null);
+      setEditingProposal(null);
+      localStorage.removeItem('prowess_proposals_v1');
+
+      try {
+        await fetch('/api/proposals/clear-all', {
+          method: 'POST',
+          headers: getAuthHeaders(currentUser)
+        });
+
+        const logEntry = {
+          id: 'log_' + Math.random().toString(36).substring(2, 10),
+          timestamp: new Date().toISOString(),
+          userId: currentUser?.id,
+          userName: currentUser?.name || 'System',
+          userRole: currentUser?.role || UserRole.SALES,
+          action: 'Clear Memory Directory',
+          details: `Cleared all stored proposals from memory directory and database.`
+        };
+
+        await fetch('/api/activity-logs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(logEntry)
+        });
+      } catch (err: any) {
+        console.warn("Error clearing proposals from backend:", err.message);
+      }
+    }
+  };
+
   // Launch fresh builder
   const startNewProposal = (type: ProposalType) => {
     const blank = createDefaultProposal(type);
@@ -1144,9 +1178,21 @@ export default function App() {
                 <span className={`text-xs font-mono font-bold uppercase ${isLuxury ? 'text-[#C5A059]' : 'text-slate-400'}`}>
                   ACTIVE MEMORY DIRECTORY
                 </span>
-                <span className="text-xs font-sans">
-                  Showing <strong>{filteredProposals.length}</strong> of <strong>{proposals.length}</strong> stored proposals
-                </span>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-sans">
+                    Showing <strong>{filteredProposals.length}</strong> of <strong>{proposals.length}</strong> stored proposals
+                  </span>
+                  {proposals.length > 0 && (
+                    <button
+                      onClick={handleClearAllProposals}
+                      className="px-2.5 py-1 text-[11px] font-semibold font-sans rounded bg-rose-500/15 hover:bg-rose-500/25 text-rose-400 hover:text-rose-300 border border-rose-500/30 transition-colors cursor-pointer flex items-center gap-1.5"
+                      title="Clear all proposals from memory"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                      Clear All
+                    </button>
+                  )}
+                </div>
               </div>
 
               {filteredProposals.length > 0 ? (
