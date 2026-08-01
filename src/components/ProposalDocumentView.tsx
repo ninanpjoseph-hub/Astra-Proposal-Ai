@@ -2817,6 +2817,12 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
                             The client is responsible for providing the latest approved Brand Guidelines, including logos, fonts, colour palette, imagery, and brand assets before the design phase commences.
                           </span>
                         </div>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
+                          <span style={{ color: '#B8962E', fontWeight: 'bold', fontSize: '11px', marginTop: '1px' }}>•</span>
+                          <span style={{ fontSize: '10px', color: '#4b5563', lineHeight: '1.45' }}>
+                            Please be advised that this proposal does not include the cost or purchase of any premium plugins or third-party licenses. Our development scope is strictly limited to the use of such plugins that are either bundled with the selected theme or freely available.
+                          </span>
+                        </div>
                       </div>
                     </div>
                   )}

@@ -2544,43 +2544,6 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
                             ))}
                           </select>
                         </div>
-
-                        {/* Live CMS Framework Card Preview */}
-                        {(() => {
-                          const currentFw = getCMSFrameworkConfig(proposal.websiteScope.cmsType);
-                          return (
-                            <div className="mt-3 p-4 sm:p-5 bg-slate-50/90 border border-slate-200/90 rounded-2xl space-y-3.5 text-left">
-                              <div className="space-y-1">
-                                <span className="inline-block text-[11px] font-bold uppercase tracking-wider text-amber-900 font-mono bg-amber-100/80 px-3 py-1 rounded-md border border-amber-200/90">
-                                  {currentFw.stackTitle}
-                                </span>
-                                <div className="text-xs sm:text-sm text-slate-500 font-medium font-sans">
-                                  System Architecture Stack
-                                </div>
-                              </div>
-
-                              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-sans">
-                                {currentFw.description}
-                              </p>
-
-                              {/* Stacked Tech Cards (1 column) */}
-                              <div className="flex flex-col gap-2.5 pt-1">
-                                {[
-                                  { label: "FRONTEND", val: proposal.websiteScope.ecommerceTechStack?.website || currentFw.techStack.website },
-                                  { label: "MOBILE APPS", val: proposal.websiteScope.ecommerceTechStack?.mobile || currentFw.techStack.mobile },
-                                  { label: "BACKEND API", val: proposal.websiteScope.ecommerceTechStack?.backend || currentFw.techStack.backend },
-                                  { label: "DATABASE", val: proposal.websiteScope.ecommerceTechStack?.database || currentFw.techStack.database },
-                                  { label: "HOSTING", val: proposal.websiteScope.ecommerceTechStack?.hosting || currentFw.techStack.hosting }
-                                ].map((item, idx) => (
-                                  <div key={idx} className="bg-white p-3.5 sm:p-4 border border-slate-200/90 rounded-xl shadow-2xs text-left">
-                                    <span className="block text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">{item.label}</span>
-                                    <span className="block text-sm sm:text-base font-bold text-slate-800 leading-snug">{item.val}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          );
-                        })()}
                       </div>
 
                       {/* Optional WordPress Plugins & Licensing Section Toggle (When WordPress or WooCommerce selected) */}

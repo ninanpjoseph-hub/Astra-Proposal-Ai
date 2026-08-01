@@ -356,7 +356,8 @@ export async function exportProposalToDocx(proposal: Proposal) {
       const notesList = [
         'Any additional requirements, features, or functionality not explicitly mentioned in this proposal shall be considered out of scope.',
         `Any out-of-scope work may only be undertaken after receiving written authorization and approval from ${clientName}, and will be covered under a separate Statement of Work (SOW) and commercial agreement.`,
-        'The client is responsible for providing the latest approved Brand Guidelines, including logos, fonts, colour palette, imagery, and brand assets before the design phase commences.'
+        'The client is responsible for providing the latest approved Brand Guidelines, including logos, fonts, colour palette, imagery, and brand assets before the design phase commences.',
+        'Please be advised that this proposal does not include the cost or purchase of any premium plugins or third-party licenses. Our development scope is strictly limited to the use of such plugins that are either bundled with the selected theme or freely available.'
       ];
 
       notesList.forEach(noteText => {
