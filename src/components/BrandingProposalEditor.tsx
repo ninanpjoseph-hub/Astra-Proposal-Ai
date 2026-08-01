@@ -408,7 +408,7 @@ export default function BrandingProposalEditor({ proposal, onChange }: BrandingP
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {[
-                { key: 'includeCoverPage', label: '1. Cover Page', desc: 'Title, client name, confidentiality badge & Astra branding' },
+                { key: 'includeCoverPage', label: '1. Cover Page', desc: 'Title, client name, confidentiality badge & company branding' },
                 { key: 'includeTableOfContents', label: '2. Table of Contents', desc: 'Index page with dot leaders and page numbering' },
                 { key: 'includeExecutiveSummary', label: '3. Executive Summary', desc: 'Agency introduction letter and project background summary' },
                 { key: 'includeObjectives', label: '4. Project Mission & Objectives', desc: 'Strategic goals and brand building focus points' },
