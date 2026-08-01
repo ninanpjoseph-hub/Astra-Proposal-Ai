@@ -10,6 +10,7 @@ import { DEFAULT_SCOPE_TEMPLATES } from '../staticTemplates';
 import SitemapGenerator from './SitemapGenerator';
 import ProposalDocumentView from './ProposalDocumentView';
 import { getScopeCategory, ScopeCategory } from '../utils/scopeClassifier';
+import { getCMSFrameworkConfig, CMS_FRAMEWORKS } from '../utils/cmsFrameworks';
 import { 
   Building2, User, Calendar, FileText, CheckSquare, Clock, Landmark, Settings, 
   Trash2, Plus, ArrowLeft, ArrowRight, Eye, Sparkles, Check, HelpCircle, ArrowUp, ArrowDown, Edit3, X,
@@ -2524,16 +2525,67 @@ export default function ProposalWizard({ initialProposal, onSave, onCancel }: Pr
                           <label className="text-xs font-sans font-semibold text-slate-700">CMS Framework Type</label>
                           <select
                             value={proposal.websiteScope.cmsType}
-                            onChange={(e) => updateWebsiteScope('cmsType', e.target.value)}
-                            className="w-full px-3 py-1 border border-slate-300 rounded-lg text-xs font-sans focus:outline-hidden bg-white"
+                            onChange={(e) => {
+                              const newCms = e.target.value;
+                              const fw = getCMSFrameworkConfig(newCms);
+                              setProposal(prev => ({
+                                ...prev,
+                                websiteScope: {
+                                  ...prev.websiteScope,
+                                  cmsType: newCms,
+                                  ecommerceTechStack: { ...fw.techStack }
+                                }
+                              }));
+                            }}
+                            className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-sans font-medium text-slate-800 focus:outline-hidden bg-white"
                           >
-                            <option value="Basic HTML5">Basic HTML5</option>
-                            <option value="WordPress">WordPress</option>
-                            <option value="WooCommerce">WooCommerce</option>
-                            <option value="Shopify Framework">Shopify Framework</option>
-                            <option value="Custom PHP/Node.js Backend">Custom PHP/Node.js Backend</option>
+                            {Object.values(CMS_FRAMEWORKS).map((fw) => (
+                              <option key={fw.id} value={fw.id}>{fw.name} — ({fw.stackTitle})</option>
+                            ))}
                           </select>
                         </div>
+
+                        {/* Live CMS Framework Card Preview */}
+                        {(() => {
+                          const currentFw = getCMSFrameworkConfig(proposal.websiteScope.cmsType);
+                          return (
+                            <div className="mt-2 p-3.5 bg-slate-50 border border-slate-200 rounded-lg space-y-2.5">
+                              <div className="flex items-center justify-between">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-blue-700 font-mono bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
+                                  {currentFw.stackTitle}
+                                </span>
+                                <span className="text-[10px] text-slate-500 font-medium">System Architecture Stack</span>
+                              </div>
+                              <p className="text-[11px] text-slate-600 leading-relaxed font-sans">
+                                {currentFw.description}
+                              </p>
+
+                              {/* Tech Stack Pills */}
+                              <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5 pt-1">
+                                <div className="bg-white p-1.5 border border-slate-200 rounded text-center">
+                                  <span className="block text-[8px] font-bold text-slate-400 uppercase">Frontend</span>
+                                  <span className="block text-[9.5px] font-bold text-slate-800 truncate">{proposal.websiteScope.ecommerceTechStack?.website || currentFw.techStack.website}</span>
+                                </div>
+                                <div className="bg-white p-1.5 border border-slate-200 rounded text-center">
+                                  <span className="block text-[8px] font-bold text-slate-400 uppercase">Mobile Apps</span>
+                                  <span className="block text-[9.5px] font-bold text-slate-800 truncate">{proposal.websiteScope.ecommerceTechStack?.mobile || currentFw.techStack.mobile}</span>
+                                </div>
+                                <div className="bg-white p-1.5 border border-slate-200 rounded text-center">
+                                  <span className="block text-[8px] font-bold text-slate-400 uppercase">Backend API</span>
+                                  <span className="block text-[9.5px] font-bold text-slate-800 truncate">{proposal.websiteScope.ecommerceTechStack?.backend || currentFw.techStack.backend}</span>
+                                </div>
+                                <div className="bg-white p-1.5 border border-slate-200 rounded text-center">
+                                  <span className="block text-[8px] font-bold text-slate-400 uppercase">Database</span>
+                                  <span className="block text-[9.5px] font-bold text-slate-800 truncate">{proposal.websiteScope.ecommerceTechStack?.database || currentFw.techStack.database}</span>
+                                </div>
+                                <div className="bg-white p-1.5 border border-slate-200 rounded text-center">
+                                  <span className="block text-[8px] font-bold text-slate-400 uppercase">Hosting</span>
+                                  <span className="block text-[9.5px] font-bold text-slate-800 truncate">{proposal.websiteScope.ecommerceTechStack?.hosting || currentFw.techStack.hosting}</span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })()}
                       </div>
 
                       {/* Optional WordPress Plugins & Licensing Section Toggle (When WordPress or WooCommerce selected) */}

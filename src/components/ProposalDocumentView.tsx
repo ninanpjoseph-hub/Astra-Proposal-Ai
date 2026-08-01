@@ -13,6 +13,7 @@ import { groupScopeIntoPages, packScopePagesIntoPhysicalPageGroups } from '../ut
 import { Check, Bookmark, DollarSign, Calendar, Landmark, BookOpen, Signature, Award, ChevronRight, FileText, Printer, Download, History, RotateCcw, Clock, Sliders, Upload, Trash2, Plus, AlertCircle, Coins, CreditCard, Shield, Users, MoreVertical, ChevronDown, Mail } from 'lucide-react';
 import { Proposal, ProposalHistoryEntry, ProposalStatus, PaymentEntry, UserRole } from '../types';
 import { exportProposalToDocx } from '../utils/docxExport';
+import { getCMSFrameworkConfig } from '../utils/cmsFrameworks';
 
 interface ProposalDocumentViewProps {
   proposal: Proposal;
@@ -2686,42 +2687,91 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
                     </div>
                   )}
 
-                  {/* Tech stack: display as a single-row grid of labelled badges, one per technology layer */}
-                  <div style={{ border: '1px solid #e0ddd5', borderRadius: '8px', backgroundColor: '#fafaf8', padding: '14px' }}>
-                    <div style={{ marginBottom: '8px', textAlign: 'left' }}>
-                      <span style={{ display: 'block', fontSize: '10px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#B8962E', fontWeight: 'bold' }}>
-                        SYSTEM INFRASTRUCTURE
-                      </span>
-                      <h4 style={{ fontSize: '12px', fontWeight: 'bold', color: '#1a2744', marginTop: '2px' }}>
-                        Provisioned Container Technology Stack
-                      </h4>
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '10px' }}>
-                      {[
-                        { label: "Frontend", val: proposal.websiteScope.ecommerceTechStack?.website || "HTML5 & PHP CMS" },
-                        { label: "Mobile Apps", val: proposal.websiteScope.ecommerceTechStack?.mobile || "Responsive Web Design" },
-                        { label: "Backend API", val: proposal.websiteScope.ecommerceTechStack?.backend || "WordPress CMS (PHP)" },
-                        { label: "Database", val: proposal.websiteScope.ecommerceTechStack?.database || "MySQL" },
-                        { label: "Hosting", val: proposal.websiteScope.ecommerceTechStack?.hosting || "Web Server Infrastructure" }
-                      ].map((stackIdx) => (
-                        <div key={stackIdx.label} style={{ backgroundColor: '#ffffff', border: '1px solid #e0ddd5', borderRadius: '6px', padding: '8px', textAlign: 'center', boxSizing: 'border-box' }}>
-                          <span style={{ display: 'block', fontSize: '8px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#B8962E', fontWeight: 'bold' }}>
-                            {stackIdx.label}
-                          </span>
-                          <span style={{ display: 'block', fontSize: '10.5px', fontWeight: 'bold', color: '#1a2744', marginTop: '4px', wordBreak: 'break-word', lineHeight: '1.2' }}>
-                            {stackIdx.val}
+                  {/* Tech stack: display as a single-row grid of labelled badges + dynamic framework overview */}
+                  {(() => {
+                    const currentFwConfig = getCMSFrameworkConfig(proposal.websiteScope.cmsType);
+                    return (
+                      <div style={{ border: '1px solid #e0ddd5', borderRadius: '8px', backgroundColor: '#fafaf8', padding: '14px', textAlign: 'left' }}>
+                        <div style={{ marginBottom: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <div>
+                            <span style={{ display: 'block', fontSize: '10px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#B8962E', fontWeight: 'bold' }}>
+                              SYSTEM INFRASTRUCTURE
+                            </span>
+                            <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#1a2744', marginTop: '2px' }}>
+                              {currentFwConfig.stackTitle}
+                            </h4>
+                          </div>
+                          <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#1a2744', backgroundColor: '#eef2ff', border: '1px solid #c7d2fe', padding: '3px 8px', borderRadius: '4px', textTransform: 'uppercase' }}>
+                            {proposal.websiteScope.cmsType || currentFwConfig.name}
                           </span>
                         </div>
-                      ))}
-                    </div>
-                  </div>
 
-                  {/* PREMIUM WORDPRESS PLUGINS & LICENSING SECTION */}
+                        {/* 5-Column Grid for Container Technology Stack */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '10px', marginBottom: '12px' }}>
+                          {[
+                            { label: "Frontend", val: proposal.websiteScope.ecommerceTechStack?.website || currentFwConfig.techStack.website },
+                            { label: "Mobile Apps", val: proposal.websiteScope.ecommerceTechStack?.mobile || currentFwConfig.techStack.mobile },
+                            { label: "Backend API", val: proposal.websiteScope.ecommerceTechStack?.backend || currentFwConfig.techStack.backend },
+                            { label: "Database", val: proposal.websiteScope.ecommerceTechStack?.database || currentFwConfig.techStack.database },
+                            { label: "Hosting", val: proposal.websiteScope.ecommerceTechStack?.hosting || currentFwConfig.techStack.hosting }
+                          ].map((stackIdx) => (
+                            <div key={stackIdx.label} style={{ backgroundColor: '#ffffff', border: '1px solid #e0ddd5', borderRadius: '6px', padding: '8px', textAlign: 'center', boxSizing: 'border-box' }}>
+                              <span style={{ display: 'block', fontSize: '8px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#B8962E', fontWeight: 'bold' }}>
+                                {stackIdx.label}
+                              </span>
+                              <span style={{ display: 'block', fontSize: '10.5px', fontWeight: 'bold', color: '#1a2744', marginTop: '4px', wordBreak: 'break-word', lineHeight: '1.2' }}>
+                                {stackIdx.val}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Dynamic Framework Overview & Architecture Specs */}
+                        <div style={{ backgroundColor: '#ffffff', border: '1px solid #e0ddd5', borderRadius: '6px', padding: '10px 12px' }}>
+                          <p style={{ fontSize: '10.5px', color: '#374151', margin: '0 0 10px 0', lineHeight: '1.45', fontWeight: '500' }}>
+                            {currentFwConfig.description}
+                          </p>
+
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', borderTop: '1px solid #f3f4f6', paddingTop: '8px' }}>
+                            <div>
+                              <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#B8962E', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '4px' }}>
+                                Key Framework Advantages
+                              </span>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                {currentFwConfig.advantages.map((adv, idx) => (
+                                  <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '5px', fontSize: '10px', color: '#4b5563' }}>
+                                    <span style={{ color: '#B8962E', fontWeight: 'bold', lineHeight: '1' }}>✓</span>
+                                    <span>{adv}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            <div>
+                              <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#1a2744', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '4px' }}>
+                                Core Architectural Features
+                              </span>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                {currentFwConfig.features.map((feat, idx) => (
+                                  <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '5px', fontSize: '10px', color: '#4b5563' }}>
+                                    <span style={{ color: '#1a2744', fontWeight: 'bold', lineHeight: '1' }}>•</span>
+                                    <span>{feat}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* PREMIUM WORDPRESS PLUGINS & LICENSING SECTION (for WordPress / WooCommerce) */}
                   {proposal.type === 'website' && 
                    ((proposal.websiteScope.cmsType || '').toLowerCase().includes('wordpress') || (proposal.websiteScope.cmsType || '').toLowerCase().includes('woocommerce')) && 
                    proposal.websiteScope.includeWordpressPlugins !== false && (
                     <div style={{ backgroundColor: '#ffffff', border: '1.5px solid #1a2744', borderRadius: '8px', padding: '14px', textAlign: 'left' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyBetween: 'space-between', borderBottom: '1px solid #e0ddd5', pb: '6px', marginBottom: '10px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e0ddd5', paddingBottom: '6px', marginBottom: '10px' }}>
                         <div>
                           <span style={{ display: 'block', fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#B8962E', fontWeight: 'bold' }}>
                             LICENSED INFRASTRUCTURE & EXTENSIONS
@@ -2736,7 +2786,7 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
                         <span style={{ fontSize: '10.5px', fontWeight: 'bold', color: '#1a2744', display: 'block' }}>
                           Plugin Usage – Licensed (Annual Renewal)
                         </span>
-                        <p style={{ fontSize: '10px', color: '#4b5563', margin: '2px 0 0 0', italic: 'true' }}>
+                        <p style={{ fontSize: '10px', color: '#4b5563', margin: '2px 0 0 0', fontStyle: 'italic' }}>
                           Pricing for all licensed plugins will be detailed separately in the Financial Section of this proposal.
                         </p>
                       </div>
@@ -2771,6 +2821,40 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
                             Provides enterprise-grade website security, including firewall protection, malware scanning, brute-force attack prevention, and continuous threat monitoring.
                           </p>
                         </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* FRAMEWORK EXTENSION & DEPLOYMENT SPECIFICATIONS (for Non-WordPress frameworks) */}
+                  {proposal.type === 'website' && 
+                   !((proposal.websiteScope.cmsType || '').toLowerCase().includes('wordpress') || (proposal.websiteScope.cmsType || '').toLowerCase().includes('woocommerce')) && (
+                    <div style={{ backgroundColor: '#ffffff', border: '1.5px solid #1a2744', borderRadius: '8px', padding: '14px', textAlign: 'left' }}>
+                      <div style={{ borderBottom: '1px solid #e0ddd5', paddingBottom: '6px', marginBottom: '10px' }}>
+                        <span style={{ display: 'block', fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#B8962E', fontWeight: 'bold' }}>
+                          FRAMEWORK SPECIFICATIONS & EXTENSIONS
+                        </span>
+                        <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#1a2744', margin: '2px 0 0 0', fontFamily: 'serif' }}>
+                          {getCMSFrameworkConfig(proposal.websiteScope.cmsType).name} Architecture
+                        </h3>
+                      </div>
+
+                      <div style={{ backgroundColor: '#fafaf8', border: '1px solid #e0ddd5', borderRadius: '6px', padding: '8px 12px', marginBottom: '10px' }}>
+                        <span style={{ fontSize: '10.5px', fontWeight: 'bold', color: '#1a2744', display: 'block' }}>
+                          Framework Deployment & Runtime Parameters
+                        </span>
+                        <p style={{ fontSize: '10px', color: '#4b5563', margin: '2px 0 0 0', fontStyle: 'italic' }}>
+                          Custom production build configurations and API endpoints are optimized specifically for the {getCMSFrameworkConfig(proposal.websiteScope.cmsType).name} runtime stack.
+                        </p>
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {getCMSFrameworkConfig(proposal.websiteScope.cmsType).advantages.map((adv, idx) => (
+                          <div key={idx} style={{ borderLeft: idx % 2 === 0 ? '3px solid #B8962E' : '3px solid #1a2744', paddingLeft: '10px' }}>
+                            <h4 style={{ fontSize: '11px', fontWeight: 'bold', color: '#1a2744', margin: '0' }}>
+                              {idx + 1}. {adv}
+                            </h4>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   )}
