@@ -1546,51 +1546,59 @@ export default function ProposalDocumentView({ proposal: incomingProposal, onBac
           </div>
 
           {/* Bottom details block */}
-          <div className="border-t border-slate-200/80 pt-6 grid grid-cols-3 gap-4 relative z-10 mb-6">
-            <div>
-              <p className="text-[9px] font-sans font-bold text-slate-400 tracking-wider uppercase mb-1">
+          <div className="border-t border-slate-200/80 pt-6 grid grid-cols-3 gap-6 relative z-10 mb-6 min-w-0">
+            <div className="flex flex-col gap-1 min-w-0">
+              <p className="text-[9px] font-sans font-bold text-slate-400 tracking-wider uppercase leading-normal">
                 PREPARED BY
               </p>
-              <p className="text-xs font-sans font-bold text-slate-800">
-                {proposal.preparedByName || "Ninan P Joseph"}
-              </p>
-              <p className="text-[11px] font-sans text-slate-500 font-semibold text-[#d3af00]">
-                {proposal.preparedByCompany || "Astra Technologies"}
-              </p>
-              {proposal.preparedByTitle && (
-                <p className="text-[10px] font-sans text-slate-400 italic">
-                  {proposal.preparedByTitle}
+              <div className="flex flex-col gap-0.5 min-w-0">
+                <p className="text-xs font-sans font-bold text-slate-800 leading-snug break-words">
+                  {proposal.preparedByName || "Ninan P Joseph"}
                 </p>
-              )}
+                <p className="text-[11px] font-sans font-semibold text-[#d3af00] leading-snug break-words">
+                  {proposal.preparedByCompany || "Astra Technologies"}
+                </p>
+                {proposal.preparedByTitle && (
+                  <p className="text-[10px] font-sans text-slate-400 italic leading-snug break-words">
+                    {proposal.preparedByTitle}
+                  </p>
+                )}
+              </div>
             </div>
-            <div>
-              <p className="text-[9px] font-sans font-bold text-slate-400 tracking-wider uppercase mb-1">
+
+            <div className="flex flex-col gap-1 min-w-0">
+              <p className="text-[9px] font-sans font-bold text-slate-400 tracking-wider uppercase leading-normal">
                 CLIENT POC / CONTACT
               </p>
-              <p className="text-xs font-sans font-bold text-slate-800 truncate">
-                {proposal.clientPocName || proposal.clientName || "[Client Representative]"}
-              </p>
-              {proposal.clientPocDesignation && (
-                <p className="text-[11px] font-sans text-slate-500 font-semibold truncate">
-                  {proposal.clientPocDesignation}
+              <div className="flex flex-col gap-0.5 min-w-0">
+                <p className="text-xs font-sans font-bold text-slate-800 leading-snug break-words">
+                  {proposal.clientPocName || proposal.clientName || "[Client Representative]"}
                 </p>
-              )}
-              {proposal.companyName && (
-                <p className="text-[10px] font-sans text-slate-400 truncate">
-                  {proposal.companyName}
-                </p>
-              )}
+                {proposal.companyName && (
+                  <p className="text-[11px] font-sans font-semibold text-[#d3af00] leading-snug break-words">
+                    {proposal.companyName}
+                  </p>
+                )}
+                {proposal.clientPocDesignation && (
+                  <p className="text-[10px] font-sans text-slate-400 italic leading-snug break-words">
+                    {proposal.clientPocDesignation}
+                  </p>
+                )}
+              </div>
             </div>
-            <div className="text-right">
-              <p className="text-[9px] font-sans font-bold text-slate-400 tracking-wider uppercase mb-1">
+
+            <div className="flex flex-col gap-1 text-right min-w-0">
+              <p className="text-[9px] font-sans font-bold text-slate-400 tracking-wider uppercase leading-normal">
                 DOCUMENT EXCLUSIVES
               </p>
-              <p className="text-xs font-sans font-bold text-slate-800">
-                {formatFriendlyDate(proposal.proposalDate)}
-              </p>
-              <p className="text-[11px] font-sans text-slate-500 uppercase font-semibold">
-                Valid for 30 Days
-              </p>
+              <div className="flex flex-col gap-0.5 min-w-0">
+                <p className="text-xs font-sans font-bold text-slate-800 leading-snug">
+                  {formatFriendlyDate(proposal.proposalDate)}
+                </p>
+                <p className="text-[11px] font-sans text-slate-500 uppercase font-semibold leading-snug">
+                  Valid for 30 Days
+                </p>
+              </div>
             </div>
           </div>
 
